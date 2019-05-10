@@ -278,10 +278,9 @@ def configure(env):
         env.Prepend(CPPPATH=["/usr/include/miniupnpc"])
         env.Append(LIBS=["miniupnpc"])
 
-    # On Linux wchar_t should be 32-bits
-    # 16-bit library shouldn't be required due to compiler optimisations
+    # use utf-16 version
     if not env['builtin_pcre2']:
-        env.ParseConfig('pkg-config libpcre2-32 --cflags --libs')
+        env.ParseConfig('pkg-config libpcre2-16 --cflags --libs')
 
     ## Flags
 

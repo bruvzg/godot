@@ -182,7 +182,7 @@ Error AudioDriverWASAPI::audio_device_init(AudioDeviceWASAPI *p_device, bool p_c
 			hr = props->GetValue(PKEY_Device_FriendlyName, &propvar);
 			ERR_BREAK(hr != S_OK);
 
-			if (p_device->device_name == String(propvar.pwszVal)) {
+			if (p_device->device_name == String((const CharType *)propvar.pwszVal)) {
 				hr = device->GetId(&strId);
 				ERR_BREAK(hr != S_OK);
 
@@ -459,7 +459,7 @@ Array AudioDriverWASAPI::audio_device_get_list(bool p_capture) {
 		hr = props->GetValue(PKEY_Device_FriendlyName, &propvar);
 		ERR_BREAK(hr != S_OK);
 
-		list.push_back(String(propvar.pwszVal));
+		list.push_back(String((const CharType *)propvar.pwszVal));
 
 		PropVariantClear(&propvar);
 		props->Release();

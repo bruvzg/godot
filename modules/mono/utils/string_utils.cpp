@@ -47,7 +47,7 @@ int sfind(const String &p_text, int p_from) {
 	if (src_len == 0 || len == 0)
 		return -1;
 
-	const CharType *src = p_text.c_str();
+	const CharType *src = p_text.get_data();
 
 	for (int i = p_from; i <= (len - src_len); i++) {
 		bool found = true;

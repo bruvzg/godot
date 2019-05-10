@@ -86,7 +86,7 @@ _FORCE_INLINE_ MonoString *mono_from_utf8_string(const String &p_string) {
 }
 
 _FORCE_INLINE_ MonoString *mono_from_utf16_string(const String &p_string) {
-	return mono_string_from_utf16((mono_unichar2 *)p_string.c_str());
+	return mono_string_from_utf16((mono_unichar2 *)p_string.get_data());
 }
 
 _FORCE_INLINE_ MonoString *mono_string_from_godot(const String &p_string) {

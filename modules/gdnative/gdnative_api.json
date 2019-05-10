@@ -4764,7 +4764,7 @@
       },
       {
         "name": "godot_string_operator_index",
-        "return_type": "const wchar_t *",
+        "return_type": "const godot_char_type *",
         "arguments": [
           ["godot_string *", "p_self"],
           ["const godot_int", "p_idx"]
@@ -4772,7 +4772,7 @@
       },
       {
         "name": "godot_string_operator_index_const",
-        "return_type": "wchar_t",
+        "return_type": "godot_char_type",
         "arguments": [
           ["const godot_string *", "p_self"],
           ["const godot_int", "p_idx"]
@@ -4867,7 +4867,7 @@
         "name": "godot_string_chr",
         "return_type": "godot_string",
         "arguments": [
-          ["wchar_t", "p_character"]
+          ["godot_char_type", "p_character"]
         ]
       },
       {
@@ -5281,7 +5281,7 @@
         ]
       },
       {
-        "name": "godot_string_wchar_to_int",
+        "name": "godot_string_wide_to_int",
         "return_type": "int64_t",
         "arguments": [
           ["const wchar_t *", "p_str"]
@@ -5299,7 +5299,7 @@
         "name": "godot_string_char_to_int64_with_len",
         "return_type": "int64_t",
         "arguments": [
-          ["const wchar_t *", "p_str"],
+          ["const godot_char_type *", "p_str"],
           ["int", "p_len"]
         ]
       },
@@ -5328,8 +5328,8 @@
         "name": "godot_string_unicode_char_to_double",
         "return_type": "double",
         "arguments": [
-          ["const wchar_t *", "p_str"],
-          ["const wchar_t **", "r_end"]
+          ["const godot_char_type *", "p_str"],
+          ["const godot_char_type **", "r_end"]
         ]
       },
       {
@@ -5354,7 +5354,7 @@
         "return_type": "godot_string",
         "arguments": [
           ["const godot_string *", "p_self"],
-          ["wchar_t", "p_splitter"],
+          ["godot_char_type", "p_splitter"],
           ["godot_int", "p_slice"]
         ]
       },
@@ -5447,16 +5447,16 @@
       },
       {
         "name": "godot_string_char_lowercase",
-        "return_type": "wchar_t",
+        "return_type": "godot_char_type",
         "arguments": [
-          ["wchar_t", "p_char"]
+          ["godot_char_type", "p_char"]
         ]
       },
       {
         "name": "godot_string_char_uppercase",
-        "return_type": "wchar_t",
+        "return_type": "godot_char_type",
         "arguments": [
-          ["wchar_t", "p_char"]
+          ["godot_char_type", "p_char"]
         ]
       },
       {
@@ -5497,7 +5497,7 @@
       },
       {
         "name": "godot_string_ord_at",
-        "return_type": "wchar_t",
+        "return_type": "godot_char_type",
         "arguments": [
           ["const godot_string *", "p_self"],
           ["godot_int", "p_idx"]
@@ -5630,14 +5630,14 @@
         "name": "godot_string_hash_utf8_chars",
         "return_type": "uint32_t",
         "arguments": [
-          ["const wchar_t *", "p_str"]
+          ["const godot_char_type *", "p_str"]
         ]
       },
       {
         "name": "godot_string_hash_utf8_chars_with_len",
         "return_type": "uint32_t",
         "arguments": [
-          ["const wchar_t *", "p_str"],
+          ["const godot_char_type *", "p_str"],
           ["godot_int", "p_len"]
         ]
       },

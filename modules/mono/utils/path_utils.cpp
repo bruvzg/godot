@@ -88,7 +88,7 @@ void fix_path(const String &p_path, String &r_out) {
 bool rel_path_to_abs(const String &p_existing_path, String &r_abs_path) {
 #ifdef WINDOWS_ENABLED
 	CharType ret[_MAX_PATH];
-	if (::_wfullpath(ret, p_existing_path.c_str(), _MAX_PATH)) {
+	if (::_wfullpath(ret, (LPWSTR)p_existing_path.get_data(), _MAX_PATH)) {
 		String abspath = String(ret).replace("\\", "/");
 		int pos = abspath.find(":/");
 		if (pos != -1) {

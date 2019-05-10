@@ -169,7 +169,7 @@ DWORD CrashHandlerException(EXCEPTION_POINTERS *ep) {
 	int n = 0;
 	String msg = GLOBAL_GET("debug/settings/crash_handler/message");
 
-	fprintf(stderr, "Dumping the backtrace. %ls\n", msg.c_str());
+	fprintf(stderr, "Dumping the backtrace. %ls\n", WC_STR(msg));
 
 	do {
 		if (skip_first) {

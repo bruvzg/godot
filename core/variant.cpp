@@ -1355,11 +1355,6 @@ Variant::operator unsigned char() const {
 	return 0;
 }
 
-Variant::operator CharType() const {
-
-	return operator unsigned int();
-}
-
 Variant::operator float() const {
 
 	switch (type) {

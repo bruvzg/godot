@@ -119,7 +119,7 @@ void TextEdit::Text::_update_line_cache(int p_line) const {
 	int w = 0;
 
 	int len = text[p_line].data.length();
-	const CharType *str = text[p_line].data.c_str();
+	const CharType *str = text[p_line].data.get_data();
 
 	//update width
 
@@ -156,7 +156,7 @@ void TextEdit::Text::_update_line_cache(int p_line) const {
 			if (lr == 0 || lr > left)
 				continue;
 
-			const CharType *kc = cr.begin_key.c_str();
+			const CharType *kc = cr.begin_key.get_data();
 
 			bool match = true;
 
@@ -184,7 +184,7 @@ void TextEdit::Text::_update_line_cache(int p_line) const {
 			if (lr == 0 || lr > left)
 				continue;
 
-			kc = cr.end_key.c_str();
+			kc = cr.end_key.get_data();
 
 			match = true;
 

@@ -109,8 +109,6 @@ void EditorSceneImporterAssimp::_bind_methods() {
 
 Node *EditorSceneImporterAssimp::import_scene(const String &p_path, uint32_t p_flags, int p_bake_fps, List<String> *r_missing_deps, Error *r_err) {
 	Assimp::Importer importer;
-	std::wstring w_path = ProjectSettings::get_singleton()->globalize_path(p_path).c_str();
-	std::string s_path(w_path.begin(), w_path.end());
 	importer.SetPropertyBool(AI_CONFIG_PP_FD_REMOVE, true);
 	// Cannot remove pivot points because the static mesh will be in the wrong place
 	importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
@@ -148,8 +146,7 @@ Node *EditorSceneImporterAssimp::import_scene(const String &p_path, uint32_t p_f
 								 aiProcess_EmbedTextures |
 								 aiProcess_SplitByBoneCount |
 								 0;
-	const aiScene *scene = importer.ReadFile(s_path.c_str(),
-			post_process_Steps);
+	const aiScene *scene = importer.ReadFile(ProjectSettings::get_singleton()->globalize_path(p_path).utf8().get_data(), post_process_Steps);
 	ERR_EXPLAIN(String("Open Asset Import failed to open: ") + String(importer.GetErrorString()));
 	ERR_FAIL_COND_V(scene == NULL, NULL);
 	return _generate_scene(p_path, scene, p_flags, p_bake_fps, max_bone_weights);

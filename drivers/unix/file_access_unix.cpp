@@ -72,7 +72,7 @@ Error FileAccessUnix::_open(const String &p_path, int p_mode_flags) {
 
 	path_src = p_path;
 	path = fix_path(p_path);
-	//printf("opening %ls, %i\n", path.c_str(), Memory::get_static_mem_usage());
+	//printf("opening %ls, %i\n", WC_STR(path), Memory::get_static_mem_usage());
 
 	ERR_FAIL_COND_V(f, ERR_ALREADY_IN_USE);
 	const char *mode_string;

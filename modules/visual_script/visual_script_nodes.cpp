@@ -504,36 +504,36 @@ static const char *op_names[] = {
 
 String VisualScriptOperator::get_caption() const {
 
-	static const wchar_t *op_names[] = {
+	static String op_names[] = {
 		//comparison
-		L"A = B", //OP_EQUAL,
-		L"A \u2260 B", //OP_NOT_EQUAL,
-		L"A < B", //OP_LESS,
-		L"A \u2264 B", //OP_LESS_EQUAL,
-		L"A > B", //OP_GREATER,
-		L"A \u2265 B", //OP_GREATER_EQUAL,
+		String("A = B"), //OP_EQUAL,
+		String("A ") + String::chr(0x2260) + String(" B"), //OP_NOT_EQUAL,
+		String("A < B"), //OP_LESS,
+		String("A ") + String::chr(0x2264) + String(" B"), //OP_LESS_EQUAL,
+		String("A > B"), //OP_GREATER,
+		String("A ") + String::chr(0x2265) + String(" B"), //OP_GREATER_EQUAL,
 		//mathematic
-		L"A + B", //OP_ADD,
-		L"A - B", //OP_SUBTRACT,
-		L"A x B", //OP_MULTIPLY,
-		L"A \u00F7 B", //OP_DIVIDE,
-		L"\u00AC A", //OP_NEGATE,
-		L"+ A", //OP_POSITIVE,
-		L"A mod B", //OP_MODULE,
-		L"A .. B", //OP_STRING_CONCAT,
+		String("A + B"), //OP_ADD,
+		String("A - B"), //OP_SUBTRACT,
+		String("A x B"), //OP_MULTIPLY,
+		String("A ") + String::chr(0x00F7) + String(" B"), //OP_DIVIDE,
+		String::chr(0x00AC) + String(" A"), //OP_NEGATE,
+		String("+ A"), //OP_POSITIVE,
+		String("A mod B"), //OP_MODULE,
+		String("A .. B"), //OP_STRING_CONCAT,
 		//bitwise
-		L"A << B", //OP_SHIFT_LEFT,
-		L"A >> B", //OP_SHIFT_RIGHT,
-		L"A & B", //OP_BIT_AND,
-		L"A | B", //OP_BIT_OR,
-		L"A ^ B", //OP_BIT_XOR,
-		L"~A", //OP_BIT_NEGATE,
+		String("A << B"), //OP_SHIFT_LEFT,
+		String("A >> B"), //OP_SHIFT_RIGHT,
+		String("A & B"), //OP_BIT_AND,
+		String("A | B"), //OP_BIT_OR,
+		String("A ^ B"), //OP_BIT_XOR,
+		String("~A"), //OP_BIT_NEGATE,
 		//logic
-		L"A and B", //OP_AND,
-		L"A or B", //OP_OR,
-		L"A xor B", //OP_XOR,
-		L"not A", //OP_NOT,
-		L"A in B", //OP_IN,
+		String("A and B"), //OP_AND,
+		String("A or B"), //OP_OR,
+		String("A xor B"), //OP_XOR,
+		String("not A"), //OP_NOT,
+		String("A in B"), //OP_IN,
 
 	};
 	return op_names[op];

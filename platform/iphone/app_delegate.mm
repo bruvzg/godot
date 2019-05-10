@@ -51,7 +51,7 @@ Error _shell_open(String p_uri) {
 	if (![[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:url]])
 		return ERR_CANT_OPEN;
 
-	printf("opening url %ls\n", p_uri.c_str());
+	printf("opening url %ls\n", WC_STR(p_uri));
 	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
 	[url release];
 	return OK;

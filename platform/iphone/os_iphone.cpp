@@ -80,7 +80,7 @@ void OSIPhone::set_data_dir(String p_dir) {
 	DirAccess *da = DirAccess::open(p_dir);
 
 	data_dir = da->get_current_dir();
-	printf("setting data dir to %ls from %ls\n", data_dir.c_str(), p_dir.c_str());
+	printf("setting data dir to %ls from %ls\n", WC_STR(data_dir), WC_STR(p_dir));
 	memdelete(da);
 };
 
@@ -541,7 +541,7 @@ Error OSIPhone::native_video_play(String p_path, float p_volume, String p_audio_
 
 	if (p_path.begins_with("res://")) {
 		if (PackedData::get_singleton()->has_path(p_path)) {
-			print("Unable to play %S using the native player as it resides in a .pck file\n", p_path.c_str());
+			print("Unable to play %S using the native player as it resides in a .pck file\n", WC_STR(p_path));
 			return ERR_INVALID_PARAMETER;
 		} else {
 			p_path = p_path.replace("res:/", ProjectSettings::get_singleton()->get_resource_path());
@@ -551,7 +551,7 @@ Error OSIPhone::native_video_play(String p_path, float p_volume, String p_audio_
 
 	memdelete(f);
 
-	print("Playing video: %S\n", p_path.c_str());
+	print("Playing video: %S\n", WC_STR(p_path));
 	if (_play_video(p_path, p_volume, p_audio_track, p_subtitle_track))
 		return OK;
 	return FAILED;

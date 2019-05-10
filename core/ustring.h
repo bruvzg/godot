@@ -42,6 +42,7 @@
 
 template <class T>
 class CharProxy {
+	friend class Char32String;
 	friend class CharString;
 	friend class String;
 
@@ -73,6 +74,8 @@ public:
 		_cowdata.set(_index, other.operator T());
 	}
 };
+
+/*************************************************************************/
 
 class CharString {
 
@@ -114,15 +117,61 @@ protected:
 	void copy_from(const char *p_cstr);
 };
 
-typedef wchar_t CharType;
+typedef uint32_t CharType32; //change to char32_t after moving to C++11
+
+/*************************************************************************/
+
+class Char32String {
+
+	CowData<CharType32> _cowdata;
+	static const CharType32 _null;
+
+public:
+	_FORCE_INLINE_ CharType32 *ptrw() { return _cowdata.ptrw(); }
+	_FORCE_INLINE_ const CharType32 *ptr() const { return _cowdata.ptr(); }
+	_FORCE_INLINE_ int size() const { return _cowdata.size(); }
+	Error resize(int p_size) { return _cowdata.resize(p_size); }
+
+	_FORCE_INLINE_ CharType32 get(int p_index) const { return _cowdata.get(p_index); }
+	_FORCE_INLINE_ void set(int p_index, const CharType32 &p_elem) { _cowdata.set(p_index, p_elem); }
+	_FORCE_INLINE_ const CharType32 &operator[](int p_index) const {
+		if (unlikely(p_index == _cowdata.size()))
+			return _null;
+
+		return _cowdata.get(p_index);
+	}
+	_FORCE_INLINE_ CharProxy<CharType32> operator[](int p_index) { return CharProxy<CharType32>(p_index, _cowdata); }
+
+	_FORCE_INLINE_ Char32String() {}
+	_FORCE_INLINE_ Char32String(const Char32String &p_str) { _cowdata._ref(p_str._cowdata); }
+	_FORCE_INLINE_ Char32String operator=(const Char32String &p_str) {
+		_cowdata._ref(p_str._cowdata);
+		return *this;
+	}
+	_FORCE_INLINE_ Char32String(const CharType32 *p_cstr) { copy_from(p_cstr); }
+
+	Char32String &operator=(const CharType32 *p_cstr);
+	bool operator<(const Char32String &p_right) const;
+	Char32String &operator+=(CharType32 p_char);
+	int length() const { return size() ? size() - 1 : 0; }
+	const CharType32 *get_data() const;
+	operator const CharType32 *() const { return get_data(); };
+
+protected:
+	void copy_from(const CharType32 *p_cstr);
+};
+
+/*************************************************************************/
+
+typedef uint16_t CharType; //change to char16_t after moving to C++11
 
 struct StrRange {
 
-	const CharType *c_str;
+	const CharType *data;
 	int len;
 
-	StrRange(const CharType *p_c_str = NULL, int p_len = 0) {
-		c_str = p_c_str;
+	StrRange(const CharType *p_data = NULL, int p_len = 0) {
+		data = p_data;
 		len = p_len;
 	}
 };
@@ -192,7 +241,7 @@ public:
 	signed char nocasecmp_to(const String &p_str) const;
 	signed char naturalnocasecmp_to(const String &p_str) const;
 
-	const CharType *c_str() const;
+	const CharType *get_data() const;
 	/* standard size stuff */
 
 	_FORCE_INLINE_ int length() const {
@@ -297,6 +346,10 @@ public:
 	bool parse_utf8(const char *p_utf8, int p_len = -1); //return true on error
 	static String utf8(const char *p_utf8, int p_len = -1);
 
+	Char32String utf32() const;
+	bool parse_utf32(const CharType32 *p_utf32, int p_len = -1); //return true on error
+	static String utf32(const CharType32 *p_utf32, int p_len = -1);
+
 	static uint32_t hash(const CharType *p_cstr, int p_len); /* hash the string */
 	static uint32_t hash(const CharType *p_cstr); /* hash the string */
 	static uint32_t hash(const char *p_cstr, int p_len); /* hash the string */
@@ -309,6 +362,32 @@ public:
 	Vector<uint8_t> sha256_buffer() const;
 
 	_FORCE_INLINE_ bool empty() const { return length() == 0; }
+	_FORCE_INLINE_ bool is_valid_utf16() const {
+		int l = length();
+		int i = 0;
+		const CharType *d = &operator[](0);
+
+		while (i < l) {
+			uint32_t c = d[i];
+			if ((c & 0xFFFFF800) == 0xD800) {
+				if ((c & 0x400) == 0) {
+					if (i + 1 < l) {
+						uint32_t c2 = d[i + 1];
+						if ((c2 & 0x400) == 0) {
+							i++;
+							return false;
+						}
+					} else {
+						return false;
+					}
+				} else {
+					return false;
+				}
+			}
+			i++;
+		}
+		return true;
+	}
 
 	// path functions
 	bool is_abs_path() const;
@@ -355,6 +434,7 @@ public:
 	}
 
 	String(const char *p_str);
+	String(const wchar_t *p_str, int p_clip_to_len = -1);
 	String(const CharType *p_str, int p_clip_to_len = -1);
 	String(const StrRange &p_range);
 };
@@ -408,6 +488,14 @@ _FORCE_INLINE_ bool is_str_less(const L *l_ptr, const R *r_ptr) {
 }
 
 /* end of namespace */
+
+#ifdef WINDOWS_ENABLED
+#define FROM_WC_STR(m_value, m_len) (String((const CharType *)(m_value), (m_len)))
+#define WC_STR(m_value) ((const wchar_t *)((m_value).get_data()))
+#else
+#define FROM_WC_STR(m_value, m_len) (String::utf32((const CharType32 *)(m_value), (m_len)))
+#define WC_STR(m_value) ((const wchar_t *)((m_value).utf32().get_data()))
+#endif
 
 //tool translate
 #ifdef TOOLS_ENABLED

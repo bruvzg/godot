@@ -181,7 +181,6 @@ public:
 	operator unsigned long() const;
 #endif
 
-	operator CharType() const;
 	operator float() const;
 	operator double() const;
 	operator String() const;

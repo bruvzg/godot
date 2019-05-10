@@ -177,10 +177,10 @@ Error EditorRun::run(const String &p_scene, const String p_custom_args, const Li
 
 	String exec = OS::get_singleton()->get_executable_path();
 
-	printf("Running: %ls", exec.c_str());
+	printf("Running: %ls", WC_STR(exec));
 	for (List<String>::Element *E = args.front(); E; E = E->next()) {
 
-		printf(" %ls", E->get().c_str());
+		printf(" %ls", WC_STR(E->get()));
 	};
 	printf("\n");
 

@@ -367,10 +367,10 @@ Error OS::dialog_show(String p_title, String p_description, Vector<String> p_but
 
 	while (true) {
 
-		print("%ls\n--------\n%ls\n", p_title.c_str(), p_description.c_str());
+		print("%ls\n--------\n%ls\n", WC_STR(p_title), WC_STR(p_description));
 		for (int i = 0; i < p_buttons.size(); i++) {
 			if (i > 0) print(", ");
-			print("%i=%ls", i + 1, p_buttons[i].c_str());
+			print("%i=%ls", i + 1, WC_STR(p_buttons[i]));
 		};
 		print("\n");
 		String res = get_stdin_string().strip_edges();
@@ -390,7 +390,7 @@ Error OS::dialog_input_text(String p_title, String p_description, String p_parti
 
 	ERR_FAIL_COND_V(!p_obj, FAILED);
 	ERR_FAIL_COND_V(p_callback == "", FAILED);
-	print("%ls\n---------\n%ls\n[%ls]:\n", p_title.c_str(), p_description.c_str(), p_partial.c_str());
+	print("%ls\n---------\n%ls\n[%ls]:\n", WC_STR(p_title), WC_STR(p_description), WC_STR(p_partial));
 
 	String res = get_stdin_string().strip_edges();
 	bool success = true;

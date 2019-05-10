@@ -1046,7 +1046,7 @@ void InputDefault::parse_mapping(String p_mapping) {
 		};
 	};
 	map_db.push_back(mapping);
-	//printf("added mapping with uuid %ls\n", mapping.uid.c_str());
+	//printf("added mapping with uuid %ls\n", WC_STR(mapping));
 };
 
 void InputDefault::add_joy_mapping(String p_mapping, bool p_update_existing) {

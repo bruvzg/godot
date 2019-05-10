@@ -353,7 +353,7 @@ void OS_UWP::set_clipboard(const String &p_text) {
 
 	DataPackage ^ clip = ref new DataPackage();
 	clip->RequestedOperation = DataPackageOperation::Copy;
-	clip->SetText(ref new Platform::String((const wchar_t *)p_text.c_str()));
+	clip->SetText(ref new Platform::String((const wchar_t *)p_text.get_data()));
 
 	Clipboard::SetContent(clip);
 };
@@ -410,8 +410,8 @@ void OS_UWP::finalize_core() {
 
 void OS_UWP::alert(const String &p_alert, const String &p_title) {
 
-	Platform::String ^ alert = ref new Platform::String(p_alert.c_str());
-	Platform::String ^ title = ref new Platform::String(p_title.c_str());
+	Platform::String ^ alert = ref new Platform::String(p_alert.get_data());
+	Platform::String ^ title = ref new Platform::String(p_title.get_data());
 
 	MessageDialog ^ msg = ref new MessageDialog(alert, title);
 
@@ -828,7 +828,7 @@ static String format_error_message(DWORD id) {
 Error OS_UWP::open_dynamic_library(const String p_path, void *&p_library_handle, bool p_also_set_library_path) {
 
 	String full_path = "game/" + p_path;
-	p_library_handle = (void *)LoadPackagedLibrary(full_path.c_str(), 0);
+	p_library_handle = (void *)LoadPackagedLibrary((const wchar_t *)full_path.get_data(), 0);
 
 	if (!p_library_handle) {
 		ERR_EXPLAIN("Can't open dynamic library: " + full_path + ". Error: " + format_error_message(GetLastError()));

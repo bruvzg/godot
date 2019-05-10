@@ -1167,7 +1167,7 @@ bool GDScriptInstance::has_method(const StringName &p_method) const {
 }
 Variant GDScriptInstance::call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
 
-	//printf("calling %ls:%i method %ls\n", script->get_path().c_str(), -1, String(p_method).c_str());
+	//printf("calling %ls:%i method %ls\n", WC_STR(script->get_path()), -1, WC_STR(String(p_method)));
 
 	GDScript *sptr = script.ptr();
 	while (sptr) {

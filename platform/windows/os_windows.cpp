@@ -100,7 +100,7 @@ static String format_error_message(DWORD id) {
 	size_t size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 			NULL, id, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
 
-	String msg = "Error " + itos(id) + ": " + String(messageBuffer, size);
+	String msg = "Error " + itos(id) + ": " + String((const CharType *)messageBuffer, size);
 
 	LocalFree(messageBuffer);
 
@@ -922,7 +922,7 @@ LRESULT OS_Windows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 			HDROP hDropInfo = (HDROP)wParam;
 			const int buffsize = 4096;
-			wchar_t buf[buffsize];
+			WCHAR buf[buffsize];
 
 			int fcount = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
 
@@ -931,7 +931,7 @@ LRESULT OS_Windows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 			for (int i = 0; i < fcount; i++) {
 
 				DragQueryFileW(hDropInfo, i, buf, buffsize);
-				String file = buf;
+				String file = (const CharType *)buf;
 				files.push_back(file);
 			}
 
@@ -1429,7 +1429,7 @@ void OS_Windows::set_clipboard(const String &p_text) {
 		ERR_FAIL();
 	};
 	LPWSTR lptstrCopy = (LPWSTR)GlobalLock(mem);
-	memcpy(lptstrCopy, text.c_str(), (text.length() + 1) * sizeof(CharType));
+	memcpy(lptstrCopy, (LPWSTR)text.get_data(), (text.length() + 1) * sizeof(CharType));
 	GlobalUnlock(mem);
 
 	SetClipboardData(CF_UNICODETEXT, mem);
@@ -1542,7 +1542,7 @@ void OS_Windows::finalize_core() {
 void OS_Windows::alert(const String &p_alert, const String &p_title) {
 
 	if (!is_no_window_mode_enabled())
-		MessageBoxW(NULL, p_alert.c_str(), p_title.c_str(), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
+		MessageBoxW(NULL, (LPWSTR)p_alert.get_data(), (LPWSTR)p_title.get_data(), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 	else
 		print_line("ALERT: " + p_alert);
 }
@@ -1632,7 +1632,7 @@ int OS_Windows::get_mouse_button_state() const {
 
 void OS_Windows::set_window_title(const String &p_title) {
 
-	SetWindowTextW(hWnd, p_title.c_str());
+	SetWindowTextW(hWnd, (LPWSTR)p_title.get_data());
 }
 
 void OS_Windows::set_video_mode(const VideoMode &p_video_mode, int p_screen) {
@@ -2072,10 +2072,10 @@ Error OS_Windows::open_dynamic_library(const String p_path, void *&p_library_han
 	DLL_DIRECTORY_COOKIE cookie = NULL;
 
 	if (p_also_set_library_path && has_dll_directory_api) {
-		cookie = add_dll_directory(path.get_base_dir().c_str());
+		cookie = add_dll_directory((LPWSTR)path.get_base_dir().get_data());
 	}
 
-	p_library_handle = (void *)LoadLibraryExW(path.c_str(), NULL, (p_also_set_library_path && has_dll_directory_api) ? LOAD_LIBRARY_SEARCH_DEFAULT_DIRS : 0);
+	p_library_handle = (void *)LoadLibraryExW((LPWSTR)path.get_data(), NULL, (p_also_set_library_path && has_dll_directory_api) ? LOAD_LIBRARY_SEARCH_DEFAULT_DIRS : 0);
 
 	if (cookie) {
 		remove_dll_directory(cookie);
@@ -2163,9 +2163,9 @@ OS::TimeZoneInfo OS_Windows::get_time_zone_info() const {
 
 	TimeZoneInfo ret;
 	if (daylight) {
-		ret.name = info.DaylightName;
+		ret.name = (const CharType *)info.DaylightName;
 	} else {
-		ret.name = info.StandardName;
+		ret.name = (const CharType *)info.StandardName;
 	}
 
 	// Bias value returned by GetTimeZoneInformation is inverted of what we expect
@@ -2478,7 +2478,7 @@ Error OS_Windows::execute(const String &p_path, const List<String> &p_arguments,
 			argss += String(" \"") + E->get() + "\"";
 		}
 
-		FILE *f = _wpopen(argss.c_str(), L"r");
+		FILE *f = _wpopen((LPWSTR)argss.get_data(), L"r");
 
 		ERR_FAIL_COND_V(!f, ERR_CANT_OPEN);
 
@@ -2520,7 +2520,7 @@ Error OS_Windows::execute(const String &p_path, const List<String> &p_arguments,
 	modstr.resize(cmdline.size());
 	for (int i = 0; i < cmdline.size(); i++)
 		modstr.write[i] = cmdline[i];
-	int ret = CreateProcessW(NULL, modstr.ptrw(), NULL, NULL, 0, NORMAL_PRIORITY_CLASS, NULL, NULL, si_w, &pi.pi);
+	int ret = CreateProcessW(NULL, (LPWSTR)modstr.ptrw(), NULL, NULL, 0, NORMAL_PRIORITY_CLASS, NULL, NULL, si_w, &pi.pi);
 	ERR_FAIL_COND_V(ret == 0, ERR_CANT_FORK);
 
 	if (p_blocking) {
@@ -2563,7 +2563,7 @@ int OS_Windows::get_process_id() const {
 
 Error OS_Windows::set_cwd(const String &p_cwd) {
 
-	if (_wchdir(p_cwd.c_str()) != 0)
+	if (_wchdir((LPWSTR)p_cwd.get_data()) != 0)
 		return ERR_CANT_OPEN;
 
 	return OK;
@@ -2571,9 +2571,9 @@ Error OS_Windows::set_cwd(const String &p_cwd) {
 
 String OS_Windows::get_executable_path() const {
 
-	wchar_t bufname[4096];
+	WCHAR bufname[4096];
 	GetModuleFileNameW(NULL, bufname, 4096);
-	String s = bufname;
+	String s = (const CharType *)bufname;
 	return s;
 }
 
@@ -2632,11 +2632,11 @@ void OS_Windows::set_icon(const Ref<Image> &p_icon) {
 bool OS_Windows::has_environment(const String &p_var) const {
 
 #ifdef MINGW_ENABLED
-	return _wgetenv(p_var.c_str()) != NULL;
+	return _wgetenv((LPWSTR)p_var.get_data()) != NULL;
 #else
-	wchar_t *env;
+	WCHAR *env;
 	size_t len;
-	_wdupenv_s(&env, &len, p_var.c_str());
+	_wdupenv_s(&env, &len, (LPWSTR)p_var.get_data());
 	const bool has_env = env != NULL;
 	free(env);
 	return has_env;
@@ -2645,17 +2645,17 @@ bool OS_Windows::has_environment(const String &p_var) const {
 
 String OS_Windows::get_environment(const String &p_var) const {
 
-	wchar_t wval[0x7Fff]; // MSDN says 32767 char is the maximum
-	int wlen = GetEnvironmentVariableW(p_var.c_str(), wval, 0x7Fff);
+	WCHAR wval[0x7Fff]; // MSDN says 32767 char is the maximum
+	int wlen = GetEnvironmentVariableW((LPWSTR)p_var.get_data(), wval, 0x7Fff);
 	if (wlen > 0) {
-		return wval;
+		return (const CharType *)wval;
 	}
 	return "";
 }
 
 bool OS_Windows::set_environment(const String &p_var, const String &p_value) const {
 
-	return (bool)SetEnvironmentVariableW(p_var.c_str(), p_value.c_str());
+	return (bool)SetEnvironmentVariableW((LPWSTR)p_var.get_data(), (LPWSTR)p_value.get_data());
 }
 
 String OS_Windows::get_stdin_string(bool p_block) {
@@ -2680,7 +2680,7 @@ void OS_Windows::move_window_to_foreground() {
 
 Error OS_Windows::shell_open(String p_uri) {
 
-	ShellExecuteW(NULL, L"open", p_uri.c_str(), NULL, NULL, SW_SHOWNORMAL);
+	ShellExecuteW(NULL, L"open", (LPWSTR)p_uri.get_data(), NULL, NULL, SW_SHOWNORMAL);
 	return OK;
 }
 
@@ -2914,7 +2914,7 @@ String OS_Windows::get_system_dir(SystemDir p_dir) const {
 	PWSTR szPath;
 	HRESULT res = SHGetKnownFolderPath(id, 0, NULL, &szPath);
 	ERR_FAIL_COND_V(res != S_OK, String());
-	String path = String(szPath);
+	String path = (const CharType *)szPath;
 	CoTaskMemFree(szPath);
 	return path;
 }
@@ -3029,7 +3029,7 @@ void OS_Windows::process_and_drop_events() {
 Error OS_Windows::move_to_trash(const String &p_path) {
 	SHFILEOPSTRUCTW sf;
 	WCHAR *from = new WCHAR[p_path.length() + 2];
-	wcscpy_s(from, p_path.length() + 1, p_path.c_str());
+	wcscpy_s(from, p_path.length() + 1, (LPWSTR)p_path.get_data());
 	from[p_path.length() + 1] = 0;
 
 	sf.hwnd = hWnd;
