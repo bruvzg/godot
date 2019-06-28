@@ -82,7 +82,7 @@ Error FileAccessWindows::_open(const String &p_path, int p_mode_flags) {
 	   backend supports utf8 encoding */
 
 	struct _stat st;
-	if (_wstat(path.c_str(), &st) == 0) {
+	if (_wstat(WC_STR(path), &st) == 0) {
 
 		if (!S_ISREG(st.st_mode))
 			return ERR_FILE_CANT_OPEN;
@@ -95,7 +95,7 @@ Error FileAccessWindows::_open(const String &p_path, int p_mode_flags) {
 	// platforms).
 	if (p_mode_flags == READ) {
 		WIN32_FIND_DATAW d;
-		HANDLE f = FindFirstFileW(path.c_str(), &d);
+		HANDLE f = FindFirstFileW(WC_STR(path), &d);
 		if (f) {
 			String fname = d.cFileName;
 			if (fname != String()) {
@@ -115,7 +115,7 @@ Error FileAccessWindows::_open(const String &p_path, int p_mode_flags) {
 		path = path + ".tmp";
 	}
 
-	errno_t errcode = _wfopen_s(&f, path.c_str(), mode_string);
+	errno_t errcode = _wfopen_s(&f, WC_STR(path), mode_string);
 
 	if (f == NULL) {
 		switch (errcode) {
@@ -155,16 +155,16 @@ void FileAccessWindows::close() {
 			// UWP has no PathFileExists, so we check attributes instead
 			DWORD fileAttr;
 
-			fileAttr = GetFileAttributesW(save_path.c_str());
+			fileAttr = GetFileAttributesW(WC_STR(save_path));
 			if (INVALID_FILE_ATTRIBUTES == fileAttr) {
 #else
-			if (!PathFileExistsW(save_path.c_str())) {
+			if (!PathFileExistsW(WC_STR(save_path))) {
 #endif
 				//creating new file
-				rename_error = _wrename((save_path + ".tmp").c_str(), save_path.c_str()) != 0;
+				rename_error = _wrename(WC_STR(save_path + ".tmp"), WC_STR(save_path)) != 0;
 			} else {
 				//atomic replace for existing file
-				rename_error = !ReplaceFileW(save_path.c_str(), (save_path + ".tmp").c_str(), NULL, 2 | 4, NULL, NULL);
+				rename_error = !ReplaceFileW(WC_STR(save_path), WC_STR(save_path + ".tmp"), NULL, 2 | 4, NULL, NULL);
 			}
 			if (rename_error) {
 				attempts--;
@@ -315,9 +315,9 @@ void FileAccessWindows::store_buffer(const uint8_t *p_src, int p_length) {
 bool FileAccessWindows::file_exists(const String &p_name) {
 
 	FILE *g;
-	//printf("opening file %s\n", p_fname.c_str());
+	//printf("opening file %s\n", WC_STR(p_fname));
 	String filename = fix_path(p_name);
-	_wfopen_s(&g, filename.c_str(), L"rb");
+	_wfopen_s(&g, WC_STR(filename), L"rb");
 	if (g == NULL) {
 
 		return false;
@@ -335,7 +335,7 @@ uint64_t FileAccessWindows::_get_modified_time(const String &p_file) {
 		file = file.substr(0, file.length() - 1);
 
 	struct _stat st;
-	int rv = _wstat(file.c_str(), &st);
+	int rv = _wstat(WC_STR(file), &st);
 
 	if (rv == 0) {
 

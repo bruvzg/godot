@@ -503,36 +503,36 @@ static const char *op_names[] = {
 
 String VisualScriptOperator::get_caption() const {
 
-	static const wchar_t *op_names[] = {
+	static const CharType *op_names[] = {
 		//comparison
-		L"A = B", //OP_EQUAL,
-		L"A \u2260 B", //OP_NOT_EQUAL,
-		L"A < B", //OP_LESS,
-		L"A \u2264 B", //OP_LESS_EQUAL,
-		L"A > B", //OP_GREATER,
-		L"A \u2265 B", //OP_GREATER_EQUAL,
+		u"A = B", //OP_EQUAL,
+		u"A \u2260 B", //OP_NOT_EQUAL,
+		u"A < B", //OP_LESS,
+		u"A \u2264 B", //OP_LESS_EQUAL,
+		u"A > B", //OP_GREATER,
+		u"A \u2265 B", //OP_GREATER_EQUAL,
 		//mathematic
-		L"A + B", //OP_ADD,
-		L"A - B", //OP_SUBTRACT,
-		L"A x B", //OP_MULTIPLY,
-		L"A \u00F7 B", //OP_DIVIDE,
-		L"\u00AC A", //OP_NEGATE,
-		L"+ A", //OP_POSITIVE,
-		L"A mod B", //OP_MODULE,
-		L"A .. B", //OP_STRING_CONCAT,
+		u"A + B", //OP_ADD,
+		u"A - B", //OP_SUBTRACT,
+		u"A x B", //OP_MULTIPLY,
+		u"A \u00F7 B", //OP_DIVIDE,
+		u"\u00AC A", //OP_NEGATE,
+		u"+ A", //OP_POSITIVE,
+		u"A mod B", //OP_MODULE,
+		u"A .. B", //OP_STRING_CONCAT,
 		//bitwise
-		L"A << B", //OP_SHIFT_LEFT,
-		L"A >> B", //OP_SHIFT_RIGHT,
-		L"A & B", //OP_BIT_AND,
-		L"A | B", //OP_BIT_OR,
-		L"A ^ B", //OP_BIT_XOR,
-		L"~A", //OP_BIT_NEGATE,
+		u"A << B", //OP_SHIFT_LEFT,
+		u"A >> B", //OP_SHIFT_RIGHT,
+		u"A & B", //OP_BIT_AND,
+		u"A | B", //OP_BIT_OR,
+		u"A ^ B", //OP_BIT_XOR,
+		u"~A", //OP_BIT_NEGATE,
 		//logic
-		L"A and B", //OP_AND,
-		L"A or B", //OP_OR,
-		L"A xor B", //OP_XOR,
-		L"not A", //OP_NOT,
-		L"A in B", //OP_IN,
+		u"A and B", //OP_AND,
+		u"A or B", //OP_OR,
+		u"A xor B", //OP_XOR,
+		u"not A", //OP_NOT,
+		u"A in B", //OP_IN,
 
 	};
 	return op_names[op];
@@ -3041,7 +3041,7 @@ VisualScriptConstructor::VisualScriptConstructor() {
 	type = Variant::NIL;
 }
 
-static Map<String, Pair<Variant::Type, MethodInfo> > constructor_map;
+static Map<String, Pair<Variant::Type, MethodInfo>> constructor_map;
 
 static Ref<VisualScriptNode> create_constructor_node(const String &p_name) {
 

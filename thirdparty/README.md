@@ -143,6 +143,37 @@ See the header of glad.c for instructions on how to generate them for
 the GLES version Godot targets.
 
 
+## graphite2
+
+- Upstream: https://github.com/silnrsi/graphite
+- Version: 1.3.13
+- License: MPL 2.0
+
+
+## harfbuzz
+
+- Upstream: https://github.com/behdad/harfbuzz
+- Version: 2.6.1 (2019-08-23)
+- License: MIT-like License
+
+Files extracted from upstream source:
+
+- the `src/` folder, stripped of makefiles, non-relevant backend files and UCDN files
+- `AUTHORS, COPYING, NEWS, README, THANKS`
+
+
+## icu4c
+
+- Upstream: http://site.icu-project.org/
+- Version: 64.2 (2019-04-17)
+- License: Unicode, Inc. License
+
+Files extracted from upstream source (`icu4c-64_2-src`):
+
+- the `source/common/` folder, stripped of makefiles, `source/data/icudata_stub.cpp` minimal data stub.
+- `LICENSE`
+
+
 ## jpeg-compressor
 
 - Upstream: https://github.com/richgel999/jpeg-compressor

@@ -39,6 +39,7 @@
 template <class T>
 class CharProxy {
 	friend class CharString;
+	friend class Char32String;
 	friend class String;
 
 	const int _index;
@@ -110,7 +111,53 @@ protected:
 	void copy_from(const char *p_cstr);
 };
 
-typedef wchar_t CharType;
+typedef char32_t CharType32;
+
+/*************************************************************************/
+
+class Char32String {
+
+	CowData<CharType32> _cowdata;
+	static const CharType32 _null;
+
+public:
+	_FORCE_INLINE_ CharType32 *ptrw() { return _cowdata.ptrw(); }
+	_FORCE_INLINE_ const CharType32 *ptr() const { return _cowdata.ptr(); }
+	_FORCE_INLINE_ int size() const { return _cowdata.size(); }
+	Error resize(int p_size) { return _cowdata.resize(p_size); }
+
+	_FORCE_INLINE_ CharType32 get(int p_index) const { return _cowdata.get(p_index); }
+	_FORCE_INLINE_ void set(int p_index, const CharType32 &p_elem) { _cowdata.set(p_index, p_elem); }
+	_FORCE_INLINE_ const CharType32 &operator[](int p_index) const {
+		if (unlikely(p_index == _cowdata.size()))
+			return _null;
+
+		return _cowdata.get(p_index);
+	}
+	_FORCE_INLINE_ CharProxy<CharType32> operator[](int p_index) { return CharProxy<CharType32>(p_index, _cowdata); }
+
+	_FORCE_INLINE_ Char32String() {}
+	_FORCE_INLINE_ Char32String(const Char32String &p_str) { _cowdata._ref(p_str._cowdata); }
+	_FORCE_INLINE_ Char32String operator=(const Char32String &p_str) {
+		_cowdata._ref(p_str._cowdata);
+		return *this;
+	}
+	_FORCE_INLINE_ Char32String(const CharType32 *p_cstr) { copy_from(p_cstr); }
+
+	Char32String &operator=(const CharType32 *p_cstr);
+	bool operator<(const Char32String &p_right) const;
+	Char32String &operator+=(CharType32 p_char);
+	int length() const { return size() ? size() - 1 : 0; }
+	const CharType32 *get_data() const;
+	operator const CharType32 *() const { return get_data(); };
+
+protected:
+	void copy_from(const CharType32 *p_cstr);
+};
+
+/*************************************************************************/
+
+typedef char16_t CharType;
 
 struct StrRange {
 
@@ -161,10 +208,7 @@ public:
 	}
 	_FORCE_INLINE_ CharProxy<CharType> operator[](int p_index) { return CharProxy<CharType>(p_index, _cowdata); }
 
-	bool operator==(const String &p_str) const;
-	bool operator!=(const String &p_str) const;
 	String operator+(const String &p_str) const;
-	//String operator+(CharType p_char) const;
 
 	String &operator+=(const String &);
 	String &operator+=(CharType p_char);
@@ -174,15 +218,24 @@ public:
 	/* Compatibility Operators */
 
 	void operator=(const char *p_str);
+	void operator=(const wchar_t *p_str);
 	void operator=(const CharType *p_str);
+	void operator=(const CharType32 *p_str);
+
 	bool operator==(const char *p_str) const;
 	bool operator==(const CharType *p_str) const;
+	bool operator==(const String &p_str) const;
+
 	bool operator==(const StrRange &p_str_range) const;
+
 	bool operator!=(const char *p_str) const;
 	bool operator!=(const CharType *p_str) const;
-	bool operator<(const CharType *p_str) const;
+	bool operator!=(const String &p_str) const;
+
 	bool operator<(const char *p_str) const;
+	bool operator<(const CharType *p_str) const;
 	bool operator<(const String &p_str) const;
+
 	bool operator<=(const String &p_str) const;
 
 	signed char casecmp_to(const String &p_str) const;
@@ -293,10 +346,18 @@ public:
 
 	void erase(int p_pos, int p_chars);
 
+	//ascii
 	CharString ascii(bool p_allow_extended = false) const;
+
+	//utf8
 	CharString utf8() const;
 	bool parse_utf8(const char *p_utf8, int p_len = -1); //return true on error
 	static String utf8(const char *p_utf8, int p_len = -1);
+
+	//utf32
+	Char32String utf32() const;
+	bool parse_utf32(const CharType32 *p_utf32, int p_len = -1); //return true on error
+	static String utf32(const CharType32 *p_utf32, int p_len = -1);
 
 	static uint32_t hash(const CharType *p_cstr, int p_len); /* hash the string */
 	static uint32_t hash(const CharType *p_cstr); /* hash the string */
@@ -358,7 +419,9 @@ public:
 	}
 
 	String(const char *p_str);
+	String(const wchar_t *p_str, int p_clip_to_len = -1);
 	String(const CharType *p_str, int p_clip_to_len = -1);
+	String(const CharType32 *p_str, int p_clip_to_len = -1);
 	String(const StrRange &p_range);
 };
 
@@ -409,6 +472,12 @@ _FORCE_INLINE_ bool is_str_less(const L *l_ptr, const R *r_ptr) {
 }
 
 /* end of namespace */
+
+#ifdef WINDOWS_ENABLED
+#define WC_STR(m_value) ((const wchar_t *)((m_value).c_str()))
+#else
+#define WC_STR(m_value) ((const wchar_t *)((m_value).utf32().get_data()))
+#endif
 
 //tool translate
 #ifdef TOOLS_ENABLED

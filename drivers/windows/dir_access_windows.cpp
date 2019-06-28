@@ -67,7 +67,7 @@ Error DirAccessWindows::list_dir_begin() {
 	_cishidden = false;
 
 	list_dir_end();
-	p->h = FindFirstFileExW((current_dir + "\\*").c_str(), FindExInfoStandard, &p->fu, FindExSearchNameMatch, NULL, 0);
+	p->h = FindFirstFileExW(WC_STR((current_dir + "\\*")), FindExInfoStandard, &p->fu, FindExSearchNameMatch, NULL, 0);
 
 	return (p->h == INVALID_HANDLE_VALUE) ? ERR_CANT_OPEN : OK;
 }
@@ -131,8 +131,8 @@ Error DirAccessWindows::change_dir(String p_dir) {
 	GetCurrentDirectoryW(2048, real_current_dir_name);
 	String prev_dir = real_current_dir_name;
 
-	SetCurrentDirectoryW(current_dir.c_str());
-	bool worked = (SetCurrentDirectoryW(p_dir.c_str()) != 0);
+	SetCurrentDirectoryW(WC_STR(current_dir));
+	bool worked = (SetCurrentDirectoryW(WC_STR(p_dir)) != 0);
 
 	String base = _get_root_path();
 	if (base != "") {
@@ -148,12 +148,12 @@ Error DirAccessWindows::change_dir(String p_dir) {
 	if (worked) {
 
 		GetCurrentDirectoryW(2048, real_current_dir_name);
-		current_dir = real_current_dir_name; // TODO, utf8 parser
+		current_dir = real_current_dir_name; // TODO, utf8 parser ??? why xxxW functions should return UTF-16!
 		current_dir = current_dir.replace("\\", "/");
 
 	} //else {
 
-	SetCurrentDirectoryW(prev_dir.c_str());
+	SetCurrentDirectoryW(WC_STR(prev_dir));
 	//}
 
 	return worked ? OK : ERR_INVALID_PARAMETER;
@@ -175,7 +175,7 @@ Error DirAccessWindows::make_dir(String p_dir) {
 	p_dir = "\\\\?\\" + p_dir; //done according to
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/aa363855(v=vs.85).aspx
 
-	success = CreateDirectoryW(p_dir.c_str(), NULL);
+	success = CreateDirectoryW(WC_STR(p_dir), NULL);
 	err = GetLastError();
 
 	if (success) {
@@ -221,7 +221,7 @@ bool DirAccessWindows::file_exists(String p_file) {
 
 	DWORD fileAttr;
 
-	fileAttr = GetFileAttributesW(p_file.c_str());
+	fileAttr = GetFileAttributesW(WC_STR(p_file));
 	if (INVALID_FILE_ATTRIBUTES == fileAttr)
 		return false;
 
@@ -243,7 +243,7 @@ bool DirAccessWindows::dir_exists(String p_dir) {
 
 	DWORD fileAttr;
 
-	fileAttr = GetFileAttributesW(p_dir.c_str());
+	fileAttr = GetFileAttributesW(WC_STR(p_dir));
 	if (INVALID_FILE_ATTRIBUTES == fileAttr)
 		return false;
 	return (fileAttr & FILE_ATTRIBUTE_DIRECTORY);
@@ -265,16 +265,16 @@ Error DirAccessWindows::rename(String p_path, String p_new_path) {
 	if (p_path.to_lower() == p_new_path.to_lower()) {
 		WCHAR tmpfile[MAX_PATH];
 
-		if (!GetTempFileNameW(fix_path(get_current_dir()).c_str(), NULL, 0, tmpfile)) {
+		if (!GetTempFileNameW(WC_STR(fix_path(get_current_dir())), NULL, 0, tmpfile)) {
 			return FAILED;
 		}
 
-		if (!::ReplaceFileW(tmpfile, p_path.c_str(), NULL, 0, NULL, NULL)) {
+		if (!::ReplaceFileW(tmpfile, WC_STR(p_path), NULL, 0, NULL, NULL)) {
 			DeleteFileW(tmpfile);
 			return FAILED;
 		}
 
-		return ::_wrename(tmpfile, p_new_path.c_str()) == 0 ? OK : FAILED;
+		return ::_wrename(tmpfile, WC_STR(p_new_path)) == 0 ? OK : FAILED;
 
 	} else {
 		if (file_exists(p_new_path)) {
@@ -283,7 +283,7 @@ Error DirAccessWindows::rename(String p_path, String p_new_path) {
 			}
 		}
 
-		return ::_wrename(p_path.c_str(), p_new_path.c_str()) == 0 ? OK : FAILED;
+		return ::_wrename(WC_STR(p_path), WC_STR(p_new_path)) == 0 ? OK : FAILED;
 	}
 }
 
@@ -296,17 +296,17 @@ Error DirAccessWindows::remove(String p_path) {
 
 	printf("erasing %s\n", p_path.utf8().get_data());
 	//WIN32_FILE_ATTRIBUTE_DATA    fileInfo;
-	//DWORD fileAttr = GetFileAttributesExW(p_path.c_str(), GetFileExInfoStandard, &fileInfo);
+	//DWORD fileAttr = GetFileAttributesExW(WC_STR(p_path), GetFileExInfoStandard, &fileInfo);
 
 	DWORD fileAttr;
 
-	fileAttr = GetFileAttributesW(p_path.c_str());
+	fileAttr = GetFileAttributesW(WC_STR(p_path));
 	if (INVALID_FILE_ATTRIBUTES == fileAttr)
 		return FAILED;
 	if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY))
-		return ::_wrmdir(p_path.c_str()) == 0 ? OK : FAILED;
+		return ::_wrmdir(WC_STR(p_path)) == 0 ? OK : FAILED;
 	else
-		return ::_wunlink(p_path.c_str()) == 0 ? OK : FAILED;
+		return ::_wunlink(WC_STR(p_path)) == 0 ? OK : FAILED;
 }
 /*
 
@@ -317,17 +317,17 @@ FileType DirAccessWindows::get_file_type(const String& p_file) const {
 	GetCurrentDirectoryW(2048,real_current_dir_name);
 	String prev_dir=real_current_dir_name;
 
-	bool worked SetCurrentDirectoryW(current_dir.c_str());
+	bool worked SetCurrentDirectoryW(WC_STR(current_dir));
 
 	DWORD attr;
 	if (worked) {
 
 		WIN32_FILE_ATTRIBUTE_DATA    fileInfo;
-		attr = GetFileAttributesExW(p_file.c_str(), GetFileExInfoStandard, &fileInfo);
+		attr = GetFileAttributesExW(WC_STR(p_file), GetFileExInfoStandard, &fileInfo);
 
 	}
 
-	SetCurrentDirectoryW(prev_dir.c_str());
+	SetCurrentDirectoryW(WC_STR(rev_dir));
 
 	if (!worked)
 		return FILE_TYPE_NONE;
@@ -359,7 +359,7 @@ String DirAccessWindows::get_filesystem_type() const {
 	DWORD dwMaxFileNameLength = 0;
 	DWORD dwFileSystemFlags = 0;
 
-	if (::GetVolumeInformationW(unit.c_str(),
+	if (::GetVolumeInformationW(WC_STR(unit),
 				szVolumeName,
 				sizeof(szVolumeName),
 				&dwSerialNumber,

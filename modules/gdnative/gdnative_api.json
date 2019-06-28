@@ -4825,17 +4825,17 @@
         ]
       },
       {
-        "name": "godot_string_new_with_wide_string",
+        "name": "godot_string_new_with_char16_string",
         "return_type": "void",
         "arguments": [
           ["godot_string *", "r_dest"],
-          ["const wchar_t *", "p_contents"],
+          ["const godot_char_type *", "p_contents"],
           ["const int", "p_size"]
         ]
       },
       {
         "name": "godot_string_operator_index",
-        "return_type": "const wchar_t *",
+        "return_type": "const godot_char_type *",
         "arguments": [
           ["godot_string *", "p_self"],
           ["const godot_int", "p_idx"]
@@ -4843,15 +4843,15 @@
       },
       {
         "name": "godot_string_operator_index_const",
-        "return_type": "wchar_t",
+        "return_type": "godot_char_type",
         "arguments": [
           ["const godot_string *", "p_self"],
           ["const godot_int", "p_idx"]
         ]
       },
       {
-        "name": "godot_string_wide_str",
-        "return_type": "const wchar_t *",
+        "name": "godot_string_char16_str",
+        "return_type": "const godot_char_type *",
         "arguments": [
           ["const godot_string *", "p_self"]
         ]
@@ -4938,7 +4938,7 @@
         "name": "godot_string_chr",
         "return_type": "godot_string",
         "arguments": [
-          ["wchar_t", "p_character"]
+          ["godot_char_type", "p_character"]
         ]
       },
       {
@@ -5352,10 +5352,10 @@
         ]
       },
       {
-        "name": "godot_string_wchar_to_int",
+        "name": "godot_string_godot_char_typeo_int",
         "return_type": "int64_t",
         "arguments": [
-          ["const wchar_t *", "p_str"]
+          ["const godot_char_type *", "p_str"]
         ]
       },
       {
@@ -5370,7 +5370,7 @@
         "name": "godot_string_char_to_int64_with_len",
         "return_type": "int64_t",
         "arguments": [
-          ["const wchar_t *", "p_str"],
+          ["const godot_char_type *", "p_str"],
           ["int", "p_len"]
         ]
       },
@@ -5399,8 +5399,8 @@
         "name": "godot_string_unicode_char_to_double",
         "return_type": "double",
         "arguments": [
-          ["const wchar_t *", "p_str"],
-          ["const wchar_t **", "r_end"]
+          ["const godot_char_type *", "p_str"],
+          ["const godot_char_type **", "r_end"]
         ]
       },
       {
@@ -5425,7 +5425,7 @@
         "return_type": "godot_string",
         "arguments": [
           ["const godot_string *", "p_self"],
-          ["wchar_t", "p_splitter"],
+          ["godot_char_type", "p_splitter"],
           ["godot_int", "p_slice"]
         ]
       },
@@ -5518,16 +5518,16 @@
       },
       {
         "name": "godot_string_char_lowercase",
-        "return_type": "wchar_t",
+        "return_type": "godot_char_type",
         "arguments": [
-          ["wchar_t", "p_char"]
+          ["godot_char_type", "p_char"]
         ]
       },
       {
         "name": "godot_string_char_uppercase",
-        "return_type": "wchar_t",
+        "return_type": "godot_char_type",
         "arguments": [
-          ["wchar_t", "p_char"]
+          ["godot_char_type", "p_char"]
         ]
       },
       {
@@ -5568,7 +5568,7 @@
       },
       {
         "name": "godot_string_ord_at",
-        "return_type": "wchar_t",
+        "return_type": "godot_char_type",
         "arguments": [
           ["const godot_string *", "p_self"],
           ["godot_int", "p_idx"]
@@ -5701,14 +5701,14 @@
         "name": "godot_string_hash_utf8_chars",
         "return_type": "uint32_t",
         "arguments": [
-          ["const wchar_t *", "p_str"]
+          ["const godot_char_type *", "p_str"]
         ]
       },
       {
         "name": "godot_string_hash_utf8_chars_with_len",
         "return_type": "uint32_t",
         "arguments": [
-          ["const wchar_t *", "p_str"],
+          ["const godot_char_type *", "p_str"],
           ["godot_int", "p_len"]
         ]
       },
@@ -6464,6 +6464,204 @@
           "arguments": [
             ["godot_int", "p_controller_id"]
           ]
+        }
+      ]
+    },
+    {
+      "name": "shaping",
+      "type": "SHAPING",
+      "version": {
+        "major": 1,
+        "minor": 0
+      },
+      "next": null,
+      "api": [
+        {
+          "name": "godot_shaping_register_interface",
+          "return_type": "void",
+          "arguments": [
+            ["const godot_shaping_interface_gdnative *", "p_interface"]
+          ]
+        },
+        {
+          "name": "godot_shaping_hexbox_advance",
+          "return_type": "int",
+          "arguments": [
+            ["uint32_t", "p_unicode"]
+          ]
+        },
+        {
+          "name": "godot_shaping_hexbox_ascent",
+          "return_type": "int",
+          "arguments": []
+        },
+        {
+          "name": "godot_shaping_hexbox_descent",
+          "return_type": "int",
+          "arguments": []
+        },
+        {
+          "name": "godot_shaping_font_oversampling",
+          "return_type": "float",
+          "arguments": []
+        },
+        {
+          "name": "godot_shaping_font_data_get_type",
+          "return_type": "godot_string",
+          "arguments": [
+            ["godot_object *", "p_fontdata"]
+          ]
+        },
+        {
+          "name": "godot_shaping_font_data_get_filename",
+          "return_type": "godot_string",
+          "arguments": [
+            ["godot_object *", "p_fontdata"]
+          ]
+        },
+        {
+          "name": "godot_shaping_font_data_get_static_font_data",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_fontdata"],
+            ["const uint8_t **", "o_font_mem"],
+            ["size_t *", "o_font_mem_size"]
+          ]
+        },
+        {
+          "name": "godot_shaping_runs_size",
+          "return_type": "int32_t",
+          "arguments": [
+            ["const godot_object *", "p_vector"]
+          ]
+        },
+        {
+          "name": "godot_shaping_runs_clear",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_vector"]
+          ]
+        },
+        {
+          "name": "godot_shaping_runs_push_back",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_vector"],
+            ["int32_t", "p_start"],
+            ["int32_t", "p_end"],
+            ["int32_t", "p_level"],
+            ["uint32_t", "p_script"],
+            ["uint8_t", "p_break_type"]
+          ]
+        },
+        {
+          "name": "godot_shaping_runs_get",
+          "return_type": "godot_object *",
+          "arguments": [
+            ["const godot_object *", "p_vector"],
+            ["int32_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_shaping_run_set_bounds",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_run"],
+            ["int32_t", "p_start"],
+            ["int32_t", "p_end"],
+            ["int32_t", "p_level"],
+            ["uint32_t", "p_script"]
+          ]
+        },
+        {
+          "name": "godot_shaping_run_get_bounds",
+          "return_type": "void",
+          "arguments": [
+            ["const godot_object *", "p_run"],
+            ["int32_t *", "o_start"],
+            ["int32_t *", "o_end"],
+            ["int32_t *", "o_level"],
+            ["uint32_t *", "o_script"]
+          ]
+        },
+        {
+          "name": "godot_shaping_run_set_metrics",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_run"],
+            ["int", "p_ascent"],
+            ["int", "p_descent"],
+            ["int", "p_width"]
+          ]
+        },
+        {
+          "name": "godot_shaping_run_get_metrics",
+          "return_type": "void",
+          "arguments": [
+            ["const godot_object *", "p_run"],
+            ["int *", "o_ascent"],
+            ["int *", "o_descent"],
+            ["int *", "o_width"]
+          ]
+        },
+        {
+          "name": "godot_shaping_run_cluster_clear",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_run"]
+          ]
+        },
+        {
+          "name": "godot_shaping_run_cluster_push_back",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_run"],
+            ["int32_t", "p_start"],
+            ["int32_t", "p_end"],
+            ["int", "p_advance"],
+            ["int32_t", "p_repeat"],
+            ["void *", "p_font"],
+            ["void *", "p_outl_font"],
+            ["uint8_t", "p_flags"]
+          ]
+        },
+        {
+          "name": "godot_shaping_run_glyph_push_back",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_run"],
+            ["uint32_t", "p_codepoint"],
+            ["float", "p_offset_x"],
+            ["float", "p_offset_y"],
+            ["int", "p_advance"]
+          ]
+        },
+        {
+          "name": "godot_shaping_font_imp_vector_size",
+          "return_type": "int32_t",
+          "arguments": [
+            ["godot_object *", "p_vector"]
+          ]
+        },
+        {
+          "name": "godot_shaping_font_imp_vector_item",
+          "return_type": "godot_object *",
+          "arguments": [
+            ["godot_object *", "p_vector"],
+            ["int32_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_shaping_font_imp_native_data",
+          "return_type": "void *",
+          "arguments": [
+            ["godot_object *", "p_font"]
+          ]
+        },
+        {
+          "name": "godot_shaping_get_locale",
+          "return_type": "godot_string",
+          "arguments": []
         }
       ]
     },

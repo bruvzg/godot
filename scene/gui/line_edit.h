@@ -33,6 +33,7 @@
 
 #include "scene/gui/control.h"
 #include "scene/gui/popup_menu.h"
+#include "scene/resources/font.h"
 
 class LineEdit : public Control {
 
@@ -55,6 +56,28 @@ public:
 		MENU_SELECT_ALL,
 		MENU_UNDO,
 		MENU_REDO,
+		MENU_DIR_AUTO,
+		MENU_DIR_LTR,
+		MENU_DIR_RTL,
+		MENU_DISPLAY_UCC,
+		MENU_INSERT_LRM,
+		MENU_INSERT_RLM,
+		MENU_INSERT_LRE,
+		MENU_INSERT_RLE,
+		MENU_INSERT_LRO,
+		MENU_INSERT_RLO,
+		MENU_INSERT_PDF,
+		MENU_INSERT_ALM,
+		MENU_INSERT_LRI,
+		MENU_INSERT_RLI,
+		MENU_INSERT_FSI,
+		MENU_INSERT_PDI,
+		MENU_INSERT_ZWJ,
+		MENU_INSERT_ZWNJ,
+		MENU_INSERT_WJ,
+		MENU_INSERT_SHY,
+		MENU_INSERT_RS,
+		MENU_INSERT_US,
 		MENU_MAX
 
 	};
@@ -65,6 +88,10 @@ private:
 	bool editable;
 	bool pass;
 	bool text_changed_dirty;
+	bool display_control;
+
+	Ref<ShapedString> shaped;
+	Ref<ShapedString> placeholder_shaped;
 
 	String undo_text;
 	String text;
@@ -75,15 +102,20 @@ private:
 	String ime_text;
 	Point2 ime_selection;
 
+	String ot_features;
+	String language;
+
+	TextDirection base_direction;
+	TextDirection input_direction;
+
 	bool context_menu_enabled;
 	PopupMenu *menu;
+	PopupMenu *menu_dir;
+	PopupMenu *menu_ctl;
 
 	int cursor_pos;
 	int window_pos;
 	int max_length; // 0 for no maximum
-
-	int cached_width;
-	int cached_placeholder_width;
 
 	bool clear_button_enabled;
 
@@ -120,11 +152,12 @@ private:
 
 	Timer *caret_blink_timer;
 
+	void shape_text();
+	void shape_placeholder();
+
 	void _text_changed();
 	void _emit_text_change();
 	bool expand_to_text_length;
-
-	void update_placeholder_width();
 
 	bool caret_blink_enabled;
 	bool draw_caret;
@@ -134,7 +167,6 @@ private:
 	void shift_selection_check_post(bool);
 
 	void selection_fill_at_cursor();
-	void set_window_pos(int p_pos);
 
 	void set_cursor_at_pixel_pos(int p_x);
 
@@ -174,8 +206,17 @@ public:
 
 	void delete_char();
 	void delete_text(int p_from_column, int p_to_column);
+
+	void set_display_controls(bool p_enable);
+	bool get_display_controls() const;
 	void set_text(String p_text);
 	String get_text() const;
+	void set_text_direction(TextDirection p_text_direction);
+	TextDirection get_text_direction() const;
+	void set_ot_features(const String &p_features);
+	String get_ot_features() const;
+	void set_language(const String &p_language);
+	String get_language() const;
 	void set_placeholder(String p_text);
 	String get_placeholder() const;
 	void set_placeholder_alpha(float p_alpha);

@@ -505,10 +505,10 @@ void AnimationTreePlayerEditor::_draw_node(const StringName &p_node) {
 	Color bx = font_color_title;
 	bx.a *= 0.1;
 	draw_rect(Rect2(ofs, Size2(size.width - style->get_minimum_size().width, font->get_height())), bx);
-	font->draw_halign(ci, ofs + ascofs, HALIGN_CENTER, w, String(_node_type_names[type]), font_color_title);
+	font->draw_halign(ci, ofs + ascofs, String(_node_type_names[type]), w, HALIGN_CENTER, font_color_title);
 
 	ofs.y += h;
-	font->draw_halign(ci, ofs + ascofs, HALIGN_CENTER, w, p_node, font_color);
+	font->draw_halign(ci, ofs + ascofs, p_node, w, HALIGN_CENTER, font_color);
 	ofs.y += h;
 
 	int inputs = anim_tree->node_get_input_count(p_node);
@@ -558,7 +558,7 @@ void AnimationTreePlayerEditor::_draw_node(const StringName &p_node) {
 				default: {
 				}
 			}
-			font->draw(ci, ofs + ascofs + Point2(3, 0), text, font_color);
+			font->draw(ci, ofs + ascofs + Point2(3, 0), text, -1, font_color);
 
 			ofs.y += h;
 		}
@@ -583,7 +583,7 @@ void AnimationTreePlayerEditor::_draw_node(const StringName &p_node) {
 			else
 				text = anim->get_name();
 
-			font->draw_halign(ci, ofs + ascofs, HALIGN_CENTER, w, text, font_color_title);
+			font->draw_halign(ci, ofs + ascofs, text, w, HALIGN_CENTER, font_color_title);
 
 		} break;
 		case AnimationTreePlayer::NODE_ONESHOT:
@@ -594,7 +594,7 @@ void AnimationTreePlayerEditor::_draw_node(const StringName &p_node) {
 		case AnimationTreePlayer::NODE_TIMESCALE:
 		case AnimationTreePlayer::NODE_TRANSITION: {
 
-			font->draw_halign(ci, ofs + ascofs, HALIGN_CENTER, w, "edit...", font_color_title);
+			font->draw_halign(ci, ofs + ascofs, "edit...", w, HALIGN_CENTER, font_color_title);
 		} break;
 		default: editable = false;
 	}
@@ -928,12 +928,12 @@ void AnimationTreePlayerEditor::_notification(int p_what) {
 				case AnimationTreePlayer::CONNECT_OK: {
 
 					Ref<Font> f = get_font("font", "Label");
-					f->draw(get_canvas_item(), Point2(5, 25 + f->get_ascent()), TTR("Animation tree is valid."), Color(0, 1, 0.6, 0.8));
+					f->draw(get_canvas_item(), Point2(5, 25 + f->get_ascent()), TTR("Animation tree is valid."), -1, Color(0, 1, 0.6, 0.8));
 				} break;
 				default: {
 
 					Ref<Font> f = get_font("font", "Label");
-					f->draw(get_canvas_item(), Point2(5, 25 + f->get_ascent()), TTR("Animation tree is invalid."), Color(1, 0.6, 0.0, 0.8));
+					f->draw(get_canvas_item(), Point2(5, 25 + f->get_ascent()), TTR("Animation tree is invalid."), -1, Color(1, 0.6, 0.0, 0.8));
 				} break;
 			}
 

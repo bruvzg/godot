@@ -32,6 +32,11 @@
 #define LABEL_H
 
 #include "scene/gui/control.h"
+#include "scene/resources/font.h"
+
+/**
+	@author Juan Linietsky <reduzio@gmail.com>
+*/
 
 class Label : public Control {
 
@@ -43,7 +48,8 @@ public:
 		ALIGN_LEFT,
 		ALIGN_CENTER,
 		ALIGN_RIGHT,
-		ALIGN_FILL
+		ALIGN_FILL_LEFT,
+		ALIGN_FILL_RIGHT
 	};
 
 	enum VAlign {
@@ -61,38 +67,20 @@ private:
 	String xl_text;
 	bool autowrap;
 	bool clip;
-	Size2 minsize;
-	int line_count;
 	bool uppercase;
 
-	int get_longest_line_width() const;
-
-	struct WordCache {
-
-		enum {
-			CHAR_NEWLINE = -1,
-			CHAR_WRAPLINE = -2
-		};
-		int char_pos; // if -1, then newline
-		int word_len;
-		int pixel_width;
-		int space_count;
-		WordCache *next;
-		WordCache() {
-			char_pos = 0;
-			word_len = 0;
-			pixel_width = 0;
-			next = 0;
-			space_count = 0;
-		}
-	};
-
-	bool word_cache_dirty;
-	void regenerate_word_cache();
+	String ot_features;
+	String language;
+	TextDirection base_direction;
 
 	float percent_visible;
 
-	WordCache *word_cache;
+	Ref<ShapedString> shaped;
+	Vector<Ref<ShapedString>> lines;
+
+	void shape_text();
+	void shape_lines();
+
 	int total_char_cache;
 	int visible_chars;
 	int lines_skipped;
@@ -100,9 +88,8 @@ private:
 
 protected:
 	void _notification(int p_what);
-
 	static void _bind_methods();
-	// bind helpers
+
 public:
 	virtual Size2 get_minimum_size() const;
 
@@ -114,6 +101,15 @@ public:
 
 	void set_text(const String &p_string);
 	String get_text() const;
+
+	void set_text_direction(TextDirection p_text_direction);
+	TextDirection get_text_direction() const;
+
+	void set_ot_features(const String &p_features);
+	String get_ot_features() const;
+
+	void set_language(const String &p_language);
+	String get_language() const;
 
 	void set_autowrap(bool p_autowrap);
 	bool has_autowrap() const;
@@ -137,7 +133,7 @@ public:
 	void set_max_lines_visible(int p_lines);
 	int get_max_lines_visible() const;
 
-	int get_line_height() const;
+	int get_line_height(int p_line = -1) const;
 	int get_line_count() const;
 	int get_visible_line_count() const;
 

@@ -1071,7 +1071,7 @@ void Tree::draw_item_rect(const TreeItem::Cell &p_cell, const Rect2i &p_rect, co
 	}
 
 	rect.position.y += Math::floor((rect.size.y - font->get_height()) / 2.0) + font->get_ascent();
-	font->draw(ci, rect.position, text, p_color, rect.size.x);
+	font->draw(ci, rect.position, text, rect.size.x, p_color);
 }
 
 int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 &p_draw_size, TreeItem *p_item) {
@@ -1245,7 +1245,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 			Color icon_col = p_item->cells[i].icon_color;
 
 			Point2i text_pos = item_rect.position;
-			text_pos.y += Math::floor((item_rect.size.y - font->get_height()) / 2) + font_ascent;
+			text_pos.y += Math::floor(float(item_rect.size.y - font->get_height()) / 2) + font_ascent;
 
 			switch (p_item->cells[i].mode) {
 
@@ -1302,7 +1302,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 
 						Ref<Texture> downarrow = cache.select_arrow;
 
-						font->draw(ci, text_pos, s, col, item_rect.size.x - downarrow->get_width());
+						font->draw(ci, text_pos, s, item_rect.size.x - downarrow->get_width(), col);
 
 						Point2i arrow_pos = item_rect.position;
 						arrow_pos.x += item_rect.size.x - downarrow->get_width();
@@ -1318,7 +1318,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 						if (p_item->cells[i].suffix != String())
 							valtext += " " + p_item->cells[i].suffix;
 
-						font->draw(ci, text_pos, valtext, col, item_rect.size.x - updown->get_width());
+						font->draw(ci, text_pos, valtext, item_rect.size.x - updown->get_width(), col);
 
 						if (!p_item->cells[i].editable)
 							break;
@@ -2985,7 +2985,7 @@ void Tree::_notification(int p_what) {
 				ofs2 += tbrect.size.width;
 				//text
 				int clip_w = tbrect.size.width - sb->get_minimum_size().width;
-				f->draw_halign(ci, tbrect.position + Point2i(sb->get_offset().x, (tbrect.size.height - f->get_height()) / 2 + f->get_ascent()), HALIGN_CENTER, clip_w, columns[i].title, cache.title_button_color);
+				f->draw_halign(ci, tbrect.position + Point2i(sb->get_offset().x, (tbrect.size.height - f->get_height()) / 2 + f->get_ascent()), columns[i].title, clip_w, HALIGN_CENTER, cache.title_button_color);
 			}
 		}
 	}

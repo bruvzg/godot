@@ -83,7 +83,7 @@ public:
 
 		label->set_position(Point2(80, 90));
 		label->set_size(Point2(170, 80));
-		label->set_align(Label::ALIGN_FILL);
+		label->set_align(Label::ALIGN_FILL_LEFT);
 		label->set_text("There was once upon a time a beautiful unicorn that loved to play with little girls...");
 
 		frame->add_child(label);

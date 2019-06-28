@@ -996,7 +996,7 @@ void EditorPropertyEasing::_draw_easing() {
 	}
 
 	easing_draw->draw_multiline(lines, color, 1.0, true);
-	f->draw(ci, Point2(10, 10 + f->get_ascent()), String::num(exp, 2), color);
+	f->draw(ci, Point2(10, 10 + f->get_ascent()), String::num(exp, 2), -1, color);
 }
 
 void EditorPropertyEasing::update_property() {
@@ -2125,7 +2125,7 @@ void EditorPropertyResource::_menu_option(int p_which) {
 
 			List<PropertyInfo> property_list;
 			res_orig->get_property_list(&property_list);
-			List<Pair<String, Variant> > propvalues;
+			List<Pair<String, Variant>> propvalues;
 
 			for (List<PropertyInfo>::Element *E = property_list.front(); E; E = E->next()) {
 
@@ -2148,7 +2148,7 @@ void EditorPropertyResource::_menu_option(int p_which) {
 
 			ERR_FAIL_COND(res.is_null());
 
-			for (List<Pair<String, Variant> >::Element *E = propvalues.front(); E; E = E->next()) {
+			for (List<Pair<String, Variant>>::Element *E = propvalues.front(); E; E = E->next()) {
 
 				Pair<String, Variant> &p = E->get();
 				res->set(p.first, p.second);
@@ -2203,7 +2203,7 @@ void EditorPropertyResource::_menu_option(int p_which) {
 
 				int to_type = p_which - CONVERT_BASE_ID;
 
-				Vector<Ref<EditorResourceConversionPlugin> > conversions = EditorNode::get_singleton()->find_resource_conversion_plugin(res);
+				Vector<Ref<EditorResourceConversionPlugin>> conversions = EditorNode::get_singleton()->find_resource_conversion_plugin(res);
 
 				ERR_FAIL_INDEX(to_type, conversions.size());
 
@@ -2442,7 +2442,7 @@ void EditorPropertyResource::_update_menu_items() {
 
 	if (!res.is_null()) {
 
-		Vector<Ref<EditorResourceConversionPlugin> > conversions = EditorNode::get_singleton()->find_resource_conversion_plugin(res);
+		Vector<Ref<EditorResourceConversionPlugin>> conversions = EditorNode::get_singleton()->find_resource_conversion_plugin(res);
 		if (conversions.size()) {
 			menu->add_separator();
 		}

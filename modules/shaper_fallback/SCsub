@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+Import('env')
+Import('env_modules')
+
+env_fallback = env_modules.Clone()
+
+env_fallback.Append(CPPPATH=["#thirdparty/freetype/include"])
+env_fallback.add_source_files(env.modules_sources, "*.cpp")

@@ -83,23 +83,37 @@ public:
 			Ref<Texture> info_icon;
 			String info;
 			String data;
+
+			Ref<ShapedString> logical;
+			Vector<Ref<ShapedString>> line_shaped;
+			Vector<Pair<int32_t, int32_t>> line_bounds;
 		};
 
 	private:
 		const Vector<ColorRegion> *color_regions;
 		mutable Vector<Line> text;
 		Ref<Font> font;
+		String ot_features;
+		String language;
+		TextDirection base_direction;
 		int indent_size;
 
 		void _update_line_cache(int p_line) const;
 
 	public:
+		Ref<ShapedString> get_line_shaped(int p_line, int p_wrap) const;
+		Pair<int32_t, int32_t> get_line_wraps(int p_line, int p_wrap) const;
+
+		void update_line(int p_line, int p_wrap_at) const;
 		void set_indent_size(int p_indent_size);
 		void set_font(const Ref<Font> &p_font);
+		void set_base_direction(TextDirection p_dir);
+		void set_features(const String &p_ftr);
+		void set_language(const String &p_lang);
 		void set_color_regions(const Vector<ColorRegion> *p_regions) { color_regions = p_regions; }
 		int get_line_width(int p_line) const;
 		int get_max_width(bool p_exclude_hidden = false) const;
-		int get_char_width(CharType c, CharType next_c, int px) const;
+
 		void set_line_wrap_amount(int p_line, int p_wrap_amount) const;
 		int get_line_wrap_amount(int p_line) const;
 		const Map<int, ColorRegionInfo> &get_color_region_info(int p_line) const;
@@ -215,7 +229,7 @@ private:
 	} cache;
 
 	Map<int, int> color_region_cache;
-	Map<int, Map<int, HighlighterInfo> > syntax_highlighting_cache;
+	Map<int, Map<int, HighlighterInfo>> syntax_highlighting_cache;
 
 	struct TextOperation {
 
@@ -237,6 +251,14 @@ private:
 
 	String ime_text;
 	Point2 ime_selection;
+
+	String ot_features;
+	String language;
+
+	TextDirection base_direction;
+	TextDirection input_direction;
+
+	bool display_control;
 
 	TextOperation current_op;
 
@@ -395,8 +417,6 @@ private:
 
 	int get_char_pos_for_line(int p_px, int p_line, int p_wrap_index = 0) const;
 	int get_column_x_offset_for_line(int p_char, int p_line) const;
-	int get_char_pos_for(int p_px, String p_str) const;
-	int get_column_x_offset(int p_char, String p_str) const;
 
 	void adjust_viewport_to_cursor();
 	double get_scroll_line_diff() const;
@@ -447,6 +467,8 @@ private:
 	PoolVector<int> _search_bind(const String &p_key, uint32_t p_search_flags, int p_from_line, int p_from_column) const;
 
 	PopupMenu *menu;
+	PopupMenu *menu_dir;
+	PopupMenu *menu_ctl;
 
 	void _clear();
 	void _cancel_completion();
@@ -487,8 +509,29 @@ public:
 		MENU_SELECT_ALL,
 		MENU_UNDO,
 		MENU_REDO,
+		MENU_DIR_AUTO,
+		MENU_DIR_LTR,
+		MENU_DIR_RTL,
+		MENU_DISPLAY_UCC,
+		MENU_INSERT_LRM,
+		MENU_INSERT_RLM,
+		MENU_INSERT_LRE,
+		MENU_INSERT_RLE,
+		MENU_INSERT_LRO,
+		MENU_INSERT_RLO,
+		MENU_INSERT_PDF,
+		MENU_INSERT_ALM,
+		MENU_INSERT_LRI,
+		MENU_INSERT_RLI,
+		MENU_INSERT_FSI,
+		MENU_INSERT_PDI,
+		MENU_INSERT_ZWJ,
+		MENU_INSERT_ZWNJ,
+		MENU_INSERT_WJ,
+		MENU_INSERT_SHY,
+		MENU_INSERT_RS,
+		MENU_INSERT_US,
 		MENU_MAX
-
 	};
 
 	enum SearchFlags {
@@ -510,6 +553,15 @@ public:
 	void end_complex_operation();
 
 	bool is_insert_text_operation();
+
+	void set_text_direction(TextDirection p_text_direction);
+	TextDirection get_text_direction() const;
+	void set_ot_features(const String &p_features);
+	String get_ot_features() const;
+	void set_language(const String &p_language);
+	String get_language() const;
+	void set_display_controls(bool p_enable);
+	bool get_display_controls() const;
 
 	void set_text(String p_text);
 	void insert_text_at_cursor(const String &p_text);

@@ -13114,4 +13114,15 @@ static const unsigned char _lodpi_font_img_data[12909]={
 96,
 130,
 };
+static const void *_lodpi_font_data[9]={
+	(const void *)&_lodpi_font_height,
+	(const void *)&_lodpi_font_ascent,
+	(const void *)&_lodpi_font_charcount,
+	(const void *)&_lodpi_font_charrects[0][0],
+	(const void *)&_lodpi_font_kerning_pair_count,
+	(const void *)&_lodpi_font_kerning_pairs[0][0],
+	(const void *)&_lodpi_font_img_width,
+	(const void *)&_lodpi_font_img_height,
+	(const void *)&_lodpi_font_img_data
+};
 /* clang-format on */

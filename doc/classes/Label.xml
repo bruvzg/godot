@@ -20,6 +20,8 @@
 		<method name="get_line_height" qualifiers="const">
 			<return type="int">
 			</return>
+			<argument index="0" name="line" type="int" default="-1">
+			</argument>
 			<description>
 				Returns the font size in pixels.
 			</description>
@@ -49,17 +51,23 @@
 		<member name="clip_text" type="bool" setter="set_clip_text" getter="is_clipping_text" default="false">
 			If [code]true[/code], the Label only shows the text that fits inside its bounding rectangle. It also lets you scale the node down freely.
 		</member>
+		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;&quot;">
+		</member>
 		<member name="lines_skipped" type="int" setter="set_lines_skipped" getter="get_lines_skipped" default="0">
 			The node ignores the first [code]lines_skipped[/code] lines before it starts to display text.
 		</member>
 		<member name="max_lines_visible" type="int" setter="set_max_lines_visible" getter="get_max_lines_visible" default="-1">
 			Limits the lines of text the node shows on screen.
 		</member>
+		<member name="ot_features" type="String" setter="set_ot_features" getter="get_ot_features" default="&quot;&quot;">
+		</member>
 		<member name="percent_visible" type="float" setter="set_percent_visible" getter="get_percent_visible" default="1.0">
 			Limits the count of visible characters. If you set [code]percent_visible[/code] to 50, only up to half of the text's characters will display on screen. Useful to animate the text in a dialog box.
 		</member>
 		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;&quot;">
 			The text to display on screen.
+		</member>
+		<member name="text_direction" type="int" setter="set_text_direction" getter="get_text_direction" enum="TextDirection" default="-1">
 		</member>
 		<member name="uppercase" type="bool" setter="set_uppercase" getter="is_uppercase" default="false">
 			If [code]true[/code], all the text displays as UPPERCASE.
@@ -81,8 +89,9 @@
 		<constant name="ALIGN_RIGHT" value="2" enum="Align">
 			Align rows to the right.
 		</constant>
-		<constant name="ALIGN_FILL" value="3" enum="Align">
-			Expand row whitespaces to fit the width.
+		<constant name="ALIGN_FILL_LEFT" value="3" enum="Align">
+		</constant>
+		<constant name="ALIGN_FILL_RIGHT" value="4" enum="Align">
 		</constant>
 		<constant name="VALIGN_TOP" value="0" enum="VAlign">
 			Align the whole text to the top.

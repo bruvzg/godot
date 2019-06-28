@@ -1443,7 +1443,7 @@ void OS_Windows::set_clipboard(const String &p_text) {
 	ERR_FAIL_COND_MSG(mem == NULL, "Unable to allocate memory for clipboard contents.");
 
 	LPWSTR lptstrCopy = (LPWSTR)GlobalLock(mem);
-	memcpy(lptstrCopy, text.c_str(), (text.length() + 1) * sizeof(CharType));
+	memcpy(lptstrCopy, WC_STR(text), (text.length() + 1) * sizeof(CharType));
 	GlobalUnlock(mem);
 
 	SetClipboardData(CF_UNICODETEXT, mem);
@@ -1555,7 +1555,7 @@ void OS_Windows::finalize_core() {
 void OS_Windows::alert(const String &p_alert, const String &p_title) {
 
 	if (!is_no_window_mode_enabled())
-		MessageBoxW(NULL, p_alert.c_str(), p_title.c_str(), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
+		MessageBoxW(NULL, WC_STR(p_alert), WC_STR(p_title), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 	else
 		print_line("ALERT: " + p_alert);
 }
@@ -1645,7 +1645,7 @@ int OS_Windows::get_mouse_button_state() const {
 
 void OS_Windows::set_window_title(const String &p_title) {
 
-	SetWindowTextW(hWnd, p_title.c_str());
+	SetWindowTextW(hWnd, WC_STR(p_title));
 }
 
 void OS_Windows::set_video_mode(const VideoMode &p_video_mode, int p_screen) {
@@ -2125,10 +2125,10 @@ Error OS_Windows::open_dynamic_library(const String p_path, void *&p_library_han
 	DLL_DIRECTORY_COOKIE cookie = NULL;
 
 	if (p_also_set_library_path && has_dll_directory_api) {
-		cookie = add_dll_directory(path.get_base_dir().c_str());
+		cookie = add_dll_directory(WC_STR(path.get_base_dir()));
 	}
 
-	p_library_handle = (void *)LoadLibraryExW(path.c_str(), NULL, (p_also_set_library_path && has_dll_directory_api) ? LOAD_LIBRARY_SEARCH_DEFAULT_DIRS : 0);
+	p_library_handle = (void *)LoadLibraryExW(WC_STR(path), NULL, (p_also_set_library_path && has_dll_directory_api) ? LOAD_LIBRARY_SEARCH_DEFAULT_DIRS : 0);
 	ERR_FAIL_COND_V_MSG(!p_library_handle, ERR_CANT_OPEN, "Can't open dynamic library: " + p_path + ", error: " + format_error_message(GetLastError()) + ".");
 
 	if (cookie) {
@@ -2561,7 +2561,7 @@ Error OS_Windows::execute(const String &p_path, const List<String> &p_arguments,
 			argss += " 2>&1"; // Read stderr too
 		}
 
-		FILE *f = _wpopen(argss.c_str(), L"r");
+		FILE *f = _wpopen(WC_STR(argss), L"r");
 
 		ERR_FAIL_COND_V(!f, ERR_CANT_OPEN);
 
@@ -2599,7 +2599,7 @@ Error OS_Windows::execute(const String &p_path, const List<String> &p_arguments,
 	ZeroMemory(&pi.pi, sizeof(pi.pi));
 	LPSTARTUPINFOW si_w = (LPSTARTUPINFOW)&pi.si;
 
-	Vector<CharType> modstr; //windows wants to change this no idea why
+	Vector<wchar_t> modstr; //windows wants to change this no idea why
 	modstr.resize(cmdline.size());
 	for (int i = 0; i < cmdline.size(); i++)
 		modstr.write[i] = cmdline[i];
@@ -2646,7 +2646,7 @@ int OS_Windows::get_process_id() const {
 
 Error OS_Windows::set_cwd(const String &p_cwd) {
 
-	if (_wchdir(p_cwd.c_str()) != 0)
+	if (_wchdir(WC_STR(p_cwd)) != 0)
 		return ERR_CANT_OPEN;
 
 	return OK;
@@ -2808,11 +2808,11 @@ void OS_Windows::set_icon(const Ref<Image> &p_icon) {
 bool OS_Windows::has_environment(const String &p_var) const {
 
 #ifdef MINGW_ENABLED
-	return _wgetenv(p_var.c_str()) != NULL;
+	return _wgetenv(WC_STR(p_var)) != NULL;
 #else
 	wchar_t *env;
 	size_t len;
-	_wdupenv_s(&env, &len, p_var.c_str());
+	_wdupenv_s(&env, &len, WC_STR(p_var));
 	const bool has_env = env != NULL;
 	free(env);
 	return has_env;
@@ -2822,7 +2822,7 @@ bool OS_Windows::has_environment(const String &p_var) const {
 String OS_Windows::get_environment(const String &p_var) const {
 
 	wchar_t wval[0x7Fff]; // MSDN says 32767 char is the maximum
-	int wlen = GetEnvironmentVariableW(p_var.c_str(), wval, 0x7Fff);
+	int wlen = GetEnvironmentVariableW(WC_STR(p_var), wval, 0x7Fff);
 	if (wlen > 0) {
 		return wval;
 	}
@@ -2831,7 +2831,7 @@ String OS_Windows::get_environment(const String &p_var) const {
 
 bool OS_Windows::set_environment(const String &p_var, const String &p_value) const {
 
-	return (bool)SetEnvironmentVariableW(p_var.c_str(), p_value.c_str());
+	return (bool)SetEnvironmentVariableW(WC_STR(p_var), WC_STR(p_value));
 }
 
 String OS_Windows::get_stdin_string(bool p_block) {
@@ -2856,7 +2856,7 @@ void OS_Windows::move_window_to_foreground() {
 
 Error OS_Windows::shell_open(String p_uri) {
 
-	ShellExecuteW(NULL, L"open", p_uri.c_str(), NULL, NULL, SW_SHOWNORMAL);
+	ShellExecuteW(NULL, L"open", WC_STR(p_uri), NULL, NULL, SW_SHOWNORMAL);
 	return OK;
 }
 
@@ -3205,7 +3205,7 @@ void OS_Windows::process_and_drop_events() {
 Error OS_Windows::move_to_trash(const String &p_path) {
 	SHFILEOPSTRUCTW sf;
 	WCHAR *from = new WCHAR[p_path.length() + 2];
-	wcscpy_s(from, p_path.length() + 1, p_path.c_str());
+	wcscpy_s(from, p_path.length() + 1, WC_STR(p_path));
 	from[p_path.length() + 1] = 0;
 
 	sf.hwnd = hWnd;

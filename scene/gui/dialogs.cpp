@@ -207,7 +207,7 @@ void WindowDialog::_notification(int p_what) {
 			int font_height = title_font->get_height() - title_font->get_descent() * 2;
 			int x = (size.x - title_font->get_string_size(title).x) / 2;
 			int y = (-title_height + font_height) / 2;
-			title_font->draw(canvas, Point2(x, y), title, title_color, size.x - panel->get_minimum_size().x);
+			title_font->draw(canvas, Point2(x, y), title, size.x - panel->get_minimum_size().x, title_color);
 		} break;
 
 		case NOTIFICATION_THEME_CHANGED:

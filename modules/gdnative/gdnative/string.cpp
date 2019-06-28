@@ -69,22 +69,22 @@ void GDAPI godot_string_new_copy(godot_string *r_dest, const godot_string *p_src
 	memnew_placement(dest, String(*src));
 }
 
-void GDAPI godot_string_new_with_wide_string(godot_string *r_dest, const wchar_t *p_contents, const int p_size) {
+void GDAPI godot_string_new_with_char16_string(godot_string *r_dest, const godot_char_type *p_contents, const int p_size) {
 	String *dest = (String *)r_dest;
 	memnew_placement(dest, String(p_contents, p_size));
 }
 
-const wchar_t GDAPI *godot_string_operator_index(godot_string *p_self, const godot_int p_idx) {
+const godot_char_type GDAPI *godot_string_operator_index(godot_string *p_self, const godot_int p_idx) {
 	String *self = (String *)p_self;
 	return &(self->operator[](p_idx));
 }
 
-wchar_t GDAPI godot_string_operator_index_const(const godot_string *p_self, const godot_int p_idx) {
+godot_char_type GDAPI godot_string_operator_index_const(const godot_string *p_self, const godot_int p_idx) {
 	const String *self = (const String *)p_self;
 	return self->operator[](p_idx);
 }
 
-const wchar_t GDAPI *godot_string_wide_str(const godot_string *p_self) {
+const godot_char_type GDAPI *godot_string_char16_str(const godot_string *p_self) {
 	const String *self = (const String *)p_self;
 	return self->c_str();
 }
@@ -172,7 +172,7 @@ godot_array GDAPI godot_string_bigrams(const godot_string *p_self) {
 	return result;
 };
 
-godot_string GDAPI godot_string_chr(wchar_t p_character) {
+godot_string GDAPI godot_string_chr(godot_char_type p_character) {
 	godot_string result;
 	memnew_placement(&result, String(String::chr(p_character)));
 
@@ -588,7 +588,7 @@ godot_int GDAPI godot_string_char_to_int(const char *p_what) {
 	return String::to_int(p_what);
 }
 
-int64_t GDAPI godot_string_wchar_to_int(const wchar_t *p_str) {
+int64_t GDAPI godot_string_godot_char_typeo_int(const godot_char_type *p_str) {
 	return String::to_int(p_str);
 }
 
@@ -596,7 +596,7 @@ godot_int GDAPI godot_string_char_to_int_with_len(const char *p_what, godot_int 
 	return String::to_int(p_what, p_len);
 }
 
-int64_t GDAPI godot_string_char_to_int64_with_len(const wchar_t *p_str, int p_len) {
+int64_t GDAPI godot_string_char_to_int64_with_len(const godot_char_type *p_str, int p_len) {
 	return String::to_int(p_str, p_len);
 }
 
@@ -618,7 +618,7 @@ int64_t GDAPI godot_string_to_int64(const godot_string *p_self) {
 	return self->to_int64();
 }
 
-double GDAPI godot_string_unicode_char_to_double(const wchar_t *p_str, const wchar_t **r_end) {
+double GDAPI godot_string_unicode_char_to_double(const godot_char_type *p_str, const godot_char_type **r_end) {
 	return String::to_double(p_str, r_end);
 }
 
@@ -631,7 +631,7 @@ godot_string GDAPI godot_string_get_slice(const godot_string *p_self, godot_stri
 	return result;
 }
 
-godot_string GDAPI godot_string_get_slicec(const godot_string *p_self, wchar_t p_splitter, godot_int p_slice) {
+godot_string GDAPI godot_string_get_slicec(const godot_string *p_self, godot_char_type p_splitter, godot_int p_slice) {
 	const String *self = (const String *)p_self;
 	godot_string result;
 	memnew_placement(&result, String(self->get_slicec(p_splitter, p_slice)));
@@ -849,11 +849,11 @@ godot_int GDAPI godot_string_get_slice_count(const godot_string *p_self, godot_s
 	return self->get_slice_count(*splitter);
 }
 
-wchar_t GDAPI godot_string_char_lowercase(wchar_t p_char) {
+godot_char_type GDAPI godot_string_char_lowercase(godot_char_type p_char) {
 	return String::char_lowercase(p_char);
 }
 
-wchar_t GDAPI godot_string_char_uppercase(wchar_t p_char) {
+godot_char_type GDAPI godot_string_char_uppercase(godot_char_type p_char) {
 	return String::char_uppercase(p_char);
 }
 
@@ -897,7 +897,7 @@ godot_string GDAPI godot_string_left(const godot_string *p_self, godot_int p_pos
 	return result;
 }
 
-wchar_t GDAPI godot_string_ord_at(const godot_string *p_self, godot_int p_idx) {
+godot_char_type GDAPI godot_string_ord_at(const godot_string *p_self, godot_int p_idx) {
 	const String *self = (const String *)p_self;
 
 	return self->ord_at(p_idx);
@@ -1017,11 +1017,11 @@ uint32_t GDAPI godot_string_hash_chars_with_len(const char *p_cstr, godot_int p_
 	return String::hash(p_cstr, p_len);
 }
 
-uint32_t GDAPI godot_string_hash_utf8_chars(const wchar_t *p_str) {
+uint32_t GDAPI godot_string_hash_utf8_chars(const godot_char_type *p_str) {
 	return String::hash(p_str);
 }
 
-uint32_t GDAPI godot_string_hash_utf8_chars_with_len(const wchar_t *p_str, godot_int p_len) {
+uint32_t GDAPI godot_string_hash_utf8_chars_with_len(const godot_char_type *p_str, godot_int p_len) {
 	return String::hash(p_str, p_len);
 }
 

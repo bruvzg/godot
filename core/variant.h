@@ -178,6 +178,7 @@ public:
 #endif
 
 	operator CharType() const;
+	operator CharType32() const;
 	operator float() const;
 	operator double() const;
 	operator String() const;
@@ -252,6 +253,7 @@ public:
 	Variant(const StringName &p_string);
 	Variant(const char *const p_cstring);
 	Variant(const CharType *p_wstring);
+	Variant(const CharType32 *p_wstring);
 	Variant(const Vector2 &p_vector2);
 	Variant(const Rect2 &p_rect2);
 	Variant(const Vector3 &p_vector3);

@@ -62,6 +62,8 @@
 #include "physics_2d/physics_2d_server_wrap_mt.h"
 #include "physics_2d_server.h"
 #include "physics_server.h"
+#include "shaping/shaping_interface.h"
+#include "shaping_server.h"
 #include "visual/shader_types.h"
 #include "visual_server.h"
 
@@ -185,6 +187,12 @@ void register_server_types() {
 	ClassDB::register_virtual_class<PhysicsDirectSpaceState>();
 	ClassDB::register_virtual_class<PhysicsShapeQueryResult>();
 
+	ClassDB::register_class<ShapingServer>();
+	ClassDB::register_class<ShapedString>(); //RM
+	ClassDB::register_class<TextLayout>();
+	ClassDB::register_class<AttributeMap>(); //RM
+	ClassDB::register_virtual_class<ShapingInterface>();
+
 	ScriptDebuggerRemote::resource_usage_func = _debugger_get_resource_usage;
 
 	// Physics 2D
@@ -214,4 +222,5 @@ void register_server_singletons() {
 	Engine::get_singleton()->add_singleton(Engine::Singleton("Physics2DServer", Physics2DServer::get_singleton()));
 	Engine::get_singleton()->add_singleton(Engine::Singleton("ARVRServer", ARVRServer::get_singleton()));
 	Engine::get_singleton()->add_singleton(Engine::Singleton("CameraServer", CameraServer::get_singleton()));
+	Engine::get_singleton()->add_singleton(Engine::Singleton("ShapingServer", ShapingServer::get_singleton()));
 }

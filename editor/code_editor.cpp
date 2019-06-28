@@ -38,7 +38,6 @@
 #include "editor_settings.h"
 #include "scene/gui/margin_container.h"
 #include "scene/gui/separator.h"
-#include "scene/resources/dynamic_font.h"
 
 void GotoLineDialog::popup_find_line(TextEdit *p_edit) {
 
@@ -702,7 +701,7 @@ void CodeTextEditor::_text_editor_gui_input(const Ref<InputEvent> &p_event) {
 	Ref<InputEventMagnifyGesture> magnify_gesture = p_event;
 	if (magnify_gesture.is_valid()) {
 
-		Ref<DynamicFont> font = text_editor->get_font("font");
+		Ref<Font> font = text_editor->get_font("font");
 
 		if (font.is_valid()) {
 			if (font->get_size() != (int)font_size) {
@@ -750,7 +749,7 @@ void CodeTextEditor::_zoom_changed() {
 }
 
 void CodeTextEditor::_reset_zoom() {
-	Ref<DynamicFont> font = text_editor->get_font("font"); // Reset source font size to default.
+	Ref<Font> font = text_editor->get_font("font"); // Reset source font size to default.
 
 	if (font.is_valid()) {
 		EditorSettings::get_singleton()->set("interface/editor/code_font_size", 14);
@@ -867,7 +866,7 @@ void CodeTextEditor::_font_resize_timeout() {
 
 bool CodeTextEditor::_add_font_size(int p_delta) {
 
-	Ref<DynamicFont> font = text_editor->get_font("font");
+	Ref<Font> font = text_editor->get_font("font");
 
 	if (font.is_valid()) {
 		int new_size = CLAMP(font->get_size() + p_delta, 8 * EDSCALE, 96 * EDSCALE);

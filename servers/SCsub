@@ -9,6 +9,7 @@ SConscript('arvr/SCsub')
 SConscript('camera/SCsub')
 SConscript('physics/SCsub')
 SConscript('physics_2d/SCsub')
+SConscript('shaping/SCsub')
 SConscript('visual/SCsub')
 SConscript('audio/SCsub')
 

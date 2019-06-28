@@ -37,7 +37,6 @@
 #include "editor/editor_scale.h"
 #include "editor/editor_settings.h"
 #include "scene/resources/bit_map.h"
-#include "scene/resources/dynamic_font.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
 
@@ -825,19 +824,19 @@ void EditorFontPreviewPlugin::_bind_methods() {
 
 bool EditorFontPreviewPlugin::handles(const String &p_type) const {
 
-	return ClassDB::is_parent_class(p_type, "DynamicFontData");
+	return ClassDB::is_parent_class(p_type, "FontData");
 }
 
 Ref<Texture> EditorFontPreviewPlugin::generate_from_path(const String &p_path, const Size2 &p_size) const {
 
-	Ref<DynamicFontData> SampledFont;
+	Ref<FontData> SampledFont;
 	SampledFont.instance();
-	SampledFont->set_font_path(p_path);
+	SampledFont->set_font_data_path(p_path);
 
-	Ref<DynamicFont> sampled_font;
+	Ref<Font> sampled_font;
 	sampled_font.instance();
 	sampled_font->set_size(50);
-	sampled_font->set_font_data(SampledFont);
+	sampled_font->add_font_data(SampledFont);
 
 	String sampled_text = "Abg";
 	Vector2 size = sampled_font->get_string_size(sampled_text);

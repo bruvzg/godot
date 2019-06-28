@@ -561,19 +561,19 @@ void PopupMenu::_notification(int p_what) {
 
 					if (text != String()) {
 						int center = (get_size().width - font->get_string_size(text).width) / 2;
-						font->draw(ci, Point2(center, item_ofs.y + Math::floor((h - font_h) / 2.0)), text, font_color_disabled);
+						font->draw(ci, Point2(center, item_ofs.y + Math::floor((h - font_h) / 2.0)), text, -1, font_color_disabled);
 					}
 				} else {
 
 					item_ofs.x += icon_ofs + check_ofs;
-					font->draw(ci, item_ofs + Point2(0, Math::floor((h - font_h) / 2.0)), text, items[i].disabled ? font_color_disabled : (i == mouse_over ? font_color_hover : font_color));
+					font->draw(ci, item_ofs + Point2(0, Math::floor((h - font_h) / 2.0)), text, -1, items[i].disabled ? font_color_disabled : (i == mouse_over ? font_color_hover : font_color));
 				}
 
 				if (items[i].accel || (items[i].shortcut.is_valid() && items[i].shortcut->is_valid())) {
 					//accelerator
 					String text2 = _get_accel_text(i);
 					item_ofs.x = size.width - style->get_margin(MARGIN_RIGHT) - font->get_string_size(text2).width;
-					font->draw(ci, item_ofs + Point2(0, Math::floor((h - font_h) / 2.0)), text2, i == mouse_over ? font_color_hover : font_color_accel);
+					font->draw(ci, item_ofs + Point2(0, Math::floor((h - font_h) / 2.0)), text2, -1, i == mouse_over ? font_color_hover : font_color_accel);
 				}
 
 				items.write[i]._ofs_cache = ofs.y;

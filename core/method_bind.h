@@ -185,20 +185,46 @@ VARIANT_ENUM_CAST(PropertyUsageFlags);
 VARIANT_ENUM_CAST(MethodFlags);
 VARIANT_ENUM_CAST(Variant::Type);
 VARIANT_ENUM_CAST(Variant::Operator);
+VARIANT_ENUM_CAST(ShapingCapabilities);
+VARIANT_ENUM_CAST(TextDirection);
+VARIANT_ENUM_CAST(RunBreakType);
+VARIANT_ENUM_CAST(GlyphFlags);
+VARIANT_ENUM_CAST(TextAttributes);
+VARIANT_ENUM_CAST(TextBreakFlags);
+VARIANT_ENUM_CAST(TextJustificationFlags);
+VARIANT_ENUM_CAST(TextTabluationFlags);
 
 template <>
-struct VariantCaster<wchar_t> {
-	static _FORCE_INLINE_ wchar_t cast(const Variant &p_variant) {
-		return (wchar_t)p_variant.operator int();
+struct VariantCaster<CharType> {
+	static _FORCE_INLINE_ CharType cast(const Variant &p_variant) {
+		return (CharType)p_variant.operator int();
 	}
 };
+
+template <>
+struct VariantCaster<CharType32> {
+	static _FORCE_INLINE_ CharType32 cast(const Variant &p_variant) {
+		return (CharType32)p_variant.operator int();
+	}
+};
+
 #ifdef PTRCALL_ENABLED
 template <>
-struct PtrToArg<wchar_t> {
-	_FORCE_INLINE_ static wchar_t convert(const void *p_ptr) {
-		return wchar_t(*reinterpret_cast<const int *>(p_ptr));
+struct PtrToArg<CharType> {
+	_FORCE_INLINE_ static CharType convert(const void *p_ptr) {
+		return CharType(*reinterpret_cast<const int *>(p_ptr));
 	}
-	_FORCE_INLINE_ static void encode(wchar_t p_val, const void *p_ptr) {
+	_FORCE_INLINE_ static void encode(CharType p_val, const void *p_ptr) {
+		*(int *)p_ptr = p_val;
+	}
+};
+
+template <>
+struct PtrToArg<CharType32> {
+	_FORCE_INLINE_ static CharType32 convert(const void *p_ptr) {
+		return CharType32(*reinterpret_cast<const int *>(p_ptr));
+	}
+	_FORCE_INLINE_ static void encode(CharType32 p_val, const void *p_ptr) {
 		*(int *)p_ptr = p_val;
 	}
 };

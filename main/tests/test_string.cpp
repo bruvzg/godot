@@ -40,6 +40,18 @@
 
 namespace TestString {
 
+int u16scmp(const CharType *p_l, const CharType *p_r) {
+	for (; *p_l == *p_r && *p_l; p_l++, p_r++)
+		;
+	return *(CharType *)p_l - *(CharType *)p_r;
+}
+
+int u32scmp(const CharType32 *p_l, const CharType32 *p_r) {
+	for (; *p_l == *p_r && *p_l; p_l++, p_r++)
+		;
+	return *(CharType32 *)p_l - *(CharType32 *)p_r;
+}
+
 bool test_1() {
 
 	OS::get_singleton()->print("\n\nTest 1: Assign from cstr\n");
@@ -47,9 +59,9 @@ bool test_1() {
 	String s = "Hello";
 
 	OS::get_singleton()->print("\tExpected: Hello\n");
-	OS::get_singleton()->print("\tResulted: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tResulted: %ls\n", WC_STR(s));
 
-	return (wcscmp(s.c_str(), L"Hello") == 0);
+	return (u16scmp(s.c_str(), u"Hello") == 0);
 }
 
 bool test_2() {
@@ -60,9 +72,9 @@ bool test_2() {
 	const String &t = s;
 
 	OS::get_singleton()->print("\tExpected: Dolly\n");
-	OS::get_singleton()->print("\tResulted: %ls\n", t.c_str());
+	OS::get_singleton()->print("\tResulted: %ls\n", WC_STR(t));
 
-	return (wcscmp(t.c_str(), L"Dolly") == 0);
+	return (u16scmp(t.c_str(), u"Dolly") == 0);
 }
 
 bool test_3() {
@@ -73,33 +85,33 @@ bool test_3() {
 	const String &t(s);
 
 	OS::get_singleton()->print("\tExpected: Sheep\n");
-	OS::get_singleton()->print("\tResulted: %ls\n", t.c_str());
+	OS::get_singleton()->print("\tResulted: %ls\n", WC_STR(t));
 
-	return (wcscmp(t.c_str(), L"Sheep") == 0);
+	return (u16scmp(t.c_str(), u"Sheep") == 0);
 }
 
 bool test_4() {
 
-	OS::get_singleton()->print("\n\nTest 4: Assign from c-widechar (operator=)\n");
+	OS::get_singleton()->print("\n\nTest 4: Assign from c-char16 (operator=)\n");
 
-	String s(L"Give me");
+	String s(u"Give me");
 
 	OS::get_singleton()->print("\tExpected: Give me\n");
-	OS::get_singleton()->print("\tResulted: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tResulted: %ls\n", WC_STR(s));
 
-	return (wcscmp(s.c_str(), L"Give me") == 0);
+	return (u16scmp(s.c_str(), u"Give me") == 0);
 }
 
 bool test_5() {
 
-	OS::get_singleton()->print("\n\nTest 5: Assign from c-widechar (copycon)\n");
+	OS::get_singleton()->print("\n\nTest 5: Assign from c-char16 (copycon)\n");
 
-	String s(L"Wool");
+	String s(u"Woou");
 
 	OS::get_singleton()->print("\tExpected: Wool\n");
-	OS::get_singleton()->print("\tResulted: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tResulted: %ls\n", WC_STR(s));
 
-	return (wcscmp(s.c_str(), L"Wool") == 0);
+	return (u16scmp(s.c_str(), u"Woou") == 0);
 }
 
 bool test_6() {
@@ -113,7 +125,7 @@ bool test_6() {
 	if (!(s == "Test Compare"))
 		return false;
 
-	if (!(s == L"Test Compare"))
+	if (!(s == u"Test Compare"))
 		return false;
 
 	if (!(s == String("Test Compare")))
@@ -133,7 +145,7 @@ bool test_7() {
 	if (!(s != "Peanut"))
 		return false;
 
-	if (!(s != L"Coconut"))
+	if (!(s != u"Coconut"))
 		return false;
 
 	if (!(s != String("Butter")))
@@ -153,7 +165,7 @@ bool test_8() {
 	if (!(s < "Elephant"))
 		return false;
 
-	if (s < L"Amber")
+	if (s < u"Amber")
 		return false;
 
 	if (s < String("Beatrix"))
@@ -172,7 +184,7 @@ bool test_9() {
 	s += ' ';
 	s += 'a';
 	s += String(" ");
-	s = s + L"Nice";
+	s = s + u"Nice";
 	s = s + " ";
 	s = s + String("Day");
 
@@ -240,9 +252,9 @@ bool test_13() {
 	//static const wchar_t ustr[] = { 'P', 0xCE, 'p',0xD3, 0 };
 	String s = ustr;
 
-	OS::get_singleton()->print("\tUnicode: %ls\n", ustr);
+	OS::get_singleton()->print("\tUnicode: %ls\n", WC_STR(String(ustr)));
 	s.parse_utf8(s.utf8().get_data());
-	OS::get_singleton()->print("\tConvert/Parse UTF8: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tConvert/Parse UTF8: %ls\n", WC_STR(s));
 
 	return (s == ustr);
 }
@@ -251,7 +263,7 @@ bool test_14() {
 
 	OS::get_singleton()->print("\n\nTest 14: ASCII\n");
 
-	String s = L"Primero Leche";
+	String s = u"Primero Leche";
 	OS::get_singleton()->print("\tAscii: %s\n", s.ascii().get_data());
 
 	String t = s.ascii().get_data();
@@ -263,7 +275,7 @@ bool test_15() {
 	OS::get_singleton()->print("\n\nTest 15: substr\n");
 
 	String s = "Killer Baby";
-	OS::get_singleton()->print("\tsubstr(3,4) of \"%ls\" is \"%ls\"\n", s.c_str(), s.substr(3, 4).c_str());
+	OS::get_singleton()->print("\tsubstr(3,4) of \"%ls\" is \"%ls\"\n", WC_STR(s), WC_STR(s.substr(3, 4)));
 
 	return (s.substr(3, 4) == "ler ");
 }
@@ -273,7 +285,7 @@ bool test_16() {
 	OS::get_singleton()->print("\n\nTest 16: find\n");
 
 	String s = "Pretty Woman";
-	OS::get_singleton()->print("\tString: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tString: %ls\n", WC_STR(s));
 	OS::get_singleton()->print("\t\"tty\" is at %i pos.\n", s.find("tty"));
 	OS::get_singleton()->print("\t\"Revenge of the Monster Truck\" is at %i pos.\n", s.find("Revenge of the Monster Truck"));
 
@@ -291,7 +303,7 @@ bool test_17() {
 	OS::get_singleton()->print("\n\nTest 17: find no case\n");
 
 	String s = "Pretty Whale";
-	OS::get_singleton()->print("\tString: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tString: %ls\n", WC_STR(s));
 	OS::get_singleton()->print("\t\"WHA\" is at %i pos.\n", s.findn("WHA"));
 	OS::get_singleton()->print("\t\"Revenge of the Monster SawFish\" is at %i pos.\n", s.findn("Revenge of the Monster Truck"));
 
@@ -309,7 +321,7 @@ bool test_18() {
 	OS::get_singleton()->print("\n\nTest 18: find no case\n");
 
 	String s = "Pretty Whale";
-	OS::get_singleton()->print("\tString: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tString: %ls\n", WC_STR(s));
 	OS::get_singleton()->print("\t\"WHA\" is at %i pos.\n", s.findn("WHA"));
 	OS::get_singleton()->print("\t\"Revenge of the Monster SawFish\" is at %i pos.\n", s.findn("Revenge of the Monster Truck"));
 
@@ -327,10 +339,10 @@ bool test_19() {
 	OS::get_singleton()->print("\n\nTest 19: Search & replace\n");
 
 	String s = "Happy Birthday, Anna!";
-	OS::get_singleton()->print("\tString: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tString: %ls\n", WC_STR(s));
 
 	s = s.replace("Birthday", "Halloween");
-	OS::get_singleton()->print("\tReplaced Birthday/Halloween: %ls.\n", s.c_str());
+	OS::get_singleton()->print("\tReplaced Birthday/Halloween: %ls.\n", WC_STR(s));
 
 	return (s == "Happy Halloween, Anna!");
 }
@@ -341,9 +353,9 @@ bool test_20() {
 
 	String s = "Who is Frederic?";
 
-	OS::get_singleton()->print("\tString: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tString: %ls\n", WC_STR(s));
 	s = s.insert(s.find("?"), " Chopin");
-	OS::get_singleton()->print("\tInserted Chopin: %ls.\n", s.c_str());
+	OS::get_singleton()->print("\tInserted Chopin: %ls.\n", WC_STR(s));
 
 	return (s == "Who is Frederic Chopin?");
 }
@@ -353,7 +365,7 @@ bool test_21() {
 	OS::get_singleton()->print("\n\nTest 21: Number -> String\n");
 
 	OS::get_singleton()->print("\tPi is %f\n", 33.141593);
-	OS::get_singleton()->print("\tPi String is %ls\n", String::num(3.141593).c_str());
+	OS::get_singleton()->print("\tPi String is %ls\n", WC_STR(String::num(3.141593)));
 
 	return String::num(3.141593) == "3.141593";
 }
@@ -400,11 +412,11 @@ bool test_24() {
 
 	const char *slices[4] = { "Mars", "Jupiter", "Saturn", "Uranus" };
 
-	OS::get_singleton()->print("\tSlicing \"%ls\" by \"%s\"..\n", s.c_str(), ",");
+	OS::get_singleton()->print("\tSlicing \"%ls\" by \"%s\"..\n", WC_STR(s), ",");
 
 	for (int i = 0; i < s.get_slice_count(","); i++) {
 
-		OS::get_singleton()->print("\t\t%i- %ls\n", i + 1, s.get_slice(",", i).c_str());
+		OS::get_singleton()->print("\t\t%i- %ls\n", i + 1, WC_STR(s.get_slice(",", i)));
 
 		if (s.get_slice(",", i) != slices[i])
 			return false;
@@ -419,11 +431,11 @@ bool test_25() {
 
 	String s = "Josephine is such a cute girl!";
 
-	OS::get_singleton()->print("\tString: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tString: %ls\n", WC_STR(s));
 	OS::get_singleton()->print("\tRemoving \"cute\"\n");
 
 	s.erase(s.find("cute "), String("cute ").length());
-	OS::get_singleton()->print("\tResult: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tResult: %ls\n", WC_STR(s));
 
 	return (s == "Josephine is such a girl!");
 }
@@ -438,13 +450,13 @@ bool test_26() {
 #else
 	String s = "Double all the vowels.";
 
-	OS::get_singleton()->print("\tString: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tString: %ls\n", WC_STR(s));
 	OS::get_singleton()->print("\tRepeating instances of 'aeiou' once\n");
 
 	RegEx re("(?<vowel>[aeiou])");
-	s = re.sub(s, "$0$vowel", true);
+	s = re.sub(s, "$0$voweu", true);
 
-	OS::get_singleton()->print("\tResult: %ls\n", s.c_str());
+	OS::get_singleton()->print("\tResult: %ls\n", WC_STR(s));
 
 	return (s == "Doouublee aall thee vooweels.");
 #endif
@@ -496,7 +508,7 @@ bool test_28() {
 	args.clear();
 	output = format.sprintf(args, &error);
 	success = (output == String("fish % frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	//////// INTS
@@ -507,7 +519,7 @@ bool test_28() {
 	args.push_back(5);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 5 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Int left padded with zeroes.
@@ -516,7 +528,7 @@ bool test_28() {
 	args.push_back(5);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 00005 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Int left padded with spaces.
@@ -525,7 +537,7 @@ bool test_28() {
 	args.push_back(5);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish     5 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Int right padded with spaces.
@@ -534,7 +546,7 @@ bool test_28() {
 	args.push_back(5);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 5     frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Int with sign (positive).
@@ -543,7 +555,7 @@ bool test_28() {
 	args.push_back(5);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish +5 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Negative int.
@@ -552,7 +564,7 @@ bool test_28() {
 	args.push_back(-5);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish -5 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Hex (lower)
@@ -561,7 +573,7 @@ bool test_28() {
 	args.push_back(45);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 2d frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Hex (upper)
@@ -570,7 +582,7 @@ bool test_28() {
 	args.push_back(45);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 2D frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Octal
@@ -579,7 +591,7 @@ bool test_28() {
 	args.push_back(99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 143 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	////// REALS
@@ -590,7 +602,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 99.990000 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Real left-padded
@@ -599,7 +611,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish   99.990000 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Real right-padded
@@ -608,7 +620,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 99.990000   frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Real given int.
@@ -617,7 +629,7 @@ bool test_28() {
 	args.push_back(99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 99.000000 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Real with sign (positive).
@@ -626,7 +638,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish +99.990000 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Real with 1 decimals.
@@ -635,7 +647,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 100.0 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Real with 12 decimals.
@@ -644,7 +656,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 99.990000000000 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Real with no decimals.
@@ -653,7 +665,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish 100 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	/////// Strings.
@@ -664,7 +676,7 @@ bool test_28() {
 	args.push_back("cheese");
 	output = format.sprintf(args, &error);
 	success = (output == String("fish cheese frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// String left-padded
@@ -673,7 +685,7 @@ bool test_28() {
 	args.push_back("cheese");
 	output = format.sprintf(args, &error);
 	success = (output == String("fish     cheese frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// String right-padded
@@ -682,7 +694,7 @@ bool test_28() {
 	args.push_back("cheese");
 	output = format.sprintf(args, &error);
 	success = (output == String("fish cheese     frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	///// Characters
@@ -693,7 +705,7 @@ bool test_28() {
 	args.push_back("A");
 	output = format.sprintf(args, &error);
 	success = (output == String("fish A frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Character as int.
@@ -702,7 +714,7 @@ bool test_28() {
 	args.push_back(65);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish A frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	///// Dynamic width
@@ -714,7 +726,7 @@ bool test_28() {
 	args.push_back("cheese");
 	output = format.sprintf(args, &error);
 	success = (output == String("fish     cheese frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Int dynamic width
@@ -724,7 +736,7 @@ bool test_28() {
 	args.push_back(99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish         99 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Float dynamic width
@@ -735,7 +747,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == String("fish     99.990 frog") && !error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	///// Errors
@@ -746,7 +758,7 @@ bool test_28() {
 	args.push_back("cheese");
 	output = format.sprintf(args, &error);
 	success = (output == "not enough arguments for format string" && error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// More arguments than formats.
@@ -756,7 +768,7 @@ bool test_28() {
 	args.push_back("cheese");
 	output = format.sprintf(args, &error);
 	success = (output == "not all arguments converted during string formatting" && error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Incomplete format.
@@ -765,7 +777,7 @@ bool test_28() {
 	args.push_back("cheese");
 	output = format.sprintf(args, &error);
 	success = (output == "incomplete format" && error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Bad character in format string
@@ -774,7 +786,7 @@ bool test_28() {
 	args.push_back("cheese");
 	output = format.sprintf(args, &error);
 	success = (output == "unsupported format character" && error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Too many decimals.
@@ -783,7 +795,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == "too many decimal points in format" && error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// * not a number
@@ -793,7 +805,7 @@ bool test_28() {
 	args.push_back(99.99);
 	output = format.sprintf(args, &error);
 	success = (output == "* wants number" && error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Character too long.
@@ -802,7 +814,7 @@ bool test_28() {
 	args.push_back("sc");
 	output = format.sprintf(args, &error);
 	success = (output == "%c requires number or single-character string" && error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	// Character bad type.
@@ -811,7 +823,7 @@ bool test_28() {
 	args.push_back(Array());
 	output = format.sprintf(args, &error);
 	success = (output == "%c requires number or single-character string" && error);
-	OS::get_singleton()->print(output_format, format.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print(output_format, WC_STR(format), WC_STR(output), success ? "OK" : "FAIu");
 	state = state && success;
 
 	return state;
@@ -822,50 +834,50 @@ bool test_29() {
 	bool state = true;
 
 	IP_Address ip0("2001:0db8:85a3:0000:0000:8a2e:0370:7334");
-	OS::get_singleton()->print("ip0 is %ls\n", String(ip0).c_str());
+	OS::get_singleton()->print("ip0 is %ls\n", WC_STR(String(ip0)));
 
 	IP_Address ip(0x0123, 0x4567, 0x89ab, 0xcdef, true);
-	OS::get_singleton()->print("ip6 is %ls\n", String(ip).c_str());
+	OS::get_singleton()->print("ip6 is %ls\n", WC_STR(String(ip)));
 
 	IP_Address ip2("fe80::52e5:49ff:fe93:1baf");
-	OS::get_singleton()->print("ip6 is %ls\n", String(ip2).c_str());
+	OS::get_singleton()->print("ip6 is %ls\n", WC_STR(String(ip2)));
 
 	IP_Address ip3("::ffff:192.168.0.1");
-	OS::get_singleton()->print("ip6 is %ls\n", String(ip3).c_str());
+	OS::get_singleton()->print("ip6 is %ls\n", WC_STR(String(ip3)));
 
 	String ip4 = "192.168.0.1";
 	bool success = ip4.is_valid_ip_address();
-	OS::get_singleton()->print("Is valid ipv4: %ls, %s\n", ip4.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is valid ipv4: %ls, %s\n", WC_STR(ip4), success ? "OK" : "FAIu");
 	state = state && success;
 
 	ip4 = "192.368.0.1";
 	success = (!ip4.is_valid_ip_address());
-	OS::get_singleton()->print("Is invalid ipv4: %ls, %s\n", ip4.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is invalid ipv4: %ls, %s\n", WC_STR(ip4), success ? "OK" : "FAIu");
 	state = state && success;
 
 	String ip6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
 	success = ip6.is_valid_ip_address();
-	OS::get_singleton()->print("Is valid ipv6: %ls, %s\n", ip6.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is valid ipv6: %ls, %s\n", WC_STR(ip6), success ? "OK" : "FAIu");
 	state = state && success;
 
 	ip6 = "2001:0db8:85j3:0000:0000:8a2e:0370:7334";
 	success = (!ip6.is_valid_ip_address());
-	OS::get_singleton()->print("Is invalid ipv6: %ls, %s\n", ip6.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is invalid ipv6: %ls, %s\n", WC_STR(ip6), success ? "OK" : "FAIu");
 	state = state && success;
 
 	ip6 = "2001:0db8:85f345:0000:0000:8a2e:0370:7334";
 	success = (!ip6.is_valid_ip_address());
-	OS::get_singleton()->print("Is invalid ipv6: %ls, %s\n", ip6.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is invalid ipv6: %ls, %s\n", WC_STR(ip6), success ? "OK" : "FAIu");
 	state = state && success;
 
 	ip6 = "2001:0db8::0:8a2e:370:7334";
 	success = (ip6.is_valid_ip_address());
-	OS::get_singleton()->print("Is valid ipv6: %ls, %s\n", ip6.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is valid ipv6: %ls, %s\n", WC_STR(ip6), success ? "OK" : "FAIu");
 	state = state && success;
 
 	ip6 = "::ffff:192.168.0.1";
 	success = (ip6.is_valid_ip_address());
-	OS::get_singleton()->print("Is valid ipv6: %ls, %s\n", ip6.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is valid ipv6: %ls, %s\n", WC_STR(ip6), success ? "OK" : "FAIu");
 	state = state && success;
 
 	return state;
@@ -878,85 +890,85 @@ bool test_30() {
 	String output = "Bytes 2 Var";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "linear2db";
 	output = "Linear 2 Db";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "vector3";
 	output = "Vector 3";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "sha256";
 	output = "Sha 256";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "2db";
 	output = "2 Db";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "PascalCase";
 	output = "Pascal Case";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "PascalPascalCase";
 	output = "Pascal Pascal Case";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "snake_case";
 	output = "Snake Case";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "snake_snake_case";
 	output = "Snake Snake Case";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "sha256sum";
 	output = "Sha 256 Sum";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "cat2dog";
 	output = "Cat 2 Dog";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "function(name)";
 	output = "Function(name)";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls (existing incorrect behavior): %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls (existing incorrect behavior): %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "snake_case_function(snake_case_arg)";
 	output = "Snake Case Function(snake Case Arg)";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls (existing incorrect behavior): %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls (existing incorrect behavior): %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	input = "snake_case_function( snake_case_arg )";
 	output = "Snake Case Function( Snake Case Arg )";
 	success = (input.capitalize() == output);
 	state = state && success;
-	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", input.c_str(), output.c_str(), success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Capitalize %ls: %ls, %s\n", WC_STR(input), WC_STR(output), success ? "OK" : "FAIu");
 
 	return state;
 }
@@ -967,22 +979,22 @@ bool test_31() {
 
 	String a = "";
 	success = a[0] == 0;
-	OS::get_singleton()->print("Is 0 String[0]:, %s\n", success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is 0 String[0]:, %s\n", success ? "OK" : "FAIu");
 	if (!success) state = false;
 
 	String b = "Godot";
 	success = b[b.size()] == 0;
-	OS::get_singleton()->print("Is 0 String[size()]:, %s\n", success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is 0 String[size()]:, %s\n", success ? "OK" : "FAIu");
 	if (!success) state = false;
 
 	const String c = "";
 	success = c[0] == 0;
-	OS::get_singleton()->print("Is 0 const String[0]:, %s\n", success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is 0 const String[0]:, %s\n", success ? "OK" : "FAIu");
 	if (!success) state = false;
 
 	const String d = "Godot";
 	success = d[d.size()] == 0;
-	OS::get_singleton()->print("Is 0 const String[size()]:, %s\n", success ? "OK" : "FAIL");
+	OS::get_singleton()->print("Is 0 const String[size()]:, %s\n", success ? "OK" : "FAIu");
 	if (!success) state = false;
 
 	return state;
@@ -1032,31 +1044,31 @@ bool test_32() {
 	// the above tests repeated with additional superfluous strip chars
 
 	// strip none
-	STRIP_TEST(String("abc").lstrip("qwjkl") == "abc");
-	STRIP_TEST(String("abc").rstrip("qwjkl") == "abc");
+	STRIP_TEST(String("abc").lstrip("qwjku") == "abc");
+	STRIP_TEST(String("abc").rstrip("qwjku") == "abc");
 	// strip one
-	STRIP_TEST(String("abc").lstrip("qwajkl") == "bc");
-	STRIP_TEST(String("abc").rstrip("qwcjkl") == "ab");
+	STRIP_TEST(String("abc").lstrip("qwajku") == "bc");
+	STRIP_TEST(String("abc").rstrip("qwcjku") == "ab");
 	// strip lots
-	STRIP_TEST(String("bababbababccc").lstrip("qwabjkl") == "ccc");
-	STRIP_TEST(String("aaabcbcbcbbcbbc").rstrip("qwcbjkl") == "aaa");
+	STRIP_TEST(String("bababbababccc").lstrip("qwabjku") == "ccc");
+	STRIP_TEST(String("aaabcbcbcbbcbbc").rstrip("qwcbjku") == "aaa");
 	// strip empty string
-	STRIP_TEST(String("").lstrip("qwjkl") == "");
-	STRIP_TEST(String("").rstrip("qwjkl") == "");
+	STRIP_TEST(String("").lstrip("qwjku") == "");
+	STRIP_TEST(String("").rstrip("qwjku") == "");
 	// strip to empty string
-	STRIP_TEST(String("abcabcabc").lstrip("qwbcajkl") == "");
-	STRIP_TEST(String("abcabcabc").rstrip("qwbcajkl") == "");
+	STRIP_TEST(String("abcabcabc").lstrip("qwbcajku") == "");
+	STRIP_TEST(String("abcabcabc").rstrip("qwbcajku") == "");
 	// don't strip wrong end
-	STRIP_TEST(String("abc").lstrip("qwcjkl") == "abc");
-	STRIP_TEST(String("abca").lstrip("qwajkl") == "bca");
-	STRIP_TEST(String("abc").rstrip("qwajkl") == "abc");
-	STRIP_TEST(String("abca").rstrip("qwajkl") == "abc");
+	STRIP_TEST(String("abc").lstrip("qwcjku") == "abc");
+	STRIP_TEST(String("abca").lstrip("qwajku") == "bca");
+	STRIP_TEST(String("abc").rstrip("qwajku") == "abc");
+	STRIP_TEST(String("abca").rstrip("qwajku") == "abc");
 	// in utf-8 "¿" (\u00bf) has the same first byte as "µ" (\u00b5)
 	// and the same second as "ÿ" (\u00ff)
-	STRIP_TEST(String::utf8("¿").lstrip(String::utf8("qwaµÿjkl")) == String::utf8("¿"));
-	STRIP_TEST(String::utf8("¿").rstrip(String::utf8("qwaµÿjkl")) == String::utf8("¿"));
-	STRIP_TEST(String::utf8("µ¿ÿ").lstrip(String::utf8("qwaµÿjkl")) == String::utf8("¿ÿ"));
-	STRIP_TEST(String::utf8("µ¿ÿ").rstrip(String::utf8("qwaµÿjkl")) == String::utf8("µ¿"));
+	STRIP_TEST(String::utf8("¿").lstrip(String::utf8("qwaµÿjku")) == String::utf8("¿"));
+	STRIP_TEST(String::utf8("¿").rstrip(String::utf8("qwaµÿjku")) == String::utf8("¿"));
+	STRIP_TEST(String::utf8("µ¿ÿ").lstrip(String::utf8("qwaµÿjku")) == String::utf8("¿ÿ"));
+	STRIP_TEST(String::utf8("µ¿ÿ").rstrip(String::utf8("qwaµÿjku")) == String::utf8("µ¿"));
 
 	return state;
 

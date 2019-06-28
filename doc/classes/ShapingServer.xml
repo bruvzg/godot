@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ShapingServer" inherits="Object" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="find_interface" qualifiers="const">
+			<return type="ShapingInterface">
+			</return>
+			<argument index="0" name="name" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_interface" qualifiers="const">
+			<return type="ShapingInterface">
+			</return>
+			<argument index="0" name="idx" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_interface_count" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_interfaces" qualifiers="const">
+			<return type="Array">
+			</return>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="primary_interface" type="ShapingInterface" setter="set_primary_interface" getter="get_primary_interface">
+		</member>
+	</members>
+	<signals>
+		<signal name="interface_added">
+			<argument index="0" name="interface_name" type="String">
+			</argument>
+			<description>
+			</description>
+		</signal>
+		<signal name="interface_removed">
+			<argument index="0" name="interface_name" type="String">
+			</argument>
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+	</constants>
+</class>

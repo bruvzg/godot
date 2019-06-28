@@ -60,6 +60,7 @@ public:
 		NOTIFICATION_WM_ABOUT = 1011,
 		NOTIFICATION_CRASH = 1012,
 		NOTIFICATION_OS_IME_UPDATE = 1013,
+		NOTIFICATION_SHAPING_INTERFACE_CHANGED = 1014
 	};
 
 	virtual void input_event(const Ref<InputEvent> &p_event);

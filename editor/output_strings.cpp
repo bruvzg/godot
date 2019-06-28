@@ -87,7 +87,6 @@ void OutputStrings::_notification(int p_what) {
 			float h_ofs = (int)h_scroll->get_value();
 			Point2 icon_ofs = Point2(0, (font_height - (int)icon_error->get_height()) / 2);
 
-			FontDrawer drawer(font, Color(1, 1, 1));
 			while (E && ofs.y < (size_height - (int)margin.y)) {
 
 				String str = E->get().text;
@@ -112,15 +111,17 @@ void OutputStrings::_notification(int p_what) {
 				line_ofs.y += font->get_ascent();
 				line_ofs.x += icon_error->get_width() + 4;
 
-				for (int i = 0; i < str.length(); i++) {
-					if (line_ofs.x - h_ofs < 0) {
-						line_ofs.x += font->get_char_size(str[i], str[i + 1]).width;
-					} else if (line_ofs.x - h_ofs > size.width - margin.width) {
-						break;
-					} else {
-						line_ofs.x += font->draw_char(ci, Point2(line_ofs.x - h_ofs, line_ofs.y), str[i], str[i + 1], color);
-					}
-				}
+				font->draw(ci, Point2(line_ofs.x - h_ofs, line_ofs.y), str, size.width - margin.width, color);
+
+				// for (int i = 0; i < str.length(); i++) {
+				// 	if (line_ofs.x - h_ofs < 0) {
+				// 		line_ofs.x += font->get_char_size(str[i], str[i + 1]).width;
+				// 	} else if (line_ofs.x - h_ofs > size.width - margin.width) {
+				// 		break;
+				// 	} else {
+				// 		line_ofs.x += font->draw_char(ci, Point2(line_ofs.x - h_ofs, line_ofs.y), str[i], str[i + 1], color);
+				// 	}
+				// }
 
 				ofs.y += font_height;
 				E = E->next();

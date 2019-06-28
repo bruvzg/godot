@@ -136,7 +136,8 @@ MAKE_TYPE_INFO_WITH_META(uint32_t, Variant::INT, GodotTypeInfo::METADATA_INT_IS_
 MAKE_TYPE_INFO_WITH_META(int32_t, Variant::INT, GodotTypeInfo::METADATA_INT_IS_INT32)
 MAKE_TYPE_INFO_WITH_META(uint64_t, Variant::INT, GodotTypeInfo::METADATA_INT_IS_UINT64)
 MAKE_TYPE_INFO_WITH_META(int64_t, Variant::INT, GodotTypeInfo::METADATA_INT_IS_INT64)
-MAKE_TYPE_INFO(wchar_t, Variant::INT)
+MAKE_TYPE_INFO(char16_t, Variant::INT)
+MAKE_TYPE_INFO(char32_t, Variant::INT)
 MAKE_TYPE_INFO_WITH_META(float, Variant::REAL, GodotTypeInfo::METADATA_REAL_IS_FLOAT)
 MAKE_TYPE_INFO_WITH_META(double, Variant::REAL, GodotTypeInfo::METADATA_REAL_IS_DOUBLE)
 
@@ -208,7 +209,7 @@ struct GetTypeInfo<const Variant &> {
 
 #define MAKE_TEMPLATE_TYPE_INFO(m_template, m_type, m_var_type)                       \
 	template <>                                                                       \
-	struct GetTypeInfo<m_template<m_type> > {                                         \
+	struct GetTypeInfo<m_template<m_type>> {                                          \
 		static const Variant::Type VARIANT_TYPE = m_var_type;                         \
 		static const GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_NONE; \
 		static inline PropertyInfo get_class_info() {                                 \

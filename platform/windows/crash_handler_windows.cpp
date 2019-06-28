@@ -173,7 +173,7 @@ DWORD CrashHandlerException(EXCEPTION_POINTERS *ep) {
 		msg = proj_settings->get("debug/settings/crash_handler/message");
 	}
 
-	fprintf(stderr, "Dumping the backtrace. %ls\n", msg.c_str());
+	fprintf(stderr, "Dumping the backtrace. %ls\n", WC_STR(msg));
 
 	int n = 0;
 	do {
@@ -184,9 +184,9 @@ DWORD CrashHandlerException(EXCEPTION_POINTERS *ep) {
 				std::string fnName = symbol(process, frame.AddrPC.Offset).undecorated_name();
 
 				if (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &offset_from_symbol, &line))
-					fprintf(stderr, "[%d] %s (%s:%d)\n", n, fnName.c_str(), line.FileName, line.LineNumber);
+					fprintf(stderr, "[%d] %s (%s:%d)\n", n, WC_STR(fnName), line.FileName, line.LineNumber);
 				else
-					fprintf(stderr, "[%d] %s\n", n, fnName.c_str());
+					fprintf(stderr, "[%d] %s\n", n, WC_STR(fnName));
 			} else
 				fprintf(stderr, "[%d] ???\n", n);
 

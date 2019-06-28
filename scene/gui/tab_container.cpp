@@ -322,7 +322,7 @@ void TabContainer::_notification(int p_what) {
 
 				// Draw the tab text.
 				Point2i text_pos(x_content, y_center - (font->get_height() / 2) + font->get_ascent());
-				font->draw(canvas, text_pos, text, font_color);
+				font->draw(canvas, text_pos, text, -1, font_color);
 
 				x += tab_width;
 				last_tab_cache = i + first_tab_cache;

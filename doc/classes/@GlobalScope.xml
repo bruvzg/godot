@@ -72,6 +72,8 @@
 		<member name="ResourceSaver" type="ResourceSaver" setter="" getter="">
 			The [ResourceSaver] singleton.
 		</member>
+		<member name="ShapingServer" type="ShapingServer" setter="" getter="">
+		</member>
 		<member name="TranslationServer" type="TranslationServer" setter="" getter="">
 			The [TranslationServer] singleton.
 		</member>
@@ -122,6 +124,10 @@
 		<constant name="HALIGN_RIGHT" value="2" enum="HAlign">
 			Horizontal right alignment, usually for text-derived classes.
 		</constant>
+		<constant name="HALIGN_FILL_LEFT" value="3" enum="HAlign">
+		</constant>
+		<constant name="HALIGN_FILL_RIGHT" value="4" enum="HAlign">
+		</constant>
 		<constant name="VALIGN_TOP" value="0" enum="VAlign">
 			Vertical top alignment, usually for text-derived classes.
 		</constant>
@@ -130,6 +136,48 @@
 		</constant>
 		<constant name="VALIGN_BOTTOM" value="2" enum="VAlign">
 			Vertical bottom alignment, usually for text-derived classes.
+		</constant>
+		<constant name="SHAPING_INTERFACE_NONE" value="0" enum="ShapingCapabilities">
+		</constant>
+		<constant name="SHAPING_INTERFACE_BIDI_LAYOUT" value="1" enum="ShapingCapabilities">
+		</constant>
+		<constant name="SHAPING_INTERFACE_VERTICAL_LAYOUT" value="2" enum="ShapingCapabilities">
+		</constant>
+		<constant name="SHAPING_INTERFACE_GENERIC_SHAPING" value="4" enum="ShapingCapabilities">
+		</constant>
+		<constant name="SHAPING_INTERFACE_OPENTYPE_SHAPING" value="8" enum="ShapingCapabilities">
+		</constant>
+		<constant name="SHAPING_INTERFACE_GRAPHITE2_SHAPING" value="16" enum="ShapingCapabilities">
+		</constant>
+		<constant name="TEXT_DIRECTION_INVALID" value="-2" enum="TextDirection">
+		</constant>
+		<constant name="TEXT_DIRECTION_AUTO" value="-1" enum="TextDirection">
+		</constant>
+		<constant name="TEXT_DIRECTION_LTR" value="0" enum="TextDirection">
+		</constant>
+		<constant name="TEXT_DIRECTION_RTL" value="1" enum="TextDirection">
+		</constant>
+		<constant name="RUN_BREAK_NO" value="0" enum="RunBreakType">
+		</constant>
+		<constant name="RUN_BREAK_SOFT" value="1" enum="RunBreakType">
+		</constant>
+		<constant name="RUN_BREAK_HARD" value="2" enum="RunBreakType">
+		</constant>
+		<constant name="GLYPH_INVALD" value="0" enum="GlyphFlags">
+		</constant>
+		<constant name="GLYPH_VALID" value="1" enum="GlyphFlags">
+		</constant>
+		<constant name="GLYPH_SPACE" value="2" enum="GlyphFlags">
+		</constant>
+		<constant name="GLYPH_ELONGATION" value="4" enum="GlyphFlags">
+		</constant>
+		<constant name="GLYPH_TAB" value="8" enum="GlyphFlags">
+		</constant>
+		<constant name="GLYPH_VIRTUAL" value="16" enum="GlyphFlags">
+		</constant>
+		<constant name="GLYPH_CONTROL" value="32" enum="GlyphFlags">
+		</constant>
+		<constant name="GLYPH_SURROGATE" value="64" enum="GlyphFlags">
 		</constant>
 		<constant name="SPKEY" value="16777216">
 			Scancodes with this bit applied are non-printable.

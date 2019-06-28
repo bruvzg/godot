@@ -68,6 +68,8 @@
 #include "servers/physics_2d_server.h"
 #include "servers/physics_server.h"
 #include "servers/register_server_types.h"
+#include "servers/shaping/shaping_interface.h"
+#include "servers/shaping_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/doc/doc_data.h"
@@ -98,6 +100,7 @@ static MessageQueue *message_queue = NULL;
 // Initialized in setup2()
 static AudioServer *audio_server = NULL;
 static ARVRServer *arvr_server = NULL;
+static ShapingServer *shaping_server = NULL;
 static PhysicsServer *physics_server = NULL;
 static Physics2DServer *physics_2d_server = NULL;
 // We error out if setup2() doesn't turn this true
@@ -1133,6 +1136,7 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 	// also init our arvr_server from here
 	arvr_server = memnew(ARVRServer);
 
+	shaping_server = memnew(ShapingServer);
 	register_core_singletons();
 
 	MAIN_PRINT("Main: Setup Logo");
@@ -2065,6 +2069,9 @@ void Main::cleanup() {
 #ifdef TOOLS_ENABLED
 	EditorNode::unregister_editor_types();
 #endif
+	if (shaping_server) {
+		memdelete(shaping_server);
+	}
 
 	if (arvr_server) {
 		// cleanup now before we pull the rug from underneath...

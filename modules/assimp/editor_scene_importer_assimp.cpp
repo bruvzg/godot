@@ -98,7 +98,7 @@ void EditorSceneImporterAssimp::_bind_methods() {
 
 Node *EditorSceneImporterAssimp::import_scene(const String &p_path, uint32_t p_flags, int p_bake_fps, List<String> *r_missing_deps, Error *r_err) {
 	Assimp::Importer importer;
-	std::wstring w_path = ProjectSettings::get_singleton()->globalize_path(p_path).c_str();
+	std::wstring w_path = WC_STR(ProjectSettings::get_singleton()->globalize_path(p_path));
 	std::string s_path(w_path.begin(), w_path.end());
 	importer.SetPropertyBool(AI_CONFIG_PP_FD_REMOVE, true);
 	// Cannot remove pivot points because the static mesh will be in the wrong place
@@ -548,7 +548,7 @@ Ref<Mesh> EditorSceneImporterAssimp::_generate_mesh_from_surface_indices(
 		const unsigned int mesh_idx = p_surface_indices[i];
 		const aiMesh *ai_mesh = state.assimp_scene->mMeshes[mesh_idx];
 
-		Map<uint32_t, Vector<BoneInfo> > vertex_weights;
+		Map<uint32_t, Vector<BoneInfo>> vertex_weights;
 
 		if (p_skeleton) {
 			for (size_t b = 0; b < ai_mesh->mNumBones; b++) {

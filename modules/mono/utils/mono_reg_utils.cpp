@@ -73,13 +73,13 @@ LONG _RegKeyQueryString(HKEY hKey, const String &p_value_name, String &r_value) 
 	buffer.resize(512);
 	DWORD dwBufferSize = buffer.size();
 
-	LONG res = RegQueryValueExW(hKey, p_value_name.c_str(), 0, NULL, (LPBYTE)buffer.ptr(), &dwBufferSize);
+	LONG res = RegQueryValueExW(hKey, WC_STR(p_value_name), 0, NULL, (LPBYTE)buffer.ptr(), &dwBufferSize);
 
 	if (res == ERROR_MORE_DATA) {
 		// dwBufferSize now contains the actual size
 		Vector<WCHAR> buffer;
 		buffer.resize(dwBufferSize);
-		res = RegQueryValueExW(hKey, p_value_name.c_str(), 0, NULL, (LPBYTE)buffer.ptr(), &dwBufferSize);
+		res = RegQueryValueExW(hKey, WC_STR(p_value_name), 0, NULL, (LPBYTE)buffer.ptr(), &dwBufferSize);
 	}
 
 	if (res == ERROR_SUCCESS) {
@@ -94,7 +94,7 @@ LONG _RegKeyQueryString(HKEY hKey, const String &p_value_name, String &r_value) 
 LONG _find_mono_in_reg(const String &p_subkey, MonoRegInfo &r_info, bool p_old_reg = false) {
 
 	HKEY hKey;
-	LONG res = _RegOpenKey(HKEY_LOCAL_MACHINE, p_subkey.c_str(), &hKey);
+	LONG res = _RegOpenKey(HKEY_LOCAL_MACHINE, WC_STR(p_subkey), &hKey);
 
 	if (res != ERROR_SUCCESS)
 		goto cleanup;
@@ -132,7 +132,7 @@ LONG _find_mono_in_reg_old(const String &p_subkey, MonoRegInfo &r_info) {
 	String default_clr;
 
 	HKEY hKey;
-	LONG res = _RegOpenKey(HKEY_LOCAL_MACHINE, p_subkey.c_str(), &hKey);
+	LONG res = _RegOpenKey(HKEY_LOCAL_MACHINE, WC_STR(p_subkey), &hKey);
 
 	if (res != ERROR_SUCCESS)
 		goto cleanup;

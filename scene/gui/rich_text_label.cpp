@@ -319,7 +319,7 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 				if (it != l.from) {
 					ItemIndent *indent_it = static_cast<ItemIndent *>(it);
 
-					int indent = indent_it->level * tab_size * cfont->get_char_size(' ').width;
+					int indent = indent_it->level * tab_size * 0; //font->get_char_size(' ').width;
 					margin += indent;
 					begin += indent;
 					wofs += indent;
@@ -360,7 +360,7 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 				}
 
 				rchar = 0;
-				FontDrawer drawer(font, Color(1, 1, 1));
+				//FontDrawer drawer(font, Color(1, 1, 1));
 				while (*c) {
 
 					int end = 0;
@@ -375,9 +375,9 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 					}
 					while (c[end] != 0 && !(end && c[end - 1] == ' ' && c[end] != ' ')) {
 
-						int cw = font->get_char_size(c[end], c[end + 1]).width;
+						int cw = 0; //font->get_char_size(c[end], c[end + 1]).width;
 						if (c[end] == '\t') {
-							cw = tab_size * font->get_char_size(' ').width;
+							cw = tab_size * 0; //font->get_char_size(' ').width;
 						}
 
 						if (end > 0 && w + cw + begin > p_width) {
@@ -398,7 +398,7 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 
 					if (end && c[end - 1] == ' ') {
 						if (p_mode == PROCESS_CACHE) {
-							spaces_size += font->get_char_size(' ').width;
+							spaces_size += 0; //font->get_char_size(' ').width;
 						} else if (align == ALIGN_FILL) {
 							int ln = MIN(l.offset_caches.size() - 1, line);
 							if (l.space_caches[ln]) {
@@ -418,10 +418,10 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 							if (p_mode == PROCESS_POINTER && r_click_char && p_click_pos.y >= p_ofs.y + y && p_click_pos.y <= p_ofs.y + y + lh) {
 								//int o = (wofs+w)-p_click_pos.x;
 
-								int cw = font->get_char_size(c[i], c[i + 1]).x;
+								int cw = 0; //font->get_char_size(c[i], c[i + 1]).x;
 
 								if (c[i] == '\t') {
-									cw = tab_size * font->get_char_size(' ').width;
+									cw = tab_size * 0; //font->get_char_size(' ').width;
 								}
 
 								if (p_click_pos.x - cw / 2 > p_ofs.x + align_ofs + pofs) {
@@ -452,32 +452,32 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 
 								if (visible) {
 									if (selected) {
-										cw = font->get_char_size(c[i], c[i + 1]).x;
+										cw = 0; //font->get_char_size(c[i], c[i + 1]).x;
 										draw_rect(Rect2(p_ofs.x + pofs, p_ofs.y + y, cw, lh), selection_bg);
 									}
 
 									if (p_font_color_shadow.a > 0) {
 										float x_ofs_shadow = align_ofs + pofs;
 										float y_ofs_shadow = y + lh - line_descent;
-										font->draw_char(ci, Point2(x_ofs_shadow, y_ofs_shadow) + shadow_ofs, c[i], c[i + 1], p_font_color_shadow);
+										//font->draw_char(ci, Point2(x_ofs_shadow, y_ofs_shadow) + shadow_ofs, c[i], c[i + 1], p_font_color_shadow);
 
 										if (p_shadow_as_outline) {
-											font->draw_char(ci, Point2(x_ofs_shadow, y_ofs_shadow) + Vector2(-shadow_ofs.x, shadow_ofs.y), c[i], c[i + 1], p_font_color_shadow);
-											font->draw_char(ci, Point2(x_ofs_shadow, y_ofs_shadow) + Vector2(shadow_ofs.x, -shadow_ofs.y), c[i], c[i + 1], p_font_color_shadow);
-											font->draw_char(ci, Point2(x_ofs_shadow, y_ofs_shadow) + Vector2(-shadow_ofs.x, -shadow_ofs.y), c[i], c[i + 1], p_font_color_shadow);
+											//font->draw_char(ci, Point2(x_ofs_shadow, y_ofs_shadow) + Vector2(-shadow_ofs.x, shadow_ofs.y), c[i], c[i + 1], p_font_color_shadow);
+											//font->draw_char(ci, Point2(x_ofs_shadow, y_ofs_shadow) + Vector2(shadow_ofs.x, -shadow_ofs.y), c[i], c[i + 1], p_font_color_shadow);
+											//font->draw_char(ci, Point2(x_ofs_shadow, y_ofs_shadow) + Vector2(-shadow_ofs.x, -shadow_ofs.y), c[i], c[i + 1], p_font_color_shadow);
 										}
 									}
 
 									if (selected) {
-										drawer.draw_char(ci, p_ofs + Point2(align_ofs + pofs, y + lh - line_descent), c[i], c[i + 1], override_selected_font_color ? selection_fg : color);
+										//drawer.draw_char(ci, p_ofs + Point2(align_ofs + pofs, y + lh - line_descent), c[i], c[i + 1], override_selected_font_color ? selection_fg : color);
 									} else {
-										cw = drawer.draw_char(ci, p_ofs + Point2(align_ofs + pofs, y + lh - line_descent), c[i], c[i + 1], color);
+										//cw = drawer.draw_char(ci, p_ofs + Point2(align_ofs + pofs, y + lh - line_descent), c[i], c[i + 1], color);
 									}
 								}
 
 								p_char_count++;
 								if (c[i] == '\t') {
-									cw = tab_size * font->get_char_size(' ').width;
+									cw = tab_size * 0; //font->get_char_size(' ').width;
 								}
 
 								ofs += cw;
@@ -1200,7 +1200,7 @@ int RichTextLabel::_find_margin(Item *p_item, const Ref<Font> &p_base_font) {
 
 			ItemIndent *indent = static_cast<ItemIndent *>(item);
 
-			margin += indent->level * tab_size * font->get_char_size(' ').width;
+			margin += indent->level * tab_size * 0; //font->get_char_size(' ').width;
 
 		} else if (item->type == ITEM_LIST) {
 

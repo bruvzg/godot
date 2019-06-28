@@ -138,7 +138,7 @@ Error InAppStore::request_product_info(Variant p_params) {
 
 	NSMutableArray *array = [[[NSMutableArray alloc] initWithCapacity:pids.size()] autorelease];
 	for (int i = 0; i < pids.size(); i++) {
-		printf("******** adding %ls to product list\n", pids[i].c_str());
+		printf("******** adding %ls to product list\n", WC_STR(pids[i]));
 		NSString *pid = [[[NSString alloc] initWithUTF8String:pids[i].utf8().get_data()] autorelease];
 		[array addObject:pid];
 	};

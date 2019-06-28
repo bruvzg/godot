@@ -137,8 +137,7 @@
 #include "scene/resources/convex_polygon_shape_2d.h"
 #include "scene/resources/cylinder_shape.h"
 #include "scene/resources/default_theme/default_theme.h"
-#include "scene/resources/dynamic_font.h"
-#include "scene/resources/dynamic_font_stb.h"
+#include "scene/resources/font.h"
 #include "scene/resources/gradient.h"
 #include "scene/resources/height_map_shape.h"
 #include "scene/resources/line_shape_2d.h"
@@ -215,12 +214,10 @@
 static Ref<ResourceFormatSaverText> resource_saver_text;
 static Ref<ResourceFormatLoaderText> resource_loader_text;
 
-static Ref<ResourceFormatLoaderDynamicFont> resource_loader_dynamic_font;
-
 static Ref<ResourceFormatLoaderStreamTexture> resource_loader_stream_texture;
 static Ref<ResourceFormatLoaderTextureLayered> resource_loader_texture_layered;
 
-static Ref<ResourceFormatLoaderBMFont> resource_loader_bmfont;
+static Ref<ResourceFormatLoaderFontData> resource_loader_fontdata;
 
 static Ref<ResourceFormatSaverShader> resource_saver_shader;
 static Ref<ResourceFormatLoaderShader> resource_loader_shader;
@@ -232,9 +229,6 @@ void register_scene_types() {
 	OS::get_singleton()->yield(); //may take time to init
 
 	Node::init_node_hrcr();
-
-	resource_loader_dynamic_font.instance();
-	ResourceLoader::add_resource_format_loader(resource_loader_dynamic_font);
 
 	resource_loader_stream_texture.instance();
 	ResourceLoader::add_resource_format_loader(resource_loader_stream_texture);
@@ -254,8 +248,8 @@ void register_scene_types() {
 	resource_loader_shader.instance();
 	ResourceLoader::add_resource_format_loader(resource_loader_shader, true);
 
-	resource_loader_bmfont.instance();
-	ResourceLoader::add_resource_format_loader(resource_loader_bmfont, true);
+	resource_loader_fontdata.instance();
+	ResourceLoader::add_resource_format_loader(resource_loader_fontdata, true);
 
 	OS::get_singleton()->yield(); //may take time to init
 
@@ -659,16 +653,13 @@ void register_scene_types() {
 	ClassDB::register_class<Texture3D>();
 	ClassDB::register_class<TextureArray>();
 	ClassDB::register_class<Animation>();
-	ClassDB::register_virtual_class<Font>();
-	ClassDB::register_class<BitmapFont>();
 	ClassDB::register_class<Curve>();
 
 	ClassDB::register_class<TextFile>();
 
-	ClassDB::register_class<DynamicFontData>();
-	ClassDB::register_class<DynamicFont>();
-
-	DynamicFont::initialize_dynamic_fonts();
+	ClassDB::register_class<Font>();
+	ClassDB::register_class<FontData>();
+	ClassDB::register_virtual_class<FontImplementation>();
 
 	ClassDB::register_virtual_class<StyleBox>();
 	ClassDB::register_class<StyleBoxEmpty>();
@@ -725,6 +716,11 @@ void register_scene_types() {
 
 #endif
 
+	ShapedString::initialize_self_list();
+	TextLayout::initialize_self_list();
+	FontImplementation::initialize_self_list();
+	FontHexBox::initialize_hex_font();
+
 	OS::get_singleton()->yield(); //may take time to init
 
 	for (int i = 0; i < 20; i++) {
@@ -769,16 +765,16 @@ void unregister_scene_types() {
 
 	clear_default_theme();
 
-	ResourceLoader::remove_resource_format_loader(resource_loader_dynamic_font);
-	resource_loader_dynamic_font.unref();
+	ShapedString::finish_self_list();
+	FontImplementation::finish_self_list();
+	FontHexBox::finish_hex_font();
+	TextLayout::finish_self_list();
 
 	ResourceLoader::remove_resource_format_loader(resource_loader_texture_layered);
 	resource_loader_texture_layered.unref();
 
 	ResourceLoader::remove_resource_format_loader(resource_loader_stream_texture);
 	resource_loader_stream_texture.unref();
-
-	DynamicFont::finish_dynamic_fonts();
 
 	ResourceSaver::remove_resource_format_saver(resource_saver_text);
 	resource_saver_text.unref();
@@ -792,8 +788,8 @@ void unregister_scene_types() {
 	ResourceLoader::remove_resource_format_loader(resource_loader_shader);
 	resource_loader_shader.unref();
 
-	ResourceLoader::remove_resource_format_loader(resource_loader_bmfont);
-	resource_loader_bmfont.unref();
+	ResourceLoader::remove_resource_format_loader(resource_loader_fontdata);
+	resource_loader_fontdata.unref();
 
 	//SpatialMaterial is not initialised when 3D is disabled, so it shouldn't be cleaned up either
 #ifndef _3D_DISABLED

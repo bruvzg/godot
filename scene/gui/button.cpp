@@ -218,7 +218,7 @@ void Button::_notification(int p_what) {
 			}
 
 			text_ofs.y += font->get_ascent();
-			font->draw(ci, text_ofs.floor(), xl_text, color, clip_text ? text_clip : -1);
+			font->draw(ci, text_ofs.floor(), xl_text, clip_text ? text_clip : -1, color);
 
 			if (!_icon.is_null() && icon_region.size.width > 0) {
 				draw_texture_rect_region(_icon, icon_region, Rect2(Point2(), icon->get_size()), color_icon);

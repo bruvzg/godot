@@ -48,6 +48,8 @@
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
+#include "servers/shaping/shaping_interface.h"
+#include "servers/shaping_server.h"
 
 // PRIVATE METHODS
 
@@ -124,7 +126,7 @@ bool EditorSettings::_get(const StringName &p_name, Variant &r_ret) const {
 	if (p_name.operator String() == "shortcuts") {
 
 		Array arr;
-		for (const Map<String, Ref<ShortCut> >::Element *E = shortcuts.front(); E; E = E->next()) {
+		for (const Map<String, Ref<ShortCut>>::Element *E = shortcuts.front(); E; E = E->next()) {
 
 			Ref<ShortCut> sc = E->get();
 
@@ -268,10 +270,22 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 		String host_lang = OS::get_singleton()->get_locale();
 		host_lang = TranslationServer::standardize_locale(host_lang);
 
-		// Some locales are not properly supported currently in Godot due to lack of font shaping
-		// (e.g. Arabic or Hindi), so even though we have work in progress translations for them,
-		// we skip them as they don't render properly. (GH-28577)
-		const Vector<String> locales_to_skip = String("ar,bn,fa,he,hi,ml,si,ta,te,ur").split(",");
+		String unsupported_locales = String();
+		if (ShapingServer::get_singleton() && ShapingServer::get_singleton()->get_primary_interface().is_valid()) {
+			if ((ShapingServer::get_singleton()->get_primary_interface()->get_capabilities() & SHAPING_INTERFACE_BIDI_LAYOUT) != SHAPING_INTERFACE_BIDI_LAYOUT) {
+				//BiDi not supported
+				unsupported_locales += "ar,he,ur,";
+			}
+			if ((ShapingServer::get_singleton()->get_primary_interface()->get_capabilities() & SHAPING_INTERFACE_GENERIC_SHAPING) != SHAPING_INTERFACE_GENERIC_SHAPING) {
+				//Shaping not supported
+				unsupported_locales += "bn,fa,hi,ml,si,ta,te,";
+			}
+		};
+
+		if (!unsupported_locales.empty()) {
+			WARN_PRINTS("Following locales are not supported by the current text shaping interface and were disabled: " + unsupported_locales);
+		}
+		const Vector<String> locales_to_skip = unsupported_locales.split(",", false);
 
 		String best;
 
@@ -281,7 +295,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 
 			const String &locale = etl->lang;
 
-			// Skip locales which we can't render properly (see above comment).
+			// Skip locales which current shaping module can't render properly.
 			// Test against language code without regional variants (e.g. ur_PK).
 			String lang_code = locale.get_slice("_", 0);
 			if (locales_to_skip.find(lang_code) != -1) {
@@ -1473,7 +1487,7 @@ void EditorSettings::add_shortcut(const String &p_name, Ref<ShortCut> &p_shortcu
 
 bool EditorSettings::is_shortcut(const String &p_name, const Ref<InputEvent> &p_event) const {
 
-	const Map<String, Ref<ShortCut> >::Element *E = shortcuts.find(p_name);
+	const Map<String, Ref<ShortCut>>::Element *E = shortcuts.find(p_name);
 	ERR_FAIL_COND_V_MSG(!E, false, "Unknown Shortcut: " + p_name + ".");
 
 	return E->get()->is_shortcut(p_event);
@@ -1481,7 +1495,7 @@ bool EditorSettings::is_shortcut(const String &p_name, const Ref<InputEvent> &p_
 
 Ref<ShortCut> EditorSettings::get_shortcut(const String &p_name) const {
 
-	const Map<String, Ref<ShortCut> >::Element *E = shortcuts.find(p_name);
+	const Map<String, Ref<ShortCut>>::Element *E = shortcuts.find(p_name);
 	if (!E)
 		return Ref<ShortCut>();
 
@@ -1490,7 +1504,7 @@ Ref<ShortCut> EditorSettings::get_shortcut(const String &p_name) const {
 
 void EditorSettings::get_shortcut_list(List<String> *r_shortcuts) {
 
-	for (const Map<String, Ref<ShortCut> >::Element *E = shortcuts.front(); E; E = E->next()) {
+	for (const Map<String, Ref<ShortCut>>::Element *E = shortcuts.front(); E; E = E->next()) {
 
 		r_shortcuts->push_back(E->key());
 	}

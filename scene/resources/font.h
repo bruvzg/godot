@@ -31,174 +31,283 @@
 #ifndef FONT_H
 #define FONT_H
 
+#include "font_hex.h"
+
+#include "core/hash_map.h"
 #include "core/map.h"
+#include "core/pair.h"
 #include "core/resource.h"
 #include "scene/resources/texture.h"
 
-class Font : public Resource {
+#include "servers/shaping/shaped_string.h"
+#include "servers/shaping/shaping_defines.h"
+#include "servers/shaping/text_layout.h"
 
-	GDCLASS(Font, Resource);
+/*************************************************************************/
+/*  Font Data (Shaper independant resource)                              */
+/*************************************************************************/
 
-protected:
-	static void _bind_methods();
-
-public:
-	virtual float get_height() const = 0;
-
-	virtual float get_ascent() const = 0;
-	virtual float get_descent() const = 0;
-
-	virtual Size2 get_char_size(CharType p_char, CharType p_next = 0) const = 0;
-	Size2 get_string_size(const String &p_string) const;
-	Size2 get_wordwrap_string_size(const String &p_string, float p_width) const;
-
-	virtual bool is_distance_field_hint() const = 0;
-
-	void draw(RID p_canvas_item, const Point2 &p_pos, const String &p_text, const Color &p_modulate = Color(1, 1, 1), int p_clip_w = -1, const Color &p_outline_modulate = Color(1, 1, 1)) const;
-	void draw_halign(RID p_canvas_item, const Point2 &p_pos, HAlign p_align, float p_width, const String &p_text, const Color &p_modulate = Color(1, 1, 1), const Color &p_outline_modulate = Color(1, 1, 1)) const;
-
-	virtual bool has_outline() const { return false; }
-	virtual float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const = 0;
-
-	void update_changes();
-	Font();
-};
-
-// Helper class to that draws outlines immediately and draws characters in its destructor.
-class FontDrawer {
-	const Ref<Font> &font;
-	Color outline_color;
-	bool has_outline;
-
-	struct PendingDraw {
-		RID canvas_item;
-		Point2 pos;
-		CharType chr;
-		CharType next;
-		Color modulate;
-	};
-
-	Vector<PendingDraw> pending_draws;
+class FontImplementation;
+class FontData : public Resource {
+	GDCLASS(FontData, Resource);
 
 public:
-	FontDrawer(const Ref<Font> &p_font, const Color &p_outline_color) :
-			font(p_font),
-			outline_color(p_outline_color) {
-		has_outline = p_font->has_outline();
-	}
-
-	float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1)) {
-		if (has_outline) {
-			PendingDraw draw = { p_canvas_item, p_pos, p_char, p_next, p_modulate };
-			pending_draws.push_back(draw);
-		}
-		return font->draw_char(p_canvas_item, p_pos, p_char, p_next, has_outline ? outline_color : p_modulate, has_outline);
-	}
-
-	~FontDrawer() {
-		for (int i = 0; i < pending_draws.size(); ++i) {
-			const PendingDraw &draw = pending_draws[i];
-			font->draw_char(draw.canvas_item, draw.pos, draw.chr, draw.next, draw.modulate, false);
-		}
-	}
-};
-
-class BitmapFont : public Font {
-
-	GDCLASS(BitmapFont, Font);
-	RES_BASE_EXTENSION("font");
-
-	Vector<Ref<Texture> > textures;
-
-public:
-	struct Character {
-
-		int texture_idx;
-		Rect2 rect;
-		float v_align;
-		float h_align;
-		float advance;
-
-		Character() {
-			texture_idx = 0;
-			v_align = 0;
-		}
-	};
-
-	struct KerningPairKey {
-
+	struct CacheID {
 		union {
 			struct {
-				uint32_t A, B;
+				uint32_t size : 8;
+				uint32_t outline_size : 8;
+				uint32_t mipmaps : 1;
+				uint32_t filter : 1;
+				uint32_t antialiased : 1;
+				uint32_t force_autohinter : 1;
+				uint32_t hinting : 2;
+				uint32_t unused : 10;
 			};
-
-			uint64_t pair;
+			uint32_t key;
 		};
+		bool operator<(CacheID right) const;
+		CacheID() {
+			key = 0;
+		}
+	};
 
-		_FORCE_INLINE_ bool operator<(const KerningPairKey &p_r) const { return pair < p_r.pair; }
+	enum Hinting {
+		HINTING_NONE,
+		HINTING_LIGHT,
+		HINTING_NORMAL
 	};
 
 private:
-	HashMap<CharType, Character> char_map;
-	Map<KerningPairKey, int> kerning_map;
+	String data_path;
 
-	float height;
-	float ascent;
-	bool distance_field_hint;
+	//raw dynamic font data
+	const uint8_t *data_mem;
+	size_t data_mem_size;
+	StringName fid;
 
-	void _set_chars(const PoolVector<int> &p_chars);
-	PoolVector<int> _get_chars() const;
-	void _set_kernings(const PoolVector<int> &p_kernings);
-	PoolVector<int> _get_kernings() const;
-	void _set_textures(const Vector<Variant> &p_textures);
-	Vector<Variant> _get_textures() const;
+	mutable HashMap<uint32_t, Ref<FontImplementation>> size_cache;
 
-	Ref<BitmapFont> fallback;
+	String supported_scripts;
+	String supported_langs;
+	float pmult;
+
+	void _clear();
+	void _clear_cache();
 
 protected:
 	static void _bind_methods();
 
 public:
-	Error create_from_fnt(const String &p_file);
+	String get_font_data_path() const;
+	void set_font_data_path(const String &p_path);
 
-	void set_height(float p_height);
-	float get_height() const;
+	float get_force_priority_multiplier() const;
+	void set_force_priority_multiplier(float p_mult);
 
-	void set_ascent(float p_ascent);
-	float get_ascent() const;
-	float get_descent() const;
+	String get_force_supported_scripts() const;
+	void set_force_supported_scripts(const String &p_supported_scripts); // , separated
 
-	void add_texture(const Ref<Texture> &p_texture);
-	void add_char(CharType p_char, int p_texture_idx, const Rect2 &p_rect, const Size2 &p_align, float p_advance = -1);
+	String get_force_supported_languages() const;
+	void set_force_supported_languages(const String &p_supported_languages); // , separated
 
-	int get_character_count() const;
-	Vector<CharType> get_char_keys() const;
-	Character get_character(CharType p_char) const;
+	//static data
+	void _get_static_font_data(const uint8_t **o_font_mem, size_t *o_font_mem_size) const;
+	void _set_static_font_data(const StringName &p_typeid, const uint8_t *p_font_mem, size_t p_font_mem_size);
+	StringName _get_font_id() const;
 
-	int get_texture_count() const;
-	Ref<Texture> get_texture(int p_idx) const;
+	Ref<FontImplementation> _get_font_implementation_at_size(CacheID p_id) const;
 
-	void add_kerning_pair(CharType p_A, CharType p_B, int p_kerning);
-	int get_kerning_pair(CharType p_A, CharType p_B) const;
-	Vector<KerningPairKey> get_kerning_pair_keys() const;
-
-	Size2 get_char_size(CharType p_char, CharType p_next = 0) const;
-
-	void set_fallback(const Ref<BitmapFont> &p_fallback);
-	Ref<BitmapFont> get_fallback() const;
-
-	void clear();
-
-	void set_distance_field_hint(bool p_distance_field);
-	bool is_distance_field_hint() const;
-
-	float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const;
-
-	BitmapFont();
-	~BitmapFont();
+	FontData();
+	~FontData();
 };
 
-class ResourceFormatLoaderBMFont : public ResourceFormatLoader {
+VARIANT_ENUM_CAST(FontData::Hinting);
+
+/*************************************************************************/
+/*  Font Implementation (Shaper and size specific resource)              */
+/*************************************************************************/
+
+class FontImplementation : public Reference {
+	GDCLASS(FontImplementation, Reference);
+
+protected:
+	static void _bind_methods();
+
+public:
+	virtual void invalidate() = 0;
+	virtual bool require_reload() const = 0;
+
+	virtual void *get_native_handle() const = 0;
+	virtual float get_font_scale() const = 0;
+
+	virtual uint32_t get_glyph(uint32_t p_unicode, uint32_t p_variation_selector = 0) const = 0;
+	virtual float get_advance(uint32_t p_glyph) const = 0;
+	virtual float get_kerning(uint32_t p_glyph_a, uint32_t p_glyph_b) const = 0;
+
+	virtual float get_v_advance(uint32_t p_glyph) const = 0;
+	virtual float get_v_kerning(uint32_t p_glyph_a, uint32_t p_glyph_b) const = 0;
+
+	virtual Size2 get_glyph_size(uint32_t p_glyph) const = 0;
+
+	virtual float get_ascent() const = 0;
+	virtual float get_descent() const = 0;
+	virtual float get_line_gap() const = 0;
+
+	virtual float get_underline_position() const = 0;
+	virtual float get_underline_thickness() const = 0;
+
+	virtual String get_name() const = 0;
+
+	virtual int32_t get_script_support_priority(uint32_t p_script) const = 0;
+	virtual int32_t get_language_support_priority(const String &p_lang) const = 0;
+
+	virtual void draw_glyph(RID p_canvas_item, const Point2 &p_pos, uint32_t p_glyph, const Color &p_modulate = Color(1, 1, 1), bool p_rotate_cw = false) const = 0;
+
+	virtual Error create(const FontData *p_data, FontData::CacheID p_cache_id) = 0;
+
+	//self list api
+	SelfList<FontImplementation> font_list;
+
+	static Mutex *font_imp_mutex;
+	static SelfList<FontImplementation>::List *font_imps;
+
+	static void invalidate_all();
+
+	static void initialize_self_list();
+	static void finish_self_list();
+
+	FontImplementation();
+	virtual ~FontImplementation();
+};
+
+/*************************************************************************/
+/*  Font                                                                 */
+/*************************************************************************/
+
+class Font : public Resource {
+	GDCLASS(Font, Resource);
+
+	void _reload_cache();
+
+public:
+	enum SpacingType {
+		SPACING_TOP,
+		SPACING_BOTTOM
+	};
+
+private:
+	static float oversampling;
+
+	Vector<Ref<FontData>> data;
+	Vector<Ref<FontImplementation>> data_at_size;
+	Vector<Ref<FontImplementation>> outline_data_at_size;
+
+	FontData::CacheID cache_id;
+	FontData::CacheID outline_cache_id;
+
+	bool distance_field_hint;
+
+	int spacing_top;
+	int spacing_bottom;
+
+	struct CacheRec {
+		Ref<TextLayout> layout;
+	};
+
+	int32_t shaped_cache_max_depth;
+	mutable HashMap<uint32_t, CacheRec> shaped_cache;
+	mutable List<uint32_t> shaped_cache_last;
+
+	Ref<TextLayout> _shape_layout(const String &p_text, TextDirection p_base_dir, const String &p_lang, const String &p_ftr) const;
+
+protected:
+	bool _set(const StringName &p_name, const Variant &p_value);
+	bool _get(const StringName &p_name, Variant &r_ret) const;
+	void _get_property_list(List<PropertyInfo> *p_list) const;
+
+	static void _bind_methods();
+
+public:
+	//max props
+	float get_ascent() const;
+	float get_descent() const;
+	float get_height() const;
+	float get_line_gap() const;
+
+	//global properties
+	bool get_mipmap() const;
+	void set_mipmap(bool p_mipmap);
+
+	bool get_filter() const;
+	void set_filter(bool p_filter);
+
+	bool get_antialiased() const;
+	void set_antialiased(bool p_antialiased);
+
+	FontData::Hinting get_hinting() const;
+	void set_hinting(FontData::Hinting p_hinting);
+
+	bool get_force_autohinter() const;
+	void set_force_autohinter(bool p_force);
+
+	bool get_distance_field_hint() const;
+	void set_distance_field_hint(bool p_distance_field);
+
+	int get_extra_spacing(SpacingType p_type) const;
+	void set_extra_spacing(SpacingType p_type, int p_value);
+
+	static float get_oversampling();
+	static void set_oversampling(float p_oversampling);
+
+	int get_size() const;
+	void set_size(int p_size);
+
+	bool has_outline() const;
+
+	int get_outline_size() const;
+	void set_outline_size(int p_size);
+
+	//low level shaping
+	void get_font_implementations(Vector<Ref<FontImplementation>> &o_fonts, Vector<Ref<FontImplementation>> &o_outlines, uint32_t p_script = 0, const String &p_lang = "") const;
+	Array _get_font_implementations(uint32_t p_script = 0, const String &p_lang = "") const;
+
+	//Ref<ShapedString> shape_string(const String &p_text, int p_start, int p_end, TextDirection p_base_dir = TEXT_DIRECTION_AUTO, const String &p_lang = "", const String &p_ftr = "", bool p_no_cache = false) const;
+	//Ref<ShapedString> shape_attributed_string(const String &p_text, int p_start, int p_end, const Ref<AttributeMap> &p_attributes, TextDirection p_base_dir = TEXT_DIRECTION_AUTO, bool p_no_cache = false) const;
+
+	//high level wrappers
+	void draw(RID p_canvas_item, const Point2 &p_pos, const String &p_text, int p_width = -1, const Color &p_modulate = Color(1, 1, 1), const Color &p_outline_modulate = Color(1, 1, 1, 0), TextDirection p_base_dir = TEXT_DIRECTION_AUTO, const String &p_lang = "", const String &p_ftr = "") const;
+	void draw_wordwrap(RID p_canvas_item, const Point2 &p_pos, const String &p_text, int p_width = -1, const Color &p_modulate = Color(1, 1, 1), const Color &p_outline_modulate = Color(1, 1, 1, 0), TextDirection p_base_dir = TEXT_DIRECTION_AUTO, const String &p_lang = "", const String &p_ftr = "") const;
+	void draw_halign(RID p_canvas_item, const Point2 &p_pos, const String &p_text, int p_width, HAlign p_align, const Color &p_modulate = Color(1, 1, 1), const Color &p_outline_modulate = Color(1, 1, 1, 0), TextDirection p_base_dir = TEXT_DIRECTION_AUTO, const String &p_lang = "", const String &p_ftr = "") const;
+	void draw_wordwrap_halign(RID p_canvas_item, const Point2 &p_pos, const String &p_text, int p_width, HAlign p_align, const Color &p_modulate = Color(1, 1, 1), const Color &p_outline_modulate = Color(1, 1, 1, 0), TextDirection p_base_dir = TEXT_DIRECTION_AUTO, const String &p_lang = "", const String &p_ftr = "") const;
+
+	Size2 get_string_size(const String &p_text, TextDirection p_base_dir = TEXT_DIRECTION_AUTO, const String &p_lang = "", const String &p_ftr = "") const;
+	Size2 get_wordwrap_string_size(const String &p_text, float p_width = -1, TextDirection p_base_dir = TEXT_DIRECTION_AUTO, const String &p_lang = "", const String &p_ftr = "") const;
+
+	//compatiblility wrappers
+	float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const;
+	Size2 get_char_size(CharType p_char, CharType p_next = 0) const;
+
+	//data control
+	int get_font_data_count() const;
+	void add_font_data(const Ref<FontData> &p_data);
+	void set_font_data(int p_idx, const Ref<FontData> &p_data);
+	Ref<FontData> get_font_data(int p_idx) const;
+	void remove_font_data(int p_idx);
+
+	void update_changes(); //call manually after data change
+
+	Font();
+	~Font();
+};
+
+VARIANT_ENUM_CAST(Font::SpacingType);
+
+/*************************************************************************/
+/*  Font Data (Resource loader)                                          */
+/*************************************************************************/
+
+class ResourceFormatLoaderFontData : public ResourceFormatLoader {
 public:
 	virtual RES load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
 	virtual void get_recognized_extensions(List<String> *p_extensions) const;

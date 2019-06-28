@@ -400,6 +400,8 @@
 		<member name="context_menu_enabled" type="bool" setter="set_context_menu_enabled" getter="is_context_menu_enabled" default="true">
 			If [code]true[/code], a right-click displays the context menu.
 		</member>
+		<member name="display_controls" type="bool" setter="set_display_controls" getter="get_display_controls" default="false">
+		</member>
 		<member name="draw_spaces" type="bool" setter="set_draw_spaces" getter="is_drawing_spaces" default="false">
 			If [code]true[/code], the "space" character will have a visible representation.
 		</member>
@@ -418,9 +420,13 @@
 		<member name="highlight_current_line" type="bool" setter="set_highlight_current_line" getter="is_highlight_current_line_enabled" default="false">
 			If [code]true[/code], the line containing the cursor is highlighted.
 		</member>
+		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;&quot;">
+		</member>
 		<member name="minimap_draw" type="bool" setter="draw_minimap" getter="is_drawing_minimap" default="false">
 		</member>
 		<member name="minimap_width" type="int" setter="set_minimap_width" getter="get_minimap_width" default="80">
+		</member>
+		<member name="ot_features" type="String" setter="set_ot_features" getter="get_ot_features" default="&quot;&quot;">
 		</member>
 		<member name="override_selected_font_color" type="bool" setter="set_override_selected_font_color" getter="is_overriding_selected_font_color" default="false">
 		</member>
@@ -438,6 +444,8 @@
 		</member>
 		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;&quot;">
 			String value of the [TextEdit].
+		</member>
+		<member name="text_direction" type="int" setter="set_text_direction" getter="get_text_direction" enum="TextDirection" default="-1">
 		</member>
 		<member name="v_scroll_speed" type="float" setter="set_v_scroll_speed" getter="get_v_scroll_speed" default="80.0">
 			Vertical scroll sensitivity.
@@ -519,7 +527,51 @@
 		<constant name="MENU_REDO" value="6" enum="MenuItems">
 			Redoes the previous action.
 		</constant>
-		<constant name="MENU_MAX" value="7" enum="MenuItems">
+		<constant name="MENU_DIR_AUTO" value="7" enum="MenuItems">
+		</constant>
+		<constant name="MENU_DIR_LTR" value="8" enum="MenuItems">
+		</constant>
+		<constant name="MENU_DIR_RTL" value="9" enum="MenuItems">
+		</constant>
+		<constant name="MENU_DISPLAY_UCC" value="10" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_LRM" value="11" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_RLM" value="12" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_LRE" value="13" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_RLE" value="14" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_LRO" value="15" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_RLO" value="16" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_PDF" value="17" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_ALM" value="18" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_LRI" value="19" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_RLI" value="20" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_FSI" value="21" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_PDI" value="22" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_ZWJ" value="23" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_ZWNJ" value="24" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_WJ" value="25" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_SHY" value="26" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_RS" value="27" enum="MenuItems">
+		</constant>
+		<constant name="MENU_INSERT_US" value="28" enum="MenuItems">
+		</constant>
+		<constant name="MENU_MAX" value="29" enum="MenuItems">
 			Represents the size of the [enum MenuItems] enum.
 		</constant>
 	</constants>

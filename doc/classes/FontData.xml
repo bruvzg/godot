@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FontData" inherits="Resource" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="font_data_path" type="String" setter="set_font_data_path" getter="get_font_data_path" default="&quot;&quot;">
+		</member>
+		<member name="force_priority_multiplier" type="float" setter="set_force_priority_multiplier" getter="get_force_priority_multiplier" default="1.0">
+		</member>
+		<member name="force_supported_scripts" type="String" setter="set_force_supported_scripts" getter="get_force_supported_scripts" default="&quot;&quot;">
+		</member>
+	</members>
+	<constants>
+		<constant name="HINTING_NONE" value="0" enum="Hinting">
+		</constant>
+		<constant name="HINTING_LIGHT" value="1" enum="Hinting">
+		</constant>
+		<constant name="HINTING_NORMAL" value="2" enum="Hinting">
+		</constant>
+	</constants>
+</class>

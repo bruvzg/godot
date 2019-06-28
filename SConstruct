@@ -139,6 +139,9 @@ opts.Add(BoolVariable('builtin_bullet', "Use the built-in Bullet library", True)
 opts.Add(BoolVariable('builtin_certs', "Bundle default SSL certificates to be used if you don't specify an override in the project settings", True))
 opts.Add(BoolVariable('builtin_enet', "Use the built-in ENet library", True))
 opts.Add(BoolVariable('builtin_freetype', "Use the built-in FreeType library", True))
+opts.Add(BoolVariable('builtin_harfbuzz', "Use the built-in HarfBuzz library", True))
+opts.Add(BoolVariable('builtin_icu', "Use the built-in ICU library", True))
+opts.Add(BoolVariable('builtin_graphite2', "Use the built-in SIL graphite library", True))
 opts.Add(BoolVariable('builtin_libogg', "Use the built-in libogg library", True))
 opts.Add(BoolVariable('builtin_libpng', "Use the built-in libpng library", True))
 opts.Add(BoolVariable('builtin_libtheora', "Use the built-in libtheora library", True))
@@ -155,6 +158,9 @@ opts.Add(BoolVariable('builtin_squish', "Use the built-in squish library", True)
 opts.Add(BoolVariable('builtin_xatlas', "Use the built-in xatlas library", True))
 opts.Add(BoolVariable('builtin_zlib', "Use the built-in zlib library", True))
 opts.Add(BoolVariable('builtin_zstd', "Use the built-in Zstd library", True))
+
+# ICU options
+opts.Add(BoolVariable('use_staitc_icu_data', "Use statically-linked ICU break iterator data", True))
 
 # Compilation environment setup
 opts.Add("CXX", "C++ compiler")
@@ -298,6 +304,9 @@ if selected_platform in platform_list:
     CXXFLAGS = env.get('CXXFLAGS', '')
     env['CXXFLAGS'] = ''
     env.Append(CXXFLAGS=str(CXXFLAGS).split())
+
+    if (not env.msvc):
+        env.Append(CXXFLAGS=['-std=c++11'])
 
     LINKFLAGS = env.get('LINKFLAGS', '')
     env['LINKFLAGS'] = ''

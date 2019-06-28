@@ -25460,4 +25460,15 @@ static const unsigned char _hidpi_font_img_data[25255]={
 96,
 130,
 };
+static const void *_hidpi_font_data[9]={
+	(const void *)&_hidpi_font_height,
+	(const void *)&_hidpi_font_ascent,
+	(const void *)&_hidpi_font_charcount,
+	(const void *)&_hidpi_font_charrects[0][0],
+	(const void *)&_hidpi_font_kerning_pair_count,
+	(const void *)&_hidpi_font_kerning_pairs[0][0],
+	(const void *)&_hidpi_font_img_width,
+	(const void *)&_hidpi_font_img_height,
+	(const void *)&_hidpi_font_img_data
+};
 /* clang-format on */

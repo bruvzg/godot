@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ShapingInterface" inherits="Reference" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_capabilities" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_info" qualifiers="const">
+			<return type="String">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_locale_direction" qualifiers="const">
+			<return type="int" enum="TextDirection">
+			</return>
+			<argument index="0" name="lang" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_name" qualifiers="const">
+			<return type="String">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_string_direction" qualifiers="const">
+			<return type="int" enum="TextDirection">
+			</return>
+			<argument index="0" name="text" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="is_primary" type="bool" setter="set_is_primary" getter="get_is_primary">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

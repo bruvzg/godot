@@ -59,6 +59,7 @@
 
 const char CharString::_null = 0;
 const CharType String::_null = 0;
+const CharType32 Char32String::_null = 0;
 
 bool is_symbol(CharType c) {
 	return c != '_' && ((c >= '!' && c <= '/') || (c >= ':' && c <= '@') || (c >= '[' && c <= '`') || (c >= '{' && c <= '~') || c == '\t' || c == ' ');
@@ -146,6 +147,65 @@ void CharString::copy_from(const char *p_cstr) {
 
 	strcpy(ptrw(), p_cstr);
 }
+
+/*************************************************************************/
+
+bool Char32String::operator<(const Char32String &p_right) const {
+
+	if (length() == 0) {
+		return p_right.length() != 0;
+	}
+
+	return is_str_less(get_data(), p_right.get_data());
+}
+
+Char32String &Char32String::operator+=(CharType32 p_char) {
+
+	resize(size() ? size() + 1 : 2);
+	set(length(), 0);
+	set(length() - 1, p_char);
+
+	return *this;
+}
+
+const CharType32 *Char32String::get_data() const {
+
+	if (size())
+		return &operator[](0);
+	else
+		return 0;
+}
+
+Char32String &Char32String::operator=(const CharType32 *p_cstr) {
+
+	copy_from(p_cstr);
+	return *this;
+}
+
+void Char32String::copy_from(const CharType32 *p_cstr) {
+
+	if (!p_cstr) {
+		resize(0);
+		return;
+	}
+
+	const CharType32 *r = p_cstr;
+	for (; *r; r++)
+		;
+	size_t len = r - p_cstr;
+
+	if (len == 0) {
+		resize(0);
+		return;
+	}
+
+	resize(len + 1); // include terminating null char
+
+	for (CharType32 *d = ptrw(); (*d = *p_cstr); p_cstr++, d++)
+		;
+}
+
+/*************************************************************************/
 
 void String::copy_from(const char *p_cstr) {
 
@@ -331,9 +391,23 @@ void String::operator=(const char *p_str) {
 	copy_from(p_str);
 }
 
+void String::operator=(const wchar_t *p_str) {
+
+#ifdef WINDOWS_ENABLED
+	copy_from((const CharType *)p_str);
+#else
+	parse_utf32((const CharType32 *)p_str);
+#endif
+}
+
 void String::operator=(const CharType *p_str) {
 
 	copy_from(p_str);
+}
+
+void String::operator=(const CharType32 *p_str) {
+
+	parse_utf32((const CharType32 *)p_str);
 }
 
 bool String::operator==(const StrRange &p_str_range) const {
@@ -1409,19 +1483,22 @@ bool String::parse_utf8(const char *p_utf8, int p_len) {
 				uint8_t c = *ptrtmp;
 
 				/* Determine the number of characters in sequence */
-				if ((c & 0x80) == 0)
+				if ((c & 0x80) == 0) {
 					skip = 0;
-				else if ((c & 0xE0) == 0xC0)
+				} else if ((c & 0xE0) == 0xC0) {
 					skip = 1;
-				else if ((c & 0xF0) == 0xE0)
+				} else if ((c & 0xF0) == 0xE0) {
 					skip = 2;
-				else if ((c & 0xF8) == 0xF0)
+				} else if ((c & 0xF8) == 0xF0) {
 					skip = 3;
-				else if ((c & 0xFC) == 0xF8)
+					str_size++; //surrogate pair!
+				} else if ((c & 0xFC) == 0xF8) {
 					skip = 4;
-				else if ((c & 0xFE) == 0xFC)
+					str_size++; //surrogate pair!
+				} else if ((c & 0xFE) == 0xFC) {
 					skip = 5;
-				else {
+					str_size++; //surrogate pair!
+				} else {
 					_UNICERROR("invalid skip");
 					return true; //invalid utf8
 				}
@@ -1516,12 +1593,15 @@ bool String::parse_utf8(const char *p_utf8, int p_len) {
 			}
 		}
 
-		//printf("char %i, len %i\n",unichar,len);
-		if (sizeof(wchar_t) == 2 && unichar > 0xFFFF) {
-			unichar = ' '; //too long for windows
+		//encode surrogate pair
+		if (unichar > 0xFFFF) {
+			unichar -= 0x10000;
+			*(dst++) = unichar / 0x400 + 0xD800; //high surrogate
+			*(dst++) = unichar % 0x400 + 0xDC00; //low surrogate
+		} else {
+			*(dst++) = unichar;
 		}
 
-		*(dst++) = unichar;
 		cstr_size -= len;
 		p_utf8 += len;
 	}
@@ -1537,23 +1617,43 @@ CharString String::utf8() const {
 
 	const CharType *d = &operator[](0);
 	int fl = 0;
-	for (int i = 0; i < l; i++) {
+	int i = 0;
+	while (i < l) {
 
 		uint32_t c = d[i];
-		if (c <= 0x7f) // 7 bits.
+
+		if ((c & 0xFFFFF800) == 0xD800) { //decode surrogate
+			if ((c & 0x400) == 0) {
+				if (i + 1 < l) {
+					uint32_t c2 = d[i + 1];
+					if ((c2 & 0xFFFFFC00) == 0xDC00) {
+						c = (c << 10UL) + c2 - ((0xD800 << 10UL) + 0xDC00 - 0x10000);
+						i++;
+					} else {
+						_UNICERROR("invalid utf16");
+					}
+				} else {
+					_UNICERROR("invalid utf16");
+				}
+			} else {
+				_UNICERROR("invalid utf16");
+			}
+		}
+
+		if (c <= 0x7f) { // 7 bits.
 			fl += 1;
-		else if (c <= 0x7ff) { // 11 bits
+		} else if (c <= 0x7ff) { // 11 bits
 			fl += 2;
 		} else if (c <= 0xffff) { // 16 bits
 			fl += 3;
 		} else if (c <= 0x001fffff) { // 21 bits
 			fl += 4;
-
 		} else if (c <= 0x03ffffff) { // 26 bits
 			fl += 5;
 		} else if (c <= 0x7fffffff) { // 31 bits
 			fl += 6;
 		}
+		i++;
 	}
 
 	CharString utf8s;
@@ -1566,9 +1666,27 @@ CharString String::utf8() const {
 
 #define APPEND_CHAR(m_c) *(cdst++) = m_c
 
-	for (int i = 0; i < l; i++) {
+	i = 0;
+	while (i < l) {
 
 		uint32_t c = d[i];
+		if ((c & 0xFFFFF800) == 0xD800) { //decode surrogate
+			if ((c & 0x400) == 0) {
+				if (i + 1 < l) {
+					uint32_t c2 = d[i + 1];
+					if ((c2 & 0xFFFFFC00) == 0xDC00) {
+						c = (c << 10UL) + c2 - ((0xD800 << 10UL) + 0xDC00 - 0x10000);
+						i++;
+					} else {
+						_UNICERROR("invalid utf16");
+					}
+				} else {
+					_UNICERROR("invalid utf16");
+				}
+			} else {
+				_UNICERROR("invalid utf16");
+			}
+		}
 
 		if (c <= 0x7f) // 7 bits.
 			APPEND_CHAR(c);
@@ -1603,11 +1721,147 @@ CharString String::utf8() const {
 			APPEND_CHAR(uint32_t(0x80 | ((c >> 6) & 0x3f))); // Lower lower middle 6 bits.
 			APPEND_CHAR(uint32_t(0x80 | (c & 0x3f))); // Bottom 6 bits.
 		}
+		i++;
 	}
 #undef APPEND_CHAR
 	*cdst = 0; //trailing zero
 
 	return utf8s;
+}
+
+String String::utf32(const CharType32 *p_utf32, int p_len) {
+
+	String ret;
+	ret.parse_utf32(p_utf32, p_len);
+
+	return ret;
+}
+
+bool String::parse_utf32(const CharType32 *p_utf32, int p_len) {
+
+	if (!p_utf32)
+		return true;
+
+	String aux;
+
+	int cstr_size = 0;
+	int str_size = 0;
+
+	{
+		const CharType32 *ptrtmp = p_utf32;
+		const CharType32 *ptrtmp_limit = &p_utf32[p_len];
+		while (ptrtmp != ptrtmp_limit && *ptrtmp) {
+
+			uint32_t c = *ptrtmp;
+			if (c > 0xFFFF) {
+				str_size++; // surrogate pair
+			}
+
+			str_size++;
+			cstr_size++;
+			ptrtmp++;
+		}
+	}
+
+	if (str_size == 0) {
+		clear();
+		return false;
+	}
+
+	resize(str_size + 1);
+	CharType *dst = ptrw();
+	dst[str_size] = 0;
+
+	while (cstr_size) {
+
+		uint32_t unichar = *p_utf32;
+
+		//encode surrogate pair
+		if (unichar > 0xFFFF) {
+			unichar -= 0x10000;
+			*(dst++) = unichar / 0x400 + 0xD800; //high surrogate
+			*(dst++) = unichar % 0x400 + 0xDC00; //low surrogate
+		} else {
+			*(dst++) = unichar;
+		}
+		cstr_size--;
+		p_utf32++;
+	}
+
+	return false;
+}
+
+Char32String String::utf32() const {
+
+	int l = length();
+	if (!l)
+		return Char32String();
+
+	const CharType *d = &operator[](0);
+	int fl = 0;
+	int i = 0;
+	while (i < l) {
+
+		uint32_t c = d[i];
+		if ((c & 0xFFFFF800) == 0xD800) { //decode surrogate
+			if ((c & 0x400) == 0) {
+				if (i + 1 < l) {
+					uint32_t c2 = d[i + 1];
+					if ((c2 & 0xFFFFFC00) == 0xDC00) {
+						i++;
+					} else {
+						_UNICERROR("invalid utf16");
+					}
+				} else {
+					_UNICERROR("invalid utf16");
+				}
+			} else {
+				_UNICERROR("invalid utf16");
+			}
+		}
+		fl++;
+		i++;
+	}
+
+	Char32String utf32s;
+	if (fl == 0) {
+		return utf32s;
+	}
+
+	utf32s.resize(fl + 1);
+	uint32_t *cdst = (uint32_t *)utf32s.get_data();
+
+#define APPEND_CHAR(m_c) *(cdst++) = m_c
+
+	i = 0;
+	while (i < l) {
+
+		uint32_t c = d[i];
+		if ((c & 0xFFFFF800) == 0xD800) { //decode surrogate
+			if ((c & 0x400) == 0) {
+				if (i + 1 < l) {
+					uint32_t c2 = d[i + 1];
+					if ((c2 & 0xFFFFFC00) == 0xDC00) {
+						c = (c << 10UL) + c2 - ((0xD800 << 10UL) + 0xDC00 - 0x10000);
+						i++;
+					} else {
+						_UNICERROR("invalid utf16");
+					}
+				} else {
+					_UNICERROR("invalid utf16");
+				}
+			} else {
+				_UNICERROR("invalid utf16");
+			}
+		}
+
+		APPEND_CHAR(c);
+		i++;
+	}
+#undef APPEND_CHAR
+	*cdst = 0; //trailing zero
+
+	return utf32s;
 }
 
 /*
@@ -1623,9 +1877,22 @@ String::String(const char *p_str) {
 	copy_from(p_str);
 }
 
+String::String(const wchar_t *p_str, int p_clip_to_len) {
+#ifdef WINDOWS_ENABLED
+	copy_from((const CharType *)p_str, p_clip_to_len);
+#else
+	parse_utf32((const CharType32 *)p_str, p_clip_to_len);
+#endif
+}
+
 String::String(const CharType *p_str, int p_clip_to_len) {
 
 	copy_from(p_str, p_clip_to_len);
+}
+
+String::String(const CharType32 *p_str, int p_clip_to_len) {
+
+	parse_utf32(p_str, p_clip_to_len);
 }
 
 String::String(const StrRange &p_range) {
@@ -3315,7 +3582,7 @@ bool String::is_valid_identifier() const {
 	if (len == 0)
 		return false;
 
-	const wchar_t *str = &operator[](0);
+	const CharType *str = &operator[](0);
 
 	for (int i = 0; i < len; i++) {
 
