@@ -38,11 +38,16 @@
 	@author Juan Linietsky <reduzio@gmail.com>
 */
 
-class Font : public Resource {
+//http://font.gohu.org/ (WTFPL) based 5x7 hex number font for char code box drawing
+static const unsigned char _hex_box_img_data[167] = {
+	0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x50, 0x00, 0x00, 0x00, 0x07, 0x01, 0x03, 0x00, 0x00, 0x00, 0xA5, 0x54, 0x58, 0xA1, 0x00, 0x00, 0x00, 0x06, 0x50, 0x4C, 0x54, 0x45, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xA5, 0xD9, 0x9F, 0xDD, 0x00, 0x00, 0x00, 0x01, 0x74, 0x52, 0x4E, 0x53, 0x00, 0x40, 0xE6, 0xD8, 0x66, 0x00, 0x00, 0x00, 0x4F, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0x28, 0x94, 0x79, 0x58, 0x7B, 0xBF, 0x78, 0xEE, 0xF3, 0xEA, 0xFF, 0x0C, 0xDD, 0xCA, 0xC2, 0x4E, 0x8C, 0x3D, 0xC9, 0x12, 0xC7, 0x04, 0x18, 0xE6, 0x32, 0x89, 0x56, 0x1F, 0x02, 0x32, 0xDD, 0x04, 0x18, 0x56, 0xB2, 0x64, 0xB2, 0x29, 0x15, 0xFF, 0x7F, 0xE1, 0x7E, 0x8F, 0xE1, 0x24, 0x87, 0x7C, 0x9B, 0x4A, 0x07, 0x58, 0xB4, 0x53, 0x50, 0xD0, 0x0D, 0xC4, 0x04, 0xAA, 0x2D, 0xB4, 0x7B, 0x68, 0x79, 0xA4, 0x78, 0xF1, 0xF3, 0xEA, 0x0F, 0x00, 0x5F, 0x2A, 0x1C, 0xFE, 0x51, 0xD4, 0xC9, 0xA3, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+};
 
+class Font : public Resource {
 	GDCLASS(Font, Resource);
 
 protected:
+	static Ref<ImageTexture> hex_box_img_tex;
 	static void _bind_methods();
 
 public:
@@ -62,6 +67,27 @@ public:
 
 	virtual bool has_outline() const { return false; }
 	virtual float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const = 0;
+
+	static void draw_hexbox(RID p_canvas_item, const Point2 &p_pos, uint32_t p_codepoint, const Color &p_modulate = Color(1, 1, 1));
+	virtual void draw_glyph(RID p_canvas_item, const Point2 &p_pos, int64_t p_fallback, uint32_t p_index, const Color &p_modulate = Color(1, 1, 1), bool p_mirror = false, bool p_rot_ccw = false, bool p_rot_cw = false, bool p_outline = false) const = 0;
+
+	//text shaper interface functions
+
+	virtual int64_t get_fallback_count() const = 0;
+	virtual uint32_t get_nominal_glyph_index(int64_t p_fallback, uint32_t p_codepoint) const = 0;
+	virtual uint32_t get_variation_glyph_index(int64_t p_fallback, uint32_t p_codepoint, uint32_t p_variation_selector) const = 0;
+	virtual Point2 get_glyph_advance(int64_t p_fallback, uint32_t p_index) const = 0;
+	virtual Point2 get_glyph_origin(int64_t p_fallback, uint32_t p_index) const = 0;
+	virtual bool get_has_contour_points(int64_t p_fallback, uint32_t p_index) const = 0;
+	virtual Point2 get_glyph_contour_point(int64_t p_fallback, uint32_t p_index, uint32_t p_point) const = 0;
+	virtual Point2 get_glyph_kerning(int64_t p_fallback, uint32_t p_index_a, uint32_t p_index_b) const = 0;
+	virtual Rect2 get_glyph_extents(int64_t p_fallback, uint32_t p_index) const = 0;
+	virtual Vector3 get_font_extents(int64_t p_fallback) const = 0;
+	virtual void *get_font_table(int64_t p_fallback, uint32_t p_tag) const = 0;
+	virtual bool get_script_supported(int64_t p_fallback, uint32_t p_tag) const = 0;
+
+	static void initialize_hex_font();
+	static void finish_hex_font();
 
 	void update_changes();
 	Font();
@@ -196,6 +222,22 @@ public:
 	bool is_distance_field_hint() const;
 
 	float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const;
+
+	virtual void draw_glyph(RID p_canvas_item, const Point2 &p_pos, int64_t p_fallback, uint32_t p_index, const Color &p_modulate = Color(1, 1, 1), bool p_mirror = false, bool p_rot_ccw = false, bool p_rot_cw = false, bool p_outline = false) const;
+
+	//text shaper interface functions
+	virtual int64_t get_fallback_count() const;
+	virtual uint32_t get_nominal_glyph_index(int64_t p_fallback, uint32_t p_codepoint) const;
+	virtual uint32_t get_variation_glyph_index(int64_t p_fallback, uint32_t p_codepoint, uint32_t p_variation_selector) const;
+	virtual Point2 get_glyph_advance(int64_t p_fallback, uint32_t p_index) const;
+	virtual Point2 get_glyph_origin(int64_t p_fallback, uint32_t p_index) const;
+	virtual bool get_has_contour_points(int64_t p_fallback, uint32_t p_index) const;
+	virtual Point2 get_glyph_contour_point(int64_t p_fallback, uint32_t p_index, uint32_t p_point) const;
+	virtual Point2 get_glyph_kerning(int64_t p_fallback, uint32_t p_index_a, uint32_t p_index_b) const;
+	virtual Rect2 get_glyph_extents(int64_t p_fallback, uint32_t p_index) const;
+	virtual Vector3 get_font_extents(int64_t p_fallback) const;
+	virtual void *get_font_table(int64_t p_fallback, uint32_t p_tag) const;
+	virtual bool get_script_supported(int64_t p_fallback, uint32_t p_tag) const;
 
 	BitmapFont();
 	~BitmapFont();

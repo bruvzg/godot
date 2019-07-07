@@ -40,6 +40,9 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_ADVANCES_H
+#include FT_MULTIPLE_MASTERS_H
+#include FT_TRUETYPE_TABLES_H
 
 class DynamicFontAtSize;
 class DynamicFont;
@@ -117,6 +120,7 @@ class DynamicFontAtSize : public Reference {
 	FT_Library library; /* handle to library     */
 	FT_Face face; /* handle to face object */
 	FT_StreamRec stream;
+	TT_OS2 *os2;
 
 	float ascent;
 	float descent;
@@ -139,7 +143,7 @@ class DynamicFontAtSize : public Reference {
 
 	Vector<CharTexture> textures;
 
-	struct Character {
+	struct Glyph {
 
 		bool found;
 		int texture_idx;
@@ -149,12 +153,12 @@ class DynamicFontAtSize : public Reference {
 		float h_align;
 		float advance;
 
-		Character() {
+		Glyph() {
 			texture_idx = 0;
 			v_align = 0;
 		}
 
-		static Character not_found();
+		static Glyph not_found();
 	};
 
 	struct TexturePosition {
@@ -163,17 +167,17 @@ class DynamicFontAtSize : public Reference {
 		int y;
 	};
 
-	const Pair<const Character *, DynamicFontAtSize *> _find_char_with_font(CharType p_char, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const;
-	Character _make_outline_char(CharType p_char);
+	const Pair<const Glyph *, DynamicFontAtSize *> _find_char_with_font(CharType p_char, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const;
+	Glyph _make_outline_glyph(uint32_t p_index);
 	TexturePosition _find_texture_pos_for_glyph(int p_color_size, Image::Format p_image_format, int p_width, int p_height);
-	Character _bitmap_to_character(FT_Bitmap bitmap, int yofs, int xofs, float advance);
+	Glyph _bitmap_to_glyph(FT_Bitmap bitmap, int yofs, int xofs, float advance);
 
 	static unsigned long _ft_stream_io(FT_Stream stream, unsigned long offset, unsigned char *buffer, unsigned long count);
 	static void _ft_stream_close(FT_Stream stream);
 
-	HashMap<CharType, Character> char_map;
+	HashMap<CharType, Glyph> glyph_map;
 
-	_FORCE_INLINE_ void _update_char(CharType p_char);
+	_FORCE_INLINE_ void _update_glyph(uint32_t p_index);
 
 	friend class DynamicFontData;
 	Ref<DynamicFontData> font;
@@ -193,6 +197,21 @@ public:
 	Size2 get_char_size(CharType p_char, CharType p_next, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const;
 
 	float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next, const Color &p_modulate, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks, bool p_advance_only = false) const;
+
+	void draw_glyph(RID p_canvas_item, const Point2 &p_pos, uint32_t p_index, const Color &p_modulate, bool p_mirror, bool p_rot_ccw, bool p_rot_cw) const;
+
+	//text shaper interface functions
+	uint32_t get_nominal_glyph_index(uint32_t p_codepoint) const;
+	uint32_t get_variation_glyph_index(uint32_t p_codepoint, uint32_t p_variation_selector) const;
+	Point2 get_glyph_advance(uint32_t p_index) const;
+	Point2 get_glyph_origin(uint32_t p_index) const;
+	bool get_has_contour_points(uint32_t p_index) const;
+	Point2 get_glyph_contour_point(uint32_t p_index, uint32_t p_point) const;
+	Point2 get_glyph_kerning(uint32_t p_index_a, uint32_t p_index_b) const;
+	Rect2 get_glyph_extents(uint32_t p_index) const;
+	Vector3 get_font_extents() const;
+	void *get_font_table(uint32_t p_tag) const;
+	bool get_script_supported(uint32_t p_tag) const;
 
 	void set_texture_flags(uint32_t p_flags);
 	void update_oversampling();
@@ -268,7 +287,6 @@ public:
 
 	void add_fallback(const Ref<DynamicFontData> &p_data);
 	void set_fallback(int p_idx, const Ref<DynamicFontData> &p_data);
-	int get_fallback_count() const;
 	Ref<DynamicFontData> get_fallback(int p_idx) const;
 	void remove_fallback(int p_idx);
 
@@ -284,6 +302,22 @@ public:
 	virtual bool has_outline() const;
 
 	virtual float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const;
+
+	virtual void draw_glyph(RID p_canvas_item, const Point2 &p_pos, int64_t p_fallback, uint32_t p_index, const Color &p_modulate = Color(1, 1, 1), bool p_mirror = false, bool p_rot_ccw = false, bool p_rot_cw = false, bool p_outline = false) const;
+
+	//text shaper interface functions
+	virtual int64_t get_fallback_count() const;
+	virtual uint32_t get_nominal_glyph_index(int64_t p_fallback, uint32_t p_codepoint) const;
+	virtual uint32_t get_variation_glyph_index(int64_t p_fallback, uint32_t p_codepoint, uint32_t p_variation_selector) const;
+	virtual Point2 get_glyph_advance(int64_t p_fallback, uint32_t p_index) const;
+	virtual Point2 get_glyph_origin(int64_t p_fallback, uint32_t p_index) const;
+	virtual bool get_has_contour_points(int64_t p_fallback, uint32_t p_index) const;
+	virtual Point2 get_glyph_contour_point(int64_t p_fallback, uint32_t p_index, uint32_t p_point) const;
+	virtual Point2 get_glyph_kerning(int64_t p_fallback, uint32_t p_index_a, uint32_t p_index_b) const;
+	virtual Rect2 get_glyph_extents(int64_t p_fallback, uint32_t p_index) const;
+	virtual Vector3 get_font_extents(int64_t p_fallback) const;
+	virtual void *get_font_table(int64_t p_fallback, uint32_t p_tag) const;
+	virtual bool get_script_supported(int64_t p_fallback, uint32_t p_tag) const;
 
 	SelfList<DynamicFont> font_list;
 

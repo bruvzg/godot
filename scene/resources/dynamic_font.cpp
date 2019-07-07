@@ -38,6 +38,23 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
+#define TAG(c1, c2, c3, c4) ((uint32_t)((((uint32_t)(c1)&0xFF) << 24) | (((uint32_t)(c2)&0xFF) << 16) | (((uint32_t)(c3)&0xFF) << 8) | ((uint32_t)(c4)&0xFF)))
+
+uint32_t tag_from_string(const String &p_str) {
+	char tag[4];
+
+	uint32_t i;
+	for (i = 0; i < MIN(4, p_str.length()); i++) {
+		tag[i] = p_str[i];
+	}
+
+	for (; i < 4; i++) {
+		tag[i] = ' ';
+	}
+
+	return TAG(tag[0], tag[1], tag[2], tag[3]);
+}
+
 bool DynamicFontData::CacheID::operator<(CacheID right) const {
 	return key < right.key;
 }
@@ -229,6 +246,9 @@ Error DynamicFontAtSize::_load() {
 	if (id.filter)
 		texture_flags |= Texture::FLAG_FILTER;
 
+	//Load "OS/2" table to get supported unicode ranges
+	os2 = (TT_OS2 *)FT_Get_Sfnt_Table(face, FT_SFNT_OS2);
+
 	valid = true;
 	return OK;
 }
@@ -249,11 +269,11 @@ float DynamicFontAtSize::get_descent() const {
 	return descent;
 }
 
-const Pair<const DynamicFontAtSize::Character *, DynamicFontAtSize *> DynamicFontAtSize::_find_char_with_font(CharType p_char, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const {
-	const Character *chr = char_map.getptr(p_char);
-	ERR_FAIL_COND_V(!chr, (Pair<const Character *, DynamicFontAtSize *>(NULL, NULL)));
+const Pair<const DynamicFontAtSize::Glyph *, DynamicFontAtSize *> DynamicFontAtSize::_find_char_with_font(CharType p_char, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const {
+	const Glyph *glph = glyph_map.getptr(get_nominal_glyph_index(p_char));
+	ERR_FAIL_COND_V(!glph, (Pair<const Glyph *, DynamicFontAtSize *>(NULL, NULL)));
 
-	if (!chr->found) {
+	if (!glph->found) {
 
 		//not found, try in fallbacks
 		for (int i = 0; i < p_fallbacks.size(); i++) {
@@ -262,33 +282,33 @@ const Pair<const DynamicFontAtSize::Character *, DynamicFontAtSize *> DynamicFon
 			if (!fb->valid)
 				continue;
 
-			fb->_update_char(p_char);
-			const Character *fallback_chr = fb->char_map.getptr(p_char);
-			ERR_CONTINUE(!fallback_chr);
+			fb->_update_glyph(get_nominal_glyph_index(p_char));
+			const Glyph *fallback_glph = fb->glyph_map.getptr(get_nominal_glyph_index(p_char));
+			ERR_CONTINUE(!fallback_glph);
 
-			if (!fallback_chr->found)
+			if (!fallback_glph->found)
 				continue;
 
-			return Pair<const Character *, DynamicFontAtSize *>(fallback_chr, fb);
+			return Pair<const Glyph *, DynamicFontAtSize *>(fallback_glph, fb);
 		}
 
 		//not found, try 0xFFFD to display 'not found'.
-		const_cast<DynamicFontAtSize *>(this)->_update_char(0xFFFD);
-		chr = char_map.getptr(0xFFFD);
-		ERR_FAIL_COND_V(!chr, (Pair<const Character *, DynamicFontAtSize *>(NULL, NULL)));
+		const_cast<DynamicFontAtSize *>(this)->_update_glyph(get_nominal_glyph_index(0xFFFD));
+		glph = glyph_map.getptr(get_nominal_glyph_index(0xFFFD));
+		ERR_FAIL_COND_V(!glph, (Pair<const Glyph *, DynamicFontAtSize *>(NULL, NULL)));
 	}
 
-	return Pair<const Character *, DynamicFontAtSize *>(chr, const_cast<DynamicFontAtSize *>(this));
+	return Pair<const Glyph *, DynamicFontAtSize *>(glph, const_cast<DynamicFontAtSize *>(this));
 }
 
 Size2 DynamicFontAtSize::get_char_size(CharType p_char, CharType p_next, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const {
 
 	if (!valid)
 		return Size2(1, 1);
-	const_cast<DynamicFontAtSize *>(this)->_update_char(p_char);
+	const_cast<DynamicFontAtSize *>(this)->_update_glyph(get_nominal_glyph_index(p_char));
 
-	Pair<const Character *, DynamicFontAtSize *> char_pair_with_font = _find_char_with_font(p_char, p_fallbacks);
-	const Character *ch = char_pair_with_font.first;
+	Pair<const Glyph *, DynamicFontAtSize *> char_pair_with_font = _find_char_with_font(p_char, p_fallbacks);
+	const Glyph *ch = char_pair_with_font.first;
 	ERR_FAIL_COND_V(!ch, Size2());
 
 	Size2 ret(0, get_height());
@@ -315,10 +335,10 @@ float DynamicFontAtSize::draw_char(RID p_canvas_item, const Point2 &p_pos, CharT
 	if (!valid)
 		return 0;
 
-	const_cast<DynamicFontAtSize *>(this)->_update_char(p_char);
+	const_cast<DynamicFontAtSize *>(this)->_update_glyph(get_nominal_glyph_index(p_char));
 
-	Pair<const Character *, DynamicFontAtSize *> char_pair_with_font = _find_char_with_font(p_char, p_fallbacks);
-	const Character *ch = char_pair_with_font.first;
+	Pair<const Glyph *, DynamicFontAtSize *> char_pair_with_font = _find_char_with_font(p_char, p_fallbacks);
+	const Glyph *ch = char_pair_with_font.first;
 	DynamicFontAtSize *font = char_pair_with_font.second;
 
 	ERR_FAIL_COND_V(!ch, 0.0);
@@ -347,6 +367,390 @@ float DynamicFontAtSize::draw_char(RID p_canvas_item, const Point2 &p_pos, CharT
 	return advance;
 }
 
+void DynamicFontAtSize::draw_glyph(RID p_canvas_item, const Point2 &p_pos, uint32_t p_index, const Color &p_modulate, bool p_mirror, bool p_rot_ccw, bool p_rot_cw) const {
+
+	if (!valid)
+		return;
+
+	const_cast<DynamicFontAtSize *>(this)->_update_glyph(p_index);
+
+	const Glyph *ch = glyph_map.getptr(p_index);
+
+	ERR_FAIL_COND(!ch);
+
+	if (ch->found) {
+		ERR_FAIL_COND(ch->texture_idx < -1 || ch->texture_idx >= textures.size());
+
+		if (ch->texture_idx != -1) {
+			Point2 cpos = p_pos;
+			cpos.x += ch->h_align;
+			cpos.y -= get_ascent();
+			cpos.y += ch->v_align;
+			Color modulate = p_modulate;
+			if (FT_HAS_COLOR(face)) {
+				modulate.r = modulate.g = modulate.b = 1.0;
+			}
+			//TODO: for vertical layout support, process "mirror", "rot_ccw", "rot_cw"
+			RID texture = textures[ch->texture_idx].texture->get_rid();
+			VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, Rect2(cpos, ch->rect.size), texture, ch->rect_uv, modulate, false, RID(), false);
+		}
+	}
+	//TODO:: hexbox fallback
+}
+
+//text shaper interface functions
+uint32_t DynamicFontAtSize::get_nominal_glyph_index(uint32_t p_codepoint) const {
+
+	return FT_Get_Char_Index(face, p_codepoint);
+}
+
+uint32_t DynamicFontAtSize::get_variation_glyph_index(uint32_t p_codepoint, uint32_t p_variation_selector) const {
+
+	return FT_Face_GetCharVariantIndex(face, p_codepoint, p_variation_selector);
+}
+
+Point2 DynamicFontAtSize::get_glyph_advance(uint32_t p_index) const {
+
+	FT_Fixed h = 0;
+	FT_Fixed v = 0;
+
+	FT_Get_Advance(face, p_index, 0, &v);
+	FT_Get_Advance(face, p_index, FT_LOAD_VERTICAL_LAYOUT, &h);
+
+	return Point2(h, v);
+}
+
+Point2 DynamicFontAtSize::get_glyph_origin(uint32_t p_index) const {
+
+	if (unlikely(FT_Load_Glyph(face, p_index, 0)))
+		return Point2();
+
+	return Point2(face->glyph->metrics.horiBearingX - face->glyph->metrics.vertBearingX, face->glyph->metrics.horiBearingY - (-face->glyph->metrics.vertBearingY));
+}
+
+bool DynamicFontAtSize::get_has_contour_points(uint32_t p_index) const {
+
+	if (unlikely(FT_Load_Glyph(face, p_index, 0)))
+		return false;
+
+	if (unlikely(face->glyph->format != FT_GLYPH_FORMAT_OUTLINE))
+		return false;
+
+	return true;
+}
+
+Point2 DynamicFontAtSize::get_glyph_contour_point(uint32_t p_index, uint32_t p_point) const {
+
+	if (unlikely(FT_Load_Glyph(face, p_index, 0)))
+		return Point2();
+
+	if (unlikely(face->glyph->format != FT_GLYPH_FORMAT_OUTLINE))
+		return Point2();
+
+	if (unlikely(p_point >= (uint32_t)face->glyph->outline.n_points))
+		return Point2();
+
+	return Point2(face->glyph->outline.points[p_point].x, face->glyph->outline.points[p_point].y);
+}
+
+Point2 DynamicFontAtSize::get_glyph_kerning(uint32_t p_index_a, uint32_t p_index_b) const {
+
+	FT_Vector kerningv;
+
+	if (FT_Get_Kerning(face, p_index_a, p_index_b, FT_KERNING_DEFAULT, &kerningv)) {
+		return Point2(kerningv.x, kerningv.y);
+	} else {
+		return Point2();
+	}
+}
+
+Rect2 DynamicFontAtSize::get_glyph_extents(uint32_t p_index) const {
+
+	if (unlikely(FT_Load_Glyph(face, p_index, 0)))
+		return Rect2();
+
+	return Rect2(Point2(face->glyph->metrics.horiBearingX, face->glyph->metrics.horiBearingY), Size2(face->glyph->metrics.width, -face->glyph->metrics.height));
+}
+
+Vector3 DynamicFontAtSize::get_font_extents() const {
+
+	FT_Long ascender = FT_MulFix(face->ascender, face->size->metrics.y_scale);
+	FT_Long descender = FT_MulFix(face->descender, face->size->metrics.y_scale);
+	FT_Long line_gap = FT_MulFix(face->height, face->size->metrics.y_scale) - (ascender - descender);
+
+	return Vector3(ascender, descender, line_gap);
+}
+
+void *DynamicFontAtSize::DynamicFontAtSize::get_font_table(uint32_t p_tag) const {
+
+	FT_Byte *buffer;
+	FT_ULong length = 0;
+	FT_Error error = FT_Load_Sfnt_Table(face, p_tag, 0, NULL, &length);
+	if (error)
+		return NULL;
+
+	buffer = (FT_Byte *)memalloc(length);
+	if (!buffer)
+		return NULL;
+
+	error = FT_Load_Sfnt_Table(face, p_tag, 0, buffer, &length);
+	if (error) {
+		memfree(buffer);
+		return NULL;
+	}
+
+	return (void *)buffer;
+}
+
+bool DynamicFontAtSize::get_script_supported(uint32_t p_tag) const {
+	//References (OS/2 table):
+	//https://docs.microsoft.com/en-us/typography/opentype/spec/os2
+	//https://en.wikipedia.org/wiki/Template:ISO_15924_script_codes_and_related_Unicode_data
+	//https://freetype.org/freetype2/docs/reference/ft2-truetype_tables.html
+
+	if (os2->version == 0xFFFF) {
+		return true; //old mac font, no table
+	}
+
+	switch (p_tag) {
+		case TAG('A', 'r', 'a', 'b'): { //Arabic
+			return (os2->ulUnicodeRange1 & 1L << 13) || (os2->ulUnicodeRange2 & 1L << 31) || (os2->ulUnicodeRange3 & 1L << 3);
+		} break;
+		case TAG('A', 'r', 'm', 'n'): { //Armenian
+			return (os2->ulUnicodeRange1 & 1L << 10);
+		} break;
+		case TAG('B', 'e', 'n', 'g'): { //Bengali (Bangla)
+			return (os2->ulUnicodeRange1 & 1L << 16);
+		} break;
+		case TAG('C', 'y', 'r', 'l'): { //Cyrillic
+			return (os2->ulUnicodeRange1 & 1L << 9);
+		} break;
+		case TAG('D', 'e', 'v', 'a'): { //Devanagari (Nagari)
+			return (os2->ulUnicodeRange1 & 1L << 15);
+		} break;
+		case TAG('G', 'e', 'o', 'r'): { //Georgian (Mkhedruli and Mtavruli)
+			return (os2->ulUnicodeRange1 & 1L << 26);
+		} break;
+		case TAG('G', 'r', 'e', 'k'): { //Greek
+			return (os2->ulUnicodeRange1 & 1L << 7) || (os2->ulUnicodeRange1 & 1L << 30);
+		} break;
+		case TAG('G', 'u', 'j', 'r'): { //Gujarati
+			return (os2->ulUnicodeRange1 & 1L << 18);
+		} break;
+		case TAG('G', 'u', 'r', 'u'): { //Gurmukhi
+			return (os2->ulUnicodeRange1 & 1L << 17);
+		} break;
+		case TAG('J', 'a', 'm', 'o'): { //Jamo subset of Hangul
+			return (os2->ulUnicodeRange1 & 1L << 28) || (os2->ulUnicodeRange2 & 1L << 20);
+		} break;
+		case TAG('H', 'a', 'n', 'g'): { //Hangul
+			return (os2->ulUnicodeRange1 & 1L << 28) || (os2->ulUnicodeRange2 & 1L << 20) || (os2->ulUnicodeRange2 & 1L << 24);
+		} break;
+		case TAG('H', 'a', 'n', 'i'): { //Han (Hanzi, Kanji, Hanja)
+			return (os2->ulUnicodeRange2 & 1L << 16) || (os2->ulUnicodeRange2 & 1L << 21) || (os2->ulUnicodeRange2 & 1L << 22) || (os2->ulUnicodeRange2 & 1L << 23) || (os2->ulUnicodeRange2 & 1L << 27) || (os2->ulUnicodeRange2 & 1L << 29) || (os2->ulUnicodeRange3 & 1L << 1);
+		} break;
+		case TAG('H', 'e', 'b', 'r'): { //Hebrew
+			return (os2->ulUnicodeRange1 & 1L << 11);
+		} break;
+		case TAG('H', 'i', 'r', 'a'): { //Hiragana
+			return (os2->ulUnicodeRange2 & 1L << 17);
+		} break;
+		case TAG('K', 'n', 'd', 'a'): { //Kannada
+			return (os2->ulUnicodeRange1 & 1L << 22);
+		} break;
+		case TAG('K', 'a', 'n', 'a'): { //Katakana
+			return (os2->ulUnicodeRange2 & 1L << 18);
+		} break;
+		case TAG('L', 'a', 'o', 'o'): { //Lao
+			return (os2->ulUnicodeRange1 & 1L << 25);
+		} break;
+		case TAG('L', 'a', 't', 'n'): { //Latin
+			return (os2->ulUnicodeRange1 & 1L << 0) || (os2->ulUnicodeRange1 & 1L << 1) || (os2->ulUnicodeRange1 & 1L << 2) || (os2->ulUnicodeRange1 & 1L << 3) || (os2->ulUnicodeRange1 & 1L << 29);
+		} break;
+		case TAG('M', 'l', 'y', 'm'): { //Malayalam
+			return (os2->ulUnicodeRange1 & 1L << 23);
+		} break;
+		case TAG('O', 'r', 'y', 'a'): { //Oriya (Odia)
+			return (os2->ulUnicodeRange1 & 1L << 19);
+		} break;
+		case TAG('T', 'a', 'm', 'l'): { //Tamil
+			return (os2->ulUnicodeRange1 & 1L << 20);
+		} break;
+		case TAG('T', 'e', 'l', 'u'): { //Telugu
+			return (os2->ulUnicodeRange1 & 1L << 21);
+		} break;
+		case TAG('T', 'h', 'a', 'i'): { //Thai
+			return (os2->ulUnicodeRange1 & 1L << 24);
+		} break;
+		case TAG('T', 'i', 'b', 't'): { //Tibetan
+			return (os2->ulUnicodeRange3 & 1L << 6);
+		} break;
+		case TAG('B', 'o', 'p', 'o'): { //Bopomofo
+			return (os2->ulUnicodeRange2 & 1L << 19);
+		} break;
+		case TAG('B', 'r', 'a', 'i'): { //Braille
+			return (os2->ulUnicodeRange3 & 1L << 18);
+		} break;
+		case TAG('C', 'a', 'n', 's'): { //Unified Canadian Aboriginal Syllabics
+			return (os2->ulUnicodeRange3 & 1L << 13);
+		} break;
+		case TAG('C', 'h', 'e', 'r'): { //Cherokee
+			return (os2->ulUnicodeRange3 & 1L << 12);
+		} break;
+		case TAG('E', 't', 'h', 'i'): { //Ethiopic (Ge'ez)
+			return (os2->ulUnicodeRange3 & 1L << 11);
+		} break;
+		case TAG('K', 'h', 'm', 'r'): { //Khmer
+			return (os2->ulUnicodeRange3 & 1L << 16);
+		} break;
+		case TAG('M', 'o', 'n', 'g'): { //Mongolian
+			return (os2->ulUnicodeRange3 & 1L << 17);
+		} break;
+		case TAG('M', 'y', 'm', 'r'): { //Myanmar (Burmese)
+			return (os2->ulUnicodeRange3 & 1L << 10);
+		} break;
+		case TAG('O', 'g', 'a', 'm'): { //Ogham
+			return (os2->ulUnicodeRange3 & 1L << 14);
+		} break;
+		case TAG('R', 'u', 'n', 'r'): { //Runic
+			return (os2->ulUnicodeRange3 & 1L << 15);
+		} break;
+		case TAG('S', 'i', 'n', 'h'): { //Sinhala
+			return (os2->ulUnicodeRange3 & 1L << 9);
+		} break;
+		case TAG('S', 'y', 'r', 'c'): { //Syriac
+			return (os2->ulUnicodeRange3 & 1L << 7);
+		} break;
+		case TAG('T', 'h', 'a', 'a'): { //Thaana
+			return (os2->ulUnicodeRange3 & 1L << 8);
+		} break;
+		case TAG('Y', 'i', 'i', 'i'): { //Yi
+			return (os2->ulUnicodeRange3 & 1L << 19);
+		} break;
+		case TAG('D', 's', 'r', 't'): { //Deseret (Mormon)
+			return (os2->ulUnicodeRange3 & 1L << 23);
+		} break;
+		case TAG('G', 'o', 't', 'h'): { //Gothic
+			return (os2->ulUnicodeRange3 & 1L << 22);
+		} break;
+		case TAG('I', 't', 'a', 'l'): { //Old Italic (Etruscan, Oscan, etc.)
+			return (os2->ulUnicodeRange3 & 1L << 21);
+		} break;
+		case TAG('B', 'u', 'h', 'd'): { //Buhid
+			return (os2->ulUnicodeRange3 & 1L << 20);
+		} break;
+		case TAG('H', 'a', 'n', 'o'): { //Hanunoo
+			return (os2->ulUnicodeRange3 & 1L << 20);
+		} break;
+		case TAG('T', 'g', 'l', 'g'): { //Tagalog (Baybayin, Alibata)
+			return (os2->ulUnicodeRange3 & 1L << 20);
+		} break;
+		case TAG('T', 'a', 'g', 'b'): { //Tagbanwa
+			return (os2->ulUnicodeRange3 & 1L << 20);
+		} break;
+		case TAG('C', 'p', 'r', 't'): { //Cypriot syllabary
+			return (os2->ulUnicodeRange4 & 1L << 11);
+		} break;
+		case TAG('L', 'i', 'm', 'b'): { //Limbu
+			return (os2->ulUnicodeRange3 & 1L << 29);
+		} break;
+		case TAG('L', 'i', 'n', 'b'): { //Linear B
+			return (os2->ulUnicodeRange4 & 1L << 5);
+		} break;
+		case TAG('O', 's', 'm', 'a'): { //Osmanya
+			return (os2->ulUnicodeRange4 & 1L << 10);
+		} break;
+		case TAG('S', 'h', 'a', 'w'): { //Shavian (Shaw)
+			return (os2->ulUnicodeRange4 & 1L << 9);
+		} break;
+		case TAG('T', 'a', 'l', 'e'): { //Tai Le
+			return (os2->ulUnicodeRange3 & 1L << 30);
+		} break;
+		case TAG('U', 'g', 'a', 'r'): { //Ugaritic
+			return (os2->ulUnicodeRange4 & 1L << 7);
+		} break;
+		case TAG('B', 'u', 'g', 'i'): { //Buginese
+			return (os2->ulUnicodeRange4 & 1L << 0);
+		} break;
+		case TAG('C', 'o', 'p', 't'): { //Coptic
+			return (os2->ulUnicodeRange1 & 1L << 8);
+		} break;
+		case TAG('G', 'l', 'a', 'g'): { //Glagolitic
+			return (os2->ulUnicodeRange4 & 1L << 1);
+		} break;
+		case TAG('K', 'h', 'a', 'r'): { //Kharoshthi
+			return (os2->ulUnicodeRange4 & 1L << 12);
+		} break;
+		case TAG('T', 'a', 'l', 'u'): { //New Tai Lue
+			return (os2->ulUnicodeRange3 & 1L << 31);
+		} break;
+		case TAG('X', 'p', 'e', 'o'): { //Old Persian
+			return (os2->ulUnicodeRange4 & 1L << 8);
+		} break;
+		case TAG('S', 'y', 'l', 'o'): { //Syloti Nagri
+			return (os2->ulUnicodeRange4 & 1L << 4);
+		} break;
+		case TAG('T', 'f', 'n', 'g'): { //Tifinagh (Berber)
+			return (os2->ulUnicodeRange4 & 1L << 2);
+		} break;
+		case TAG('B', 'a', 'l', 'i'): { //Balinese
+			return (os2->ulUnicodeRange1 & 1L << 27);
+		} break;
+		case TAG('X', 's', 'u', 'x'): { //Cuneiform, Sumero-Akkadian
+			return (os2->ulUnicodeRange4 & 1L << 14);
+		} break;
+		case TAG('N', 'k', 'o', 'o'): { //N'Ko
+			return (os2->ulUnicodeRange1 & 1L << 14);
+		} break;
+		case TAG('P', 'h', 'n', 'x'): { //Phoenician
+			return (os2->ulUnicodeRange2 & 1L << 26);
+		} break;
+		case TAG('C', 'h', 'a', 'm'): { //Cham
+			return (os2->ulUnicodeRange4 & 1L << 22);
+		} break;
+		case TAG('K', 'a', 'l', 'i'): { //Kayah Li
+			return (os2->ulUnicodeRange4 & 1L << 20);
+		} break;
+		case TAG('L', 'e', 'p', 'c'): { //Lepcha (Rong)
+			return (os2->ulUnicodeRange4 & 1L << 17);
+		} break;
+		case TAG('O', 'l', 'c', 'k'): { //Ol Chiki (Ol Cemet’, Ol, Santali)
+			return (os2->ulUnicodeRange4 & 1L << 18);
+		} break;
+		case TAG('R', 'j', 'n', 'g'): { //Rejang (Redjang, Kaganga)
+			return (os2->ulUnicodeRange4 & 1L << 21);
+		} break;
+		case TAG('S', 'a', 'u', 'r'): { //Saurashtra
+			return (os2->ulUnicodeRange4 & 1L << 19);
+		} break;
+		case TAG('S', 'u', 'n', 'd'): { //Sundanese
+			return (os2->ulUnicodeRange4 & 1L << 16);
+		} break;
+		case TAG('V', 'a', 'i', 'i'): { //Vai
+			return (os2->ulUnicodeRange1 & 1L << 12);
+		} break;
+		case TAG('T', 'a', 'v', 't'): { //Tai Viet
+			return (os2->ulUnicodeRange4 & 1L << 13);
+		} break;
+		case TAG('H', 'l', 'u', 'w'): { //Anatolian Hieroglyphs (Luwian Hieroglyphs, Hittite Hieroglyphs)
+			return (os2->ulUnicodeRange4 & 1L << 25);
+		} break;
+		case TAG('C', 'a', 'r', 'i'): { //Carian
+			return (os2->ulUnicodeRange4 & 1L << 25);
+		} break;
+		case TAG('L', 'y', 'c', 'i'): { //Lycian
+			return (os2->ulUnicodeRange4 & 1L << 25);
+		} break;
+		case TAG('L', 'y', 'd', 'i'): { //Lydian
+			return (os2->ulUnicodeRange4 & 1L << 25);
+		} break;
+		default: {
+			//no specific unicode ranges defined for the rest of scripts, assume supported
+			return true;
+		}
+	}
+}
+
 unsigned long DynamicFontAtSize::_ft_stream_io(FT_Stream stream, unsigned long offset, unsigned char *buffer, unsigned long count) {
 
 	FileAccess *f = (FileAccess *)stream->descriptor.pointer;
@@ -367,8 +771,8 @@ void DynamicFontAtSize::_ft_stream_close(FT_Stream stream) {
 	memdelete(f);
 }
 
-DynamicFontAtSize::Character DynamicFontAtSize::Character::not_found() {
-	Character ch;
+DynamicFontAtSize::Glyph DynamicFontAtSize::Glyph::not_found() {
+	Glyph ch;
 	ch.texture_idx = -1;
 	ch.advance = 0;
 	ch.h_align = 0;
@@ -461,23 +865,23 @@ DynamicFontAtSize::TexturePosition DynamicFontAtSize::_find_texture_pos_for_glyp
 	return ret;
 }
 
-DynamicFontAtSize::Character DynamicFontAtSize::_bitmap_to_character(FT_Bitmap bitmap, int yofs, int xofs, float advance) {
+DynamicFontAtSize::Glyph DynamicFontAtSize::_bitmap_to_glyph(FT_Bitmap bitmap, int yofs, int xofs, float advance) {
 	int w = bitmap.width;
 	int h = bitmap.rows;
 
 	int mw = w + rect_margin * 2;
 	int mh = h + rect_margin * 2;
 
-	ERR_FAIL_COND_V(mw > 4096, Character::not_found());
-	ERR_FAIL_COND_V(mh > 4096, Character::not_found());
+	ERR_FAIL_COND_V(mw > 4096, Glyph::not_found());
+	ERR_FAIL_COND_V(mh > 4096, Glyph::not_found());
 
 	int color_size = bitmap.pixel_mode == FT_PIXEL_MODE_BGRA ? 4 : 2;
 	Image::Format require_format = color_size == 4 ? Image::FORMAT_RGBA8 : Image::FORMAT_LA8;
 
 	TexturePosition tex_pos = _find_texture_pos_for_glyph(color_size, require_format, mw, mh);
-	ERR_FAIL_COND_V(tex_pos.index < 0, Character::not_found());
+	ERR_FAIL_COND_V(tex_pos.index < 0, Glyph::not_found());
 
-	//fit character in char texture
+	//fit glyph in char texture
 
 	CharTexture &tex = textures.write[tex_pos.index];
 
@@ -488,7 +892,7 @@ DynamicFontAtSize::Character DynamicFontAtSize::_bitmap_to_character(FT_Bitmap b
 			for (int j = 0; j < w; j++) {
 
 				int ofs = ((i + tex_pos.y + rect_margin) * tex.texture_size + j + tex_pos.x + rect_margin) * color_size;
-				ERR_FAIL_COND_V(ofs >= tex.imgdata.size(), Character::not_found());
+				ERR_FAIL_COND_V(ofs >= tex.imgdata.size(), Glyph::not_found());
 				switch (bitmap.pixel_mode) {
 					case FT_PIXEL_MODE_MONO: {
 						int byte = i * bitmap.pitch + (j >> 3);
@@ -510,7 +914,7 @@ DynamicFontAtSize::Character DynamicFontAtSize::_bitmap_to_character(FT_Bitmap b
 					// TODO: FT_PIXEL_MODE_LCD
 					default:
 						ERR_EXPLAIN("Font uses unsupported pixel format: " + itos(bitmap.pixel_mode));
-						ERR_FAIL_V(Character::not_found());
+						ERR_FAIL_V(Glyph::not_found());
 						break;
 				}
 			}
@@ -536,24 +940,24 @@ DynamicFontAtSize::Character DynamicFontAtSize::_bitmap_to_character(FT_Bitmap b
 		tex.offsets.write[k] = tex_pos.y + mh;
 	}
 
-	Character chr;
-	chr.h_align = xofs * scale_color_font / oversampling;
-	chr.v_align = ascent - (yofs * scale_color_font / oversampling); // + ascent - descent;
-	chr.advance = advance * scale_color_font / oversampling;
-	chr.texture_idx = tex_pos.index;
-	chr.found = true;
+	Glyph glph;
+	glph.h_align = xofs * scale_color_font / oversampling;
+	glph.v_align = ascent - (yofs * scale_color_font / oversampling); // + ascent - descent;
+	glph.advance = advance * scale_color_font / oversampling;
+	glph.texture_idx = tex_pos.index;
+	glph.found = true;
 
-	chr.rect_uv = Rect2(tex_pos.x + rect_margin, tex_pos.y + rect_margin, w, h);
-	chr.rect = chr.rect_uv;
-	chr.rect.position /= oversampling;
-	chr.rect.size = chr.rect.size * scale_color_font / oversampling;
-	return chr;
+	glph.rect_uv = Rect2(tex_pos.x + rect_margin, tex_pos.y + rect_margin, w, h);
+	glph.rect = glph.rect_uv;
+	glph.rect.position /= oversampling;
+	glph.rect.size = glph.rect.size * scale_color_font / oversampling;
+	return glph;
 }
 
-DynamicFontAtSize::Character DynamicFontAtSize::_make_outline_char(CharType p_char) {
-	Character ret = Character::not_found();
+DynamicFontAtSize::Glyph DynamicFontAtSize::_make_outline_glyph(uint32_t p_index) {
+	Glyph ret = Glyph::not_found();
 
-	if (FT_Load_Char(face, p_char, FT_LOAD_NO_BITMAP | (font->force_autohinter ? FT_LOAD_FORCE_AUTOHINT : 0)) != 0)
+	if (FT_Load_Glyph(face, p_index, FT_LOAD_NO_BITMAP | (font->force_autohinter ? FT_LOAD_FORCE_AUTOHINT : 0)) != 0)
 		return ret;
 
 	FT_Stroker stroker;
@@ -572,7 +976,7 @@ DynamicFontAtSize::Character DynamicFontAtSize::_make_outline_char(CharType p_ch
 		goto cleanup_glyph;
 
 	glyph_bitmap = (FT_BitmapGlyph)glyph;
-	ret = _bitmap_to_character(glyph_bitmap->bitmap, glyph_bitmap->top, glyph_bitmap->left, glyph->advance.x / 65536.0);
+	ret = _bitmap_to_glyph(glyph_bitmap->bitmap, glyph_bitmap->top, glyph_bitmap->left, glyph->advance.x / 65536.0);
 
 cleanup_glyph:
 	FT_Done_Glyph(glyph);
@@ -581,21 +985,16 @@ cleanup_stroker:
 	return ret;
 }
 
-void DynamicFontAtSize::_update_char(CharType p_char) {
+void DynamicFontAtSize::_update_glyph(uint32_t p_index) {
 
-	if (char_map.has(p_char))
+	if (glyph_map.has(p_index))
 		return;
 
 	_THREAD_SAFE_METHOD_
 
-	Character character = Character::not_found();
+	Glyph glyph = Glyph::not_found();
 
 	FT_GlyphSlot slot = face->glyph;
-
-	if (FT_Get_Char_Index(face, p_char) == 0) {
-		char_map[p_char] = character;
-		return;
-	}
 
 	int ft_hinting;
 
@@ -611,21 +1010,21 @@ void DynamicFontAtSize::_update_char(CharType p_char) {
 			break;
 	}
 
-	int error = FT_Load_Char(face, p_char, FT_HAS_COLOR(face) ? FT_LOAD_COLOR : FT_LOAD_DEFAULT | (font->force_autohinter ? FT_LOAD_FORCE_AUTOHINT : 0) | ft_hinting);
+	int error = FT_Load_Glyph(face, p_index, FT_HAS_COLOR(face) ? FT_LOAD_COLOR : FT_LOAD_DEFAULT | (font->force_autohinter ? FT_LOAD_FORCE_AUTOHINT : 0) | ft_hinting);
 	if (error) {
-		char_map[p_char] = character;
+		glyph_map[p_index] = glyph;
 		return;
 	}
 
 	if (id.outline_size > 0) {
-		character = _make_outline_char(p_char);
+		glyph = _make_outline_glyph(p_index);
 	} else {
 		error = FT_Render_Glyph(face->glyph, font->antialiased ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO);
 		if (!error)
-			character = _bitmap_to_character(slot->bitmap, slot->bitmap_top, slot->bitmap_left, slot->advance.x / 64.0);
+			glyph = _bitmap_to_glyph(slot->bitmap, slot->bitmap_top, slot->bitmap_left, slot->advance.x / 64.0);
 	}
 
-	char_map[p_char] = character;
+	glyph_map[p_index] = glyph;
 }
 
 void DynamicFontAtSize::update_oversampling() {
@@ -634,7 +1033,7 @@ void DynamicFontAtSize::update_oversampling() {
 
 	FT_Done_FreeType(library);
 	textures.clear();
-	char_map.clear();
+	glyph_map.clear();
 	oversampling = font_oversampling;
 	valid = false;
 	_load();
@@ -889,6 +1288,160 @@ float DynamicFont::draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_
 	return font_at_size->draw_char(p_canvas_item, p_pos, p_char, p_next, color, fallbacks, advance_only) + spacing_char;
 }
 
+void DynamicFont::draw_glyph(RID p_canvas_item, const Point2 &p_pos, int64_t p_fallback, uint32_t p_index, const Color &p_modulate, bool p_mirror, bool p_rot_ccw, bool p_rot_cw, bool p_outline) const {
+
+	if (p_fallback < 0) {
+		const Ref<DynamicFontAtSize> &font_at_size = p_outline && outline_cache_id.outline_size > 0 ? outline_data_at_size : data_at_size;
+		Color color = p_outline && outline_cache_id.outline_size > 0 ? p_modulate * outline_color : p_modulate;
+		return font_at_size->draw_glyph(p_canvas_item, p_pos, p_index, color, p_mirror, p_rot_ccw, p_rot_cw);
+	} else if (p_fallback < fallbacks.size()) {
+		const Ref<DynamicFontAtSize> &font_at_size = p_outline && outline_cache_id.outline_size > 0 ? fallback_outline_data_at_size[p_fallback] : fallback_data_at_size[p_fallback];
+		Color color = p_outline && outline_cache_id.outline_size > 0 ? p_modulate * outline_color : p_modulate;
+		return font_at_size->draw_glyph(p_canvas_item, p_pos, p_index, color, p_mirror, p_rot_ccw, p_rot_cw);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL();
+	}
+}
+
+//text shaper interface functions
+int64_t DynamicFont::get_fallback_count() const {
+
+	return fallbacks.size();
+}
+
+uint32_t DynamicFont::get_nominal_glyph_index(int64_t p_fallback, uint32_t p_codepoint) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_nominal_glyph_index(p_codepoint);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_nominal_glyph_index(p_codepoint);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(0);
+	}
+}
+
+uint32_t DynamicFont::get_variation_glyph_index(int64_t p_fallback, uint32_t p_codepoint, uint32_t p_variation_selector) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_variation_glyph_index(p_codepoint, p_variation_selector);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_variation_glyph_index(p_codepoint, p_variation_selector);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(0);
+	}
+}
+
+Point2 DynamicFont::get_glyph_advance(int64_t p_fallback, uint32_t p_index) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_glyph_advance(p_index);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_glyph_advance(p_index);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(Point2());
+	}
+}
+
+Point2 DynamicFont::get_glyph_origin(int64_t p_fallback, uint32_t p_index) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_glyph_origin(p_index);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_glyph_origin(p_index);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(Point2());
+	}
+}
+
+bool DynamicFont::get_has_contour_points(int64_t p_fallback, uint32_t p_index) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_has_contour_points(p_index);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_has_contour_points(p_index);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(false);
+	}
+}
+
+Point2 DynamicFont::get_glyph_contour_point(int64_t p_fallback, uint32_t p_index, uint32_t p_point) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_glyph_contour_point(p_index, p_point);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_glyph_contour_point(p_index, p_point);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(Point2());
+	}
+}
+
+Point2 DynamicFont::get_glyph_kerning(int64_t p_fallback, uint32_t p_index_a, uint32_t p_index_b) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_glyph_kerning(p_index_a, p_index_b);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_glyph_kerning(p_index_a, p_index_b);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(Point2());
+	}
+}
+
+Rect2 DynamicFont::get_glyph_extents(int64_t p_fallback, uint32_t p_index) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_glyph_extents(p_index);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_glyph_extents(p_index);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(Rect2());
+	}
+}
+
+Vector3 DynamicFont::get_font_extents(int64_t p_fallback) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_font_extents();
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_font_extents();
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(Vector3());
+	}
+}
+
+void *DynamicFont::get_font_table(int64_t p_fallback, uint32_t p_tag) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_font_table(p_tag);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_font_table(p_tag);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(NULL);
+	}
+}
+
+bool DynamicFont::get_script_supported(int64_t p_fallback, uint32_t p_tag) const {
+
+	if (p_fallback < 0) {
+		return data_at_size->get_script_supported(p_tag);
+	} else if (p_fallback < fallbacks.size()) {
+		return fallback_data_at_size[p_fallback]->get_script_supported(p_tag);
+	} else {
+		ERR_EXPLAIN("Invalid fallback index.");
+		ERR_FAIL_V(false);
+	}
+}
+
 void DynamicFont::set_fallback(int p_idx, const Ref<DynamicFontData> &p_data) {
 
 	ERR_FAIL_COND(p_data.is_null());
@@ -910,9 +1463,6 @@ void DynamicFont::add_fallback(const Ref<DynamicFontData> &p_data) {
 	_change_notify();
 }
 
-int DynamicFont::get_fallback_count() const {
-	return fallbacks.size();
-}
 Ref<DynamicFontData> DynamicFont::get_fallback(int p_idx) const {
 
 	ERR_FAIL_INDEX_V(p_idx, fallbacks.size(), Ref<DynamicFontData>());

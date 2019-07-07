@@ -6432,6 +6432,197 @@
       ]
     },
     {
+      "name": "text_shaping",
+      "type": "TEXTSHAPING",
+      "version": {
+        "major": 1,
+        "minor": 0
+      },
+      "next": null,
+      "api": [
+        {
+          "name": "godot_text_shaper_register_interface",
+          "return_type": "void",
+          "arguments": [
+            ["const godot_text_shaper_interface_gdnative *", "p_interface"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_fallback_count",
+          "return_type": "int64_t",
+          "arguments": [
+            ["godot_object *", "p_font"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_nominal_glyph_index",
+          "return_type": "uint32_t",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_codepoint"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_variation_glyph_index",
+          "return_type": "uint32_t",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_codepoint"],
+            ["uint32_t", "p_variation_selector"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_glyph_advance",
+          "return_type": "godot_vector2",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_glyph_origin",
+          "return_type": "godot_vector2",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_has_contour_points",
+          "return_type": "godot_bool",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_glyph_contour_point",
+          "return_type": "godot_vector2",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_index"],
+            ["uint32_t", "p_point"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_glyph_kerning",
+          "return_type": "godot_vector2",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_index_a"],
+            ["uint32_t", "p_index_b"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_glyph_extents",
+          "return_type": "godot_rect2",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_font_extents",
+          "return_type": "godot_vector3",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_font_table",
+          "return_type": "void *",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_tag"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_get_script_supported",
+          "return_type": "godot_bool",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_tag"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_font_draw_glyph",
+          "return_type": "void",
+          "arguments": [
+            ["godot_object *", "p_font"],
+            ["const godot_rid *", "p_canvas_item"],
+            ["const godot_vector2 *", "p_pos"],
+            ["int64_t", "p_fallback"],
+            ["uint32_t", "p_index"],
+            ["const godot_color *", "p_modulate"],
+            ["godot_bool", "p_mirror"],
+            ["godot_bool", "p_rot_ccw"],
+            ["godot_bool", "p_rot_cw"],
+            ["godot_bool", "p_outline"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_spannable_hash",
+          "return_type": "int32_t",
+          "arguments": [
+            ["godot_object *", "p_spannable"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_spannable_get_run_start",
+          "return_type": "int64_t",
+          "arguments": [
+            ["godot_object *", "p_spannable"],
+            ["uint32_t", "p_attribute"],
+            ["int64_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_spannable_get_run_end",
+          "return_type": "int64_t",
+          "arguments": [
+            ["godot_object *", "p_spannable"],
+            ["uint32_t", "p_attribute"],
+            ["int64_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_spannable_has_attribute",
+          "return_type": "godot_bool",
+          "arguments": [
+            ["godot_object *", "p_spannable"],
+            ["uint32_t", "p_attribute"],
+            ["int64_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_spannable_get_attribute",
+          "return_type": "godot_variant",
+          "arguments": [
+            ["godot_object *", "p_spannable"],
+            ["uint32_t", "p_attribute"],
+            ["int64_t", "p_index"]
+          ]
+        },
+        {
+          "name": "godot_text_shaper_get_locale",
+          "return_type": "godot_string",
+          "arguments": [
+          ]
+        }
+      ]
+    },
+    {
       "name": "videodecoder",
       "type": "VIDEODECODER",
       "version": {

@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TextShapingInterface" inherits="Reference" category="Core" version="3.2">
+	<brief_description>
+		Base class for a text shaping interface implementation.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="draw_spannable" qualifiers="const">
+			<return type="void">
+			</return>
+			<argument index="0" name="canvas_item" type="RID">
+			</argument>
+			<argument index="1" name="pos" type="Vector2">
+			</argument>
+			<argument index="2" name="spannable" type="Spannable">
+			</argument>
+			<argument index="3" name="direction" type="int" default="0">
+			</argument>
+			<argument index="4" name="clip" type="Vector2" default="Vector2( 0, 0 )">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="draw_spannable_justified" qualifiers="const">
+			<return type="void">
+			</return>
+			<argument index="0" name="canvas_item" type="RID">
+			</argument>
+			<argument index="1" name="pos" type="Vector2">
+			</argument>
+			<argument index="2" name="spannable" type="Spannable">
+			</argument>
+			<argument index="3" name="direction" type="int" default="0">
+			</argument>
+			<argument index="4" name="line_w" type="float" default="-1">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="draw_string" qualifiers="const">
+			<return type="void">
+			</return>
+			<argument index="0" name="canvas_item" type="RID">
+			</argument>
+			<argument index="1" name="pos" type="Vector2">
+			</argument>
+			<argument index="2" name="font" type="Font">
+			</argument>
+			<argument index="3" name="string" type="String">
+			</argument>
+			<argument index="4" name="direction" type="int" default="0">
+			</argument>
+			<argument index="5" name="modulate" type="Color" default="Color( 1, 1, 1, 1 )">
+			</argument>
+			<argument index="6" name="outline_modulate" type="Color" default="Color( 1, 1, 1, 1 )">
+			</argument>
+			<argument index="7" name="clip" type="Vector2" default="Vector2( 0, 0 )">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="draw_string_justified" qualifiers="const">
+			<return type="void">
+			</return>
+			<argument index="0" name="canvas_item" type="RID">
+			</argument>
+			<argument index="1" name="pos" type="Vector2">
+			</argument>
+			<argument index="2" name="font" type="Font">
+			</argument>
+			<argument index="3" name="string" type="String">
+			</argument>
+			<argument index="4" name="direction" type="int" default="0">
+			</argument>
+			<argument index="5" name="modulate" type="Color" default="Color( 1, 1, 1, 1 )">
+			</argument>
+			<argument index="6" name="outline_modulate" type="Color" default="Color( 1, 1, 1, 1 )">
+			</argument>
+			<argument index="7" name="line_w" type="float" default="-1">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_capabilities" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_name" qualifiers="const">
+			<return type="String">
+			</return>
+			<description>
+				Returns the name of this interface.
+			</description>
+		</method>
+		<method name="get_spannable_cursor_shapes" qualifiers="const">
+			<return type="Array">
+			</return>
+			<argument index="0" name="spannable" type="Spannable">
+			</argument>
+			<argument index="1" name="position" type="int">
+			</argument>
+			<argument index="2" name="direction" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_spannable_line_breaks" qualifiers="const">
+			<return type="Array">
+			</return>
+			<argument index="0" name="spannable" type="Spannable">
+			</argument>
+			<argument index="1" name="direction" type="int" default="0">
+			</argument>
+			<argument index="2" name="line_w" type="float" default="-1.0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_spannable_selection_shapes" qualifiers="const">
+			<return type="Array">
+			</return>
+			<argument index="0" name="spannable" type="Spannable">
+			</argument>
+			<argument index="1" name="start" type="int">
+			</argument>
+			<argument index="2" name="end" type="int">
+			</argument>
+			<argument index="3" name="direction" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_spannable_size" qualifiers="const">
+			<return type="Vector2">
+			</return>
+			<argument index="0" name="spannable" type="Spannable">
+			</argument>
+			<argument index="1" name="direction" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_string_cursor_shapes" qualifiers="const">
+			<return type="Array">
+			</return>
+			<argument index="0" name="font" type="Font">
+			</argument>
+			<argument index="1" name="string" type="String">
+			</argument>
+			<argument index="2" name="position" type="int">
+			</argument>
+			<argument index="3" name="direction" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_string_line_breaks" qualifiers="const">
+			<return type="Array">
+			</return>
+			<argument index="0" name="font" type="Font">
+			</argument>
+			<argument index="1" name="string" type="String">
+			</argument>
+			<argument index="2" name="direction" type="int" default="0">
+			</argument>
+			<argument index="3" name="line_w" type="float" default="-1.0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_string_selection_shapes" qualifiers="const">
+			<return type="Array">
+			</return>
+			<argument index="0" name="font" type="Font">
+			</argument>
+			<argument index="1" name="string" type="String">
+			</argument>
+			<argument index="2" name="start" type="int">
+			</argument>
+			<argument index="3" name="end" type="int">
+			</argument>
+			<argument index="4" name="direction" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_string_size" qualifiers="const">
+			<return type="Vector2">
+			</return>
+			<argument index="0" name="font" type="Font">
+			</argument>
+			<argument index="1" name="string" type="String">
+			</argument>
+			<argument index="2" name="direction" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="initialize">
+			<return type="bool">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="spannable_hit_test" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="spannable" type="Spannable">
+			</argument>
+			<argument index="1" name="point" type="Vector2">
+			</argument>
+			<argument index="2" name="direction" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="string_hit_test" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="font" type="Font">
+			</argument>
+			<argument index="1" name="string" type="String">
+			</argument>
+			<argument index="2" name="point" type="Vector2">
+			</argument>
+			<argument index="3" name="direction" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="uninitialize">
+			<return type="bool">
+			</return>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="interface_is_initialized" type="bool" setter="set_is_initialized" getter="is_initialized" default="true">
+		</member>
+		<member name="is_primary" type="bool" setter="set_is_primary" getter="get_is_primary" default="false">
+		</member>
+	</members>
+	<constants>
+		<constant name="TEXT_DIRECTION_AUTO" value="0" enum="TextShapingDirection">
+			Detect text direction automaticaly.
+		</constant>
+		<constant name="TEXT_DIRECTION_LTR_TB" value="1" enum="TextShapingDirection">
+			Character flow direction: left-to-right, Line flow direction: top-to-bottom.
+		</constant>
+		<constant name="TEXT_DIRECTION_RTL_TB" value="2" enum="TextShapingDirection">
+			Character flow direction: right-to-left, Line flow direction: top-to-bottom. Supported only if shaping interface have [code]TEXT_SHAPING_COMPLEX_LAYOUT[/code] flag set.
+		</constant>
+		<constant name="TEXT_DIRECTION_TTB_LR" value="3" enum="TextShapingDirection">
+			Character flow direction: top-to-bottom, Line flow direction: left-to-right. Supported only if shaping interface have [code]TEXT_SHAPING_VERTICAL_LAYOUT[/code] flag set.
+		</constant>
+		<constant name="TEXT_DIRECTION_TTB_RL" value="3" enum="TextShapingDirection">
+			Character flow direction: top-to-bottom, Line flow direction: right-to-left. Supported only if shaping interface have [code]TEXT_SHAPING_VERTICAL_LAYOUT[/code] flag set.
+		</constant>
+		<constant name="TEXT_SHAPING_SIMPLE_LAYOUT" value="1" enum="TextShapingCapabilities">
+			If this bit is set, shaping interface supports unshaped LTR text.
+		</constant>
+		<constant name="TEXT_SHAPING_COMPLEX_LAYOUT" value="2" enum="TextShapingCapabilities">
+			If this bit is set, shaping interface supports BiDi layouts and contextual shaping.
+		</constant>
+		<constant name="TEXT_SHAPING_VERTICAL_LAYOUT" value="4" enum="TextShapingCapabilities">
+			If this bit is set, shaping interface supports vertical layouts.
+		</constant>
+	</constants>
+</class>

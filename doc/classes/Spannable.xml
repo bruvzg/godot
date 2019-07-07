@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Spannable" inherits="Reference" category="Core" version="3.2">
+	<brief_description>
+		A string that has associated attributes.
+	</brief_description>
+	<description>
+		Holds text string and associated attribute information. An attribute is a key/value pair, identified by the key.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_attribute">
+			<return type="void">
+			</return>
+			<argument index="0" name="attribute" type="int" enum="Spannable.TextAttribute">
+			</argument>
+			<argument index="1" name="value" type="Variant">
+			</argument>
+			<argument index="2" name="start" type="int">
+			</argument>
+			<argument index="3" name="end" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="clear_attributes">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_attribute" qualifiers="const">
+			<return type="Variant">
+			</return>
+			<argument index="0" name="attribute" type="int" enum="Spannable.TextAttribute">
+			</argument>
+			<argument index="1" name="index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_run_end" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="attribute" type="int" enum="Spannable.TextAttribute">
+			</argument>
+			<argument index="1" name="index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_run_start" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="attribute" type="int" enum="Spannable.TextAttribute">
+			</argument>
+			<argument index="1" name="index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="has_attribute" qualifiers="const">
+			<return type="bool">
+			</return>
+			<argument index="0" name="attribute" type="int" enum="Spannable.TextAttribute">
+			</argument>
+			<argument index="1" name="index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="hash" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="remove_attribute">
+			<return type="void">
+			</return>
+			<argument index="0" name="attribute" type="int" enum="Spannable.TextAttribute">
+			</argument>
+			<argument index="1" name="start" type="int">
+			</argument>
+			<argument index="2" name="end" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="remove_attributes">
+			<return type="void">
+			</return>
+			<argument index="0" name="start" type="int">
+			</argument>
+			<argument index="1" name="end" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="TEXT_ATTRIBUTE_FONT" value="0" enum="TextAttribute">
+		</constant>
+		<constant name="TEXT_ATTRIBUTE_OT_FEATURES" value="1" enum="TextAttribute">
+		</constant>
+		<constant name="TEXT_ATTRIBUTE_LANGUAGE" value="2" enum="TextAttribute">
+		</constant>
+		<constant name="TEXT_ATTRIBUTE_COLOR" value="3" enum="TextAttribute">
+		</constant>
+		<constant name="TEXT_ATTRIBUTE_OUTLINE_COLOR" value="4" enum="TextAttribute">
+		</constant>
+		<constant name="TEXT_ATTRIBUTE_USER" value="100" enum="TextAttribute">
+		</constant>
+	</constants>
+</class>

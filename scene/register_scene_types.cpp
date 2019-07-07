@@ -156,6 +156,7 @@
 #include "scene/resources/resource_format_text.h"
 #include "scene/resources/segment_shape_2d.h"
 #include "scene/resources/sky.h"
+#include "scene/resources/spannable.h"
 #include "scene/resources/sphere_shape.h"
 #include "scene/resources/surface_tool.h"
 #include "scene/resources/text_file.h"
@@ -661,9 +662,12 @@ void register_scene_types() {
 
 	ClassDB::register_class<TextFile>();
 
+	ClassDB::register_class<Spannable>();
+
 	ClassDB::register_class<DynamicFontData>();
 	ClassDB::register_class<DynamicFont>();
 
+	Font::initialize_hex_font();
 	DynamicFont::initialize_dynamic_fonts();
 
 	ClassDB::register_virtual_class<StyleBox>();
@@ -775,6 +779,7 @@ void unregister_scene_types() {
 	resource_loader_stream_texture.unref();
 
 	DynamicFont::finish_dynamic_fonts();
+	Font::finish_hex_font();
 
 	ResourceSaver::remove_resource_format_saver(resource_saver_text);
 	resource_saver_text.unref();

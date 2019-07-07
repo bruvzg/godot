@@ -69,6 +69,8 @@
 #include "servers/physics_2d_server.h"
 #include "servers/physics_server.h"
 #include "servers/register_server_types.h"
+#include "servers/text_shaping/text_shaping_interface.h"
+#include "servers/text_shaping_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/doc/doc_data.h"
@@ -101,6 +103,7 @@ static AudioServer *audio_server = NULL;
 static ARVRServer *arvr_server = NULL;
 static PhysicsServer *physics_server = NULL;
 static Physics2DServer *physics_2d_server = NULL;
+static TextShapingServer *text_shaping_server = NULL;
 // We error out if setup2() doesn't turn this true
 static bool _start_success = false;
 
@@ -1122,6 +1125,13 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 	// also init our arvr_server from here
 	arvr_server = memnew(ARVRServer);
 
+	text_shaping_server = memnew(TextShapingServer);
+	Ref<TextShapingInterface> text_shaper_fb;
+	text_shaper_fb.instance();
+	if (text_shaper_fb->initialize()) {
+		text_shaping_server->add_interface(text_shaper_fb);
+	}
+
 	register_core_singletons();
 
 	MAIN_PRINT("Main: Setup Logo");
@@ -2086,6 +2096,10 @@ void Main::cleanup() {
 	if (audio_server) {
 		audio_server->finish();
 		memdelete(audio_server);
+	}
+
+	if (text_shaping_server) {
+		memdelete(text_shaping_server);
 	}
 
 	OS::get_singleton()->finalize();

@@ -34,7 +34,78 @@
 #include "core/method_bind_ext.gen.inc"
 #include "core/os/file_access.h"
 
+#include "servers/text_shaping/text_shaping_interface.h"
+#include "servers/text_shaping_server.h"
+
+Ref<ImageTexture> Font::hex_box_img_tex = NULL;
+
+void Font::initialize_hex_font() {
+
+	PoolByteArray hex_box_data;
+	hex_box_data.resize(167);
+	memcpy(hex_box_data.write().ptr(), _hex_box_img_data, 167);
+
+	Ref<Image> image;
+	image.instance();
+	image->load_png_from_buffer(hex_box_data);
+
+	hex_box_img_tex.instance();
+	hex_box_img_tex->create_from_image(image, Texture::FLAG_VIDEO_SURFACE);
+}
+
+void Font::finish_hex_font() {
+
+	hex_box_img_tex.unref();
+}
+
+void Font::draw_hexbox(RID p_canvas_item, const Point2 &p_pos, uint32_t p_codepoint, const Color &p_modulate) {
+
+	uint8_t a = p_codepoint & 0x0F;
+	uint8_t b = (p_codepoint >> 4) & 0x0F;
+	uint8_t c = (p_codepoint >> 8) & 0x0F;
+	uint8_t d = (p_codepoint >> 12) & 0x0F;
+	uint8_t e = (p_codepoint >> 16) & 0x0F;
+	uint8_t f = (p_codepoint >> 20) & 0x0F;
+
+	float w = (p_codepoint <= 0xFF) ? 11 : ((p_codepoint <= 0xFFFF) ? 17 : 23);
+
+	VisualServer::get_singleton()->canvas_item_add_rect(p_canvas_item, Rect2(p_pos + Point2(1, 0), Size2(1, 20)), p_modulate);
+	VisualServer::get_singleton()->canvas_item_add_rect(p_canvas_item, Rect2(p_pos + Point2(w, 0), Size2(1, 20)), p_modulate);
+	VisualServer::get_singleton()->canvas_item_add_rect(p_canvas_item, Rect2(p_pos + Point2(1, 0), Size2(w, 1)), p_modulate);
+	VisualServer::get_singleton()->canvas_item_add_rect(p_canvas_item, Rect2(p_pos + Point2(1, 20), Size2(w, 1)), p_modulate);
+
+	if (p_codepoint <= 0xFF) {
+		Rect2 dest = Rect2(p_pos + Point2(4, 3), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(b * 5 - 4, -3), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(4, 11), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(a * 5 - 4, -11), dest.size), p_modulate, false, RID(), false);
+	} else if (p_codepoint <= 0xFFFF) {
+		Rect2 dest = Rect2(p_pos + Point2(4, 3), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(d * 5 - 4, -3), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(10, 3), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(c * 5 - 10, -3), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(4, 11), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(b * 5 - 4, -11), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(10, 11), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(a * 5 - 10, -11), dest.size), p_modulate, false, RID(), false);
+	} else {
+		Rect2 dest = Rect2(p_pos + Point2(4, 3), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(f * 5 - 4, -3), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(10, 3), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(e * 5 - 10, -3), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(16, 3), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(d * 5 - 16, -3), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(4, 11), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(c * 5 - 4, -11), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(10, 11), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(b * 5 - 10, -11), dest.size), p_modulate, false, RID(), false);
+		dest = Rect2(p_pos + Point2(16, 11), Size2(5, 7));
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, dest, hex_box_img_tex->get_rid(), Rect2(dest.position - p_pos + Point2(a * 5 - 16, -11), dest.size), p_modulate, false, RID(), false);
+	}
+}
+
 void Font::draw_halign(RID p_canvas_item, const Point2 &p_pos, HAlign p_align, float p_width, const String &p_text, const Color &p_modulate, const Color &p_outline_modulate) const {
+
 	float length = get_string_size(p_text).width;
 	if (length >= p_width) {
 		draw(p_canvas_item, p_pos, p_text, p_modulate, p_width, p_outline_modulate);
@@ -60,27 +131,36 @@ void Font::draw_halign(RID p_canvas_item, const Point2 &p_pos, HAlign p_align, f
 }
 
 void Font::draw(RID p_canvas_item, const Point2 &p_pos, const String &p_text, const Color &p_modulate, int p_clip_w, const Color &p_outline_modulate) const {
-	Vector2 ofs;
 
-	int chars_drawn = 0;
-	bool with_outline = has_outline();
-	for (int i = 0; i < p_text.length(); i++) {
+	ERR_FAIL_COND(!TextShapingServer::get_singleton());
+	ERR_FAIL_COND(TextShapingServer::get_singleton()->get_primary_interface().is_null());
 
-		int width = get_char_size(p_text[i]).width;
+	TextShapingServer::get_singleton()->get_primary_interface()->draw_string(p_canvas_item, p_pos, const_cast<Font *>(this), p_text, TextShapingInterface::TEXT_DIRECTION_AUTO, p_modulate, p_outline_modulate, Vector2(0, p_clip_w));
+}
 
-		if (p_clip_w >= 0 && (ofs.x + width) > p_clip_w)
-			break; //clip
+Size2 Font::get_string_size(const String &p_string) const {
 
-		ofs.x += draw_char(p_canvas_item, p_pos + ofs, p_text[i], p_text[i + 1], with_outline ? p_outline_modulate : p_modulate, with_outline);
-		++chars_drawn;
+	ERR_FAIL_COND_V(!TextShapingServer::get_singleton(), Size2());
+	ERR_FAIL_COND_V(TextShapingServer::get_singleton()->get_primary_interface().is_null(), Size2());
+
+	return TextShapingServer::get_singleton()->get_primary_interface()->get_string_size(const_cast<Font *>(this), p_string, TextShapingInterface::TEXT_DIRECTION_AUTO);
+}
+
+Size2 Font::get_wordwrap_string_size(const String &p_string, float p_width) const {
+
+	ERR_FAIL_COND_V(!TextShapingServer::get_singleton(), Size2());
+	ERR_FAIL_COND_V(TextShapingServer::get_singleton()->get_primary_interface().is_null(), Size2());
+
+	Array breaks = TextShapingServer::get_singleton()->get_primary_interface()->get_string_line_breaks(const_cast<Font *>(this), p_string, TextShapingInterface::TEXT_DIRECTION_AUTO, p_width);
+
+	float h = 0.0f;
+	int64_t prev = 0;
+	for (int64_t i = 0; i < breaks.size(); i++) {
+		h = get_string_size(p_string.substr(prev, breaks[i])).y;
+		prev = breaks[i];
 	}
 
-	if (has_outline()) {
-		ofs = Vector2(0, 0);
-		for (int i = 0; i < chars_drawn; i++) {
-			ofs.x += draw_char(p_canvas_item, p_pos + ofs, p_text[i], p_text[i + 1], p_modulate, false);
-		}
-	}
+	return Size2(p_width, h);
 }
 
 void Font::update_changes() {
@@ -480,54 +560,6 @@ void BitmapFont::clear() {
 	distance_field_hint = false;
 }
 
-Size2 Font::get_string_size(const String &p_string) const {
-
-	float w = 0;
-
-	int l = p_string.length();
-	if (l == 0)
-		return Size2(0, get_height());
-	const CharType *sptr = &p_string[0];
-
-	for (int i = 0; i < l; i++) {
-
-		w += get_char_size(sptr[i], sptr[i + 1]).width;
-	}
-
-	return Size2(w, get_height());
-}
-
-Size2 Font::get_wordwrap_string_size(const String &p_string, float p_width) const {
-
-	ERR_FAIL_COND_V(p_width <= 0, Vector2(0, get_height()));
-
-	int l = p_string.length();
-	if (l == 0)
-		return Size2(p_width, get_height());
-
-	float line_w = 0;
-	float h = 0;
-	float space_w = get_char_size(' ').width;
-	Vector<String> lines = p_string.split("\n");
-	for (int i = 0; i < lines.size(); i++) {
-		h += get_height();
-		String t = lines[i];
-		line_w = 0;
-		Vector<String> words = t.split(" ");
-		for (int j = 0; j < words.size(); j++) {
-			line_w += get_string_size(words[j]).x;
-			if (line_w > p_width) {
-				h += get_height();
-				line_w = get_string_size(words[j]).x;
-			} else {
-				line_w += space_w;
-			}
-		}
-	}
-
-	return Size2(p_width, h);
-}
-
 void BitmapFont::set_fallback(const Ref<BitmapFont> &p_fallback) {
 
 	for (Ref<BitmapFont> fallback_child = p_fallback; fallback_child != NULL; fallback_child = fallback_child->get_fallback()) {
@@ -565,6 +597,197 @@ float BitmapFont::draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_c
 	}
 
 	return get_char_size(p_char, p_next).width;
+}
+
+void BitmapFont::draw_glyph(RID p_canvas_item, const Point2 &p_pos, int64_t p_fallback, uint32_t p_index, const Color &p_modulate, bool p_mirror, bool p_rot_ccw, bool p_rot_cw, bool p_outline) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->draw_glyph(p_canvas_item, p_pos, p_fallback - 1, p_index, p_modulate, p_mirror, p_rot_ccw, p_rot_cw, p_outline);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL();
+		}
+	}
+
+	const Character *c = char_map.getptr(p_index);
+
+	ERR_FAIL_COND(c->texture_idx < -1 || c->texture_idx >= textures.size());
+	if (!p_outline && c->texture_idx != -1) {
+		Point2 cpos = p_pos;
+		cpos.x += c->h_align;
+		cpos.y -= ascent;
+		cpos.y += c->v_align;
+		//TODO: for vertical layout support, process "mirror", "rot_ccw", "rot_cw"
+		VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, Rect2(cpos, c->rect.size), textures[c->texture_idx]->get_rid(), c->rect, p_modulate, false, RID(), false);
+	}
+	//TODO:: hexbox fallback
+}
+
+int64_t BitmapFont::get_fallback_count() const {
+
+	int64_t cnt = 0;
+	Ref<BitmapFont> font = Ref<BitmapFont>(this);
+	while (font->fallback.is_valid()) {
+		font = font->fallback;
+		cnt++;
+	}
+	return cnt;
+}
+
+uint32_t BitmapFont::get_nominal_glyph_index(int64_t p_fallback, uint32_t p_codepoint) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_nominal_glyph_index(p_fallback - 1, p_codepoint);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(0);
+		}
+	}
+	return p_codepoint;
+}
+
+uint32_t BitmapFont::get_variation_glyph_index(int64_t p_fallback, uint32_t p_codepoint, uint32_t p_variation_selector) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_variation_glyph_index(p_fallback - 1, p_codepoint, p_variation_selector);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(0);
+		}
+	}
+	return p_codepoint;
+}
+
+Point2 BitmapFont::get_glyph_advance(int64_t p_fallback, uint32_t p_index) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_glyph_advance(p_fallback - 1, p_index);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(Point2());
+		}
+	}
+
+	const Character *c = char_map.getptr(p_index);
+	return Point2(c->advance, 0);
+}
+
+Point2 BitmapFont::get_glyph_origin(int64_t p_fallback, uint32_t p_index) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_glyph_origin(p_fallback - 1, p_index);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(Point2());
+		}
+	}
+
+	const Character *c = char_map.getptr(p_index);
+	return Point2(c->h_align, c->v_align);
+}
+
+bool BitmapFont::get_has_contour_points(int64_t p_fallback, uint32_t p_index) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_has_contour_points(p_fallback - 1, p_index);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(false);
+		}
+	}
+
+	return false;
+}
+
+Point2 BitmapFont::get_glyph_contour_point(int64_t p_fallback, uint32_t p_index, uint32_t p_point) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_glyph_contour_point(p_fallback - 1, p_index, p_point);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(Point2());
+		}
+	}
+
+	return Point2(); //not supported
+}
+
+Point2 BitmapFont::get_glyph_kerning(int64_t p_fallback, uint32_t p_index_a, uint32_t p_index_b) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_glyph_kerning(p_fallback - 1, p_index_a, p_index_b);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(Point2());
+		}
+	}
+
+	return Point2(get_kerning_pair(p_index_a, p_index_b), 0.0);
+}
+
+Rect2 BitmapFont::get_glyph_extents(int64_t p_fallback, uint32_t p_index) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_glyph_extents(p_fallback - 1, p_index);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(Rect2());
+		}
+	}
+
+	const Character *c = char_map.getptr(p_index);
+	return c->rect;
+}
+
+Vector3 BitmapFont::get_font_extents(int64_t p_fallback) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_font_extents(p_fallback - 1);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(Vector3());
+		}
+	}
+
+	return Vector3(ascent, height - ascent, 1.0f); //ascent, descent, line gap
+}
+
+void *BitmapFont::get_font_table(int64_t p_fallback, uint32_t p_tag) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_font_table(p_fallback - 1, p_tag);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(NULL);
+		}
+	}
+
+	return NULL; //not supported
+}
+
+bool BitmapFont::get_script_supported(int64_t p_fallback, uint32_t p_tag) const {
+
+	if (p_fallback < 0) {
+		if (fallback.is_valid()) {
+			return fallback->get_script_supported(p_fallback - 1, p_tag);
+		} else {
+			ERR_EXPLAIN("Invalid fallback index.");
+			ERR_FAIL_V(false);
+		}
+	}
+
+	return true; //not supported, check all fonts
 }
 
 Size2 BitmapFont::get_char_size(CharType p_char, CharType p_next) const {

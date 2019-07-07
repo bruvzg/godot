@@ -38,6 +38,7 @@
 #include "nativescript/register_types.h"
 #include "net/register_types.h"
 #include "pluginscript/register_types.h"
+#include "text_shaping/register_types.h"
 #include "videodecoder/register_types.h"
 
 #include "core/engine.h"
@@ -240,6 +241,7 @@ void register_gdnative_types() {
 
 	register_net_types();
 	register_arvr_types();
+	register_text_shaping_types();
 	register_nativescript_types();
 	register_pluginscript_types();
 	register_videodecoder_types();
@@ -305,6 +307,7 @@ void unregister_gdnative_types() {
 	unregister_pluginscript_types();
 	unregister_nativescript_types();
 	unregister_arvr_types();
+	unregister_text_shaping_types();
 	unregister_net_types();
 
 	memdelete(GDNativeCallRegistry::singleton);
