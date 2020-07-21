@@ -31,174 +31,90 @@
 #ifndef FONT_H
 #define FONT_H
 
-#include "core/map.h"
+#include "core/lru.h"
 #include "core/resource.h"
 #include "scene/resources/texture.h"
+#include "servers/text_server.h"
+
+class FontData : public Resource {
+	GDCLASS(FontData, Resource);
+
+	mutable RID font_data;
+
+protected:
+	static void _bind_methods();
+
+public:
+	RID get_rid() const;
+
+	bool load_system(const String &p_name);
+	bool load_resource(const String &p_filename);
+	bool load_memory(const Vector<uint8_t> &p_data);
+
+	float get_height(float p_size) const;
+	float get_ascent(float p_size) const;
+	float get_descent(float p_size) const;
+	float get_underline_position(float p_size) const;
+	float get_underline_thickness(float p_size) const;
+
+	bool has_feature(TextServer::FontFeature p_feature) const;
+
+	bool get_language_supported(const String &p_locale) const;
+	void set_language_supported(const String &p_locale, bool p_value);
+
+	bool get_script_supported(const String &p_script) const;
+	void set_script_supported(const String &p_script, bool p_value);
+
+	void draw_glyph(RID p_canvas, float p_size, const Vector2 &p_pos, uint32_t p_index, const Color &p_color = Color(1, 1, 1)) const;
+	void draw_glyph_outline(RID p_canvas, float p_size, const Vector2 &p_pos, uint32_t p_index, const Color &p_color = Color(1, 1, 1)) const;
+	void draw_invalid_glpyh(RID p_canvas, float p_size, const Vector2 &p_pos, uint32_t p_index, const Color &p_color = Color(1, 1, 1)) const;
+
+	~FontData();
+};
+
+/*************************************************************************/
 
 class Font : public Resource {
 	GDCLASS(Font, Resource);
 
+	Vector<Ref<FontData>> font;
+	LRU<uint64_t, RID> cache;
+
 protected:
+	void _draw_ctx(RID p_canvas_item, float p_size, const Point2 &p_pos, RID p_ctx, const Color &p_modulate, int p_clip_w, const Color &p_outline_modulate) const;
+
+	bool _set(const StringName &p_name, const Variant &p_value);
+	bool _get(const StringName &p_name, Variant &r_ret) const;
+	void _get_property_list(List<PropertyInfo> *p_list) const;
+
 	static void _bind_methods();
 
 public:
-	virtual float get_height() const = 0;
+	float get_height(float p_size) const;
+	float get_ascent(float p_size) const;
+	float get_descent(float p_size) const;
+	float get_underline_position(float p_size) const;
+	float get_underline_thickness(float p_size) const;
 
-	virtual float get_ascent() const = 0;
-	virtual float get_descent() const = 0;
-	virtual float get_underline_position() const = 0;
-	virtual float get_underline_thickness() const = 0;
+	Size2 get_string_size(const String &p_string, float p_size) const;
+	Size2 get_wordwrap_string_size(const String &p_string, float p_size, float p_width) const;
 
-	virtual Size2 get_char_size(CharType p_char, CharType p_next = 0) const = 0;
-	Size2 get_string_size(const String &p_string) const;
-	Size2 get_wordwrap_string_size(const String &p_string, float p_width) const;
+	void draw(RID p_canvas_item, float p_size, const Point2 &p_pos, const String &p_text, const Color &p_modulate = Color(1, 1, 1), int p_clip_w = -1, const Color &p_outline_modulate = Color(0, 0, 0, 0)) const;
+	void draw_halign(RID p_canvas_item, float p_size, const Point2 &p_pos, const String &p_text, HAlign p_align, float p_width, const Color &p_modulate = Color(1, 1, 1), const Color &p_outline_modulate = Color(0, 0, 0, 0)) const;
+	void draw_wordwrap(RID p_canvas_item, float p_size, const Point2 &p_pos, const String &p_text, HAlign p_align, float p_width, const Color &p_modulate = Color(1, 1, 1), const Color &p_outline_modulate = Color(0, 0, 0, 0)) const;
 
-	virtual bool is_distance_field_hint() const = 0;
+	void add_data(const Ref<FontData> &p_data);
+	void set_data(int p_idx, const Ref<FontData> &p_data);
+	int get_data_count() const;
+	Ref<FontData> get_data(int p_idx) const;
+	void remove_data(int p_idx);
 
-	void draw(RID p_canvas_item, const Point2 &p_pos, const String &p_text, const Color &p_modulate = Color(1, 1, 1), int p_clip_w = -1, const Color &p_outline_modulate = Color(1, 1, 1)) const;
-	void draw_halign(RID p_canvas_item, const Point2 &p_pos, HAlign p_align, float p_width, const String &p_text, const Color &p_modulate = Color(1, 1, 1), const Color &p_outline_modulate = Color(1, 1, 1)) const;
-
-	virtual bool has_outline() const { return false; }
-	virtual float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const = 0;
-
-	void update_changes();
-	Font();
+	List<RID> get_data_list();
 };
 
-// Helper class to that draws outlines immediately and draws characters in its destructor.
-class FontDrawer {
-	const Ref<Font> &font;
-	Color outline_color;
-	bool has_outline;
+/*************************************************************************/
 
-	struct PendingDraw {
-		RID canvas_item;
-		Point2 pos;
-		CharType chr;
-		CharType next;
-		Color modulate;
-	};
-
-	Vector<PendingDraw> pending_draws;
-
-public:
-	FontDrawer(const Ref<Font> &p_font, const Color &p_outline_color) :
-			font(p_font),
-			outline_color(p_outline_color) {
-		has_outline = p_font->has_outline();
-	}
-
-	float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1)) {
-		if (has_outline) {
-			PendingDraw draw = { p_canvas_item, p_pos, p_char, p_next, p_modulate };
-			pending_draws.push_back(draw);
-		}
-		return font->draw_char(p_canvas_item, p_pos, p_char, p_next, has_outline ? outline_color : p_modulate, has_outline);
-	}
-
-	~FontDrawer() {
-		for (int i = 0; i < pending_draws.size(); ++i) {
-			const PendingDraw &draw = pending_draws[i];
-			font->draw_char(draw.canvas_item, draw.pos, draw.chr, draw.next, draw.modulate, false);
-		}
-	}
-};
-
-class BitmapFont : public Font {
-	GDCLASS(BitmapFont, Font);
-	RES_BASE_EXTENSION("font");
-
-	Vector<Ref<Texture2D>> textures;
-
-public:
-	struct Character {
-		int texture_idx;
-		Rect2 rect;
-		float v_align;
-		float h_align;
-		float advance;
-
-		Character() {
-			texture_idx = 0;
-			v_align = 0;
-		}
-	};
-
-	struct KerningPairKey {
-		union {
-			struct {
-				uint32_t A, B;
-			};
-
-			uint64_t pair;
-		};
-
-		_FORCE_INLINE_ bool operator<(const KerningPairKey &p_r) const { return pair < p_r.pair; }
-	};
-
-private:
-	HashMap<CharType, Character> char_map;
-	Map<KerningPairKey, int> kerning_map;
-
-	float height;
-	float ascent;
-	bool distance_field_hint;
-
-	void _set_chars(const Vector<int> &p_chars);
-	Vector<int> _get_chars() const;
-	void _set_kernings(const Vector<int> &p_kernings);
-	Vector<int> _get_kernings() const;
-	void _set_textures(const Vector<Variant> &p_textures);
-	Vector<Variant> _get_textures() const;
-
-	Ref<BitmapFont> fallback;
-
-protected:
-	static void _bind_methods();
-
-public:
-	Error create_from_fnt(const String &p_file);
-
-	void set_height(float p_height);
-	float get_height() const override;
-
-	void set_ascent(float p_ascent);
-	float get_ascent() const override;
-	float get_descent() const override;
-	float get_underline_position() const override;
-	float get_underline_thickness() const override;
-
-	void add_texture(const Ref<Texture2D> &p_texture);
-	void add_char(CharType p_char, int p_texture_idx, const Rect2 &p_rect, const Size2 &p_align, float p_advance = -1);
-
-	int get_character_count() const;
-	Vector<CharType> get_char_keys() const;
-	Character get_character(CharType p_char) const;
-
-	int get_texture_count() const;
-	Ref<Texture2D> get_texture(int p_idx) const;
-
-	void add_kerning_pair(CharType p_A, CharType p_B, int p_kerning);
-	int get_kerning_pair(CharType p_A, CharType p_B) const;
-	Vector<KerningPairKey> get_kerning_pair_keys() const;
-
-	Size2 get_char_size(CharType p_char, CharType p_next = 0) const override;
-
-	void set_fallback(const Ref<BitmapFont> &p_fallback);
-	Ref<BitmapFont> get_fallback() const;
-
-	void clear();
-
-	void set_distance_field_hint(bool p_distance_field);
-	bool is_distance_field_hint() const override;
-
-	float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const override;
-
-	BitmapFont();
-	~BitmapFont();
-};
-
-class ResourceFormatLoaderBMFont : public ResourceFormatLoader {
+class ResourceFormatLoaderFontData : public ResourceFormatLoader {
 public:
 	virtual RES load(const String &p_path, const String &p_original_path = "", Error *r_error = nullptr, bool p_use_sub_threads = false, float *r_progress = nullptr, bool p_no_cache = false);
 	virtual void get_recognized_extensions(List<String> *p_extensions) const;
@@ -206,4 +122,4 @@ public:
 	virtual String get_resource_type(const String &p_path) const;
 };
 
-#endif
+#endif /* FONT_H */
