@@ -167,7 +167,7 @@ bool TextServerAdvanced::load_support_data(const String &p_filename) {
 	if (icu_data == nullptr) {
 		UErrorCode err = U_ZERO_ERROR;
 		u_init(&err); // Do not check for errors, since we only load part of the data.
-		icu_data = (uint8_t *)&U_ICUDATA_ENTRY_POINT;
+		icu_data = (uint8_t *)U_ICUDATA_ENTRY_POINT;
 	}
 #else
 	if (icu_data == nullptr) {

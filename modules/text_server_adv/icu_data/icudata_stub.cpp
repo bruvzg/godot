@@ -41,7 +41,7 @@ typedef struct {
 	int fake_name_and_data[4];
 } ICU_data_header;
 
-extern "C" U_EXPORT const ICU_data_header U_ICUDATA_ENTRY_POINT = {
+extern "C" U_EXPORT const ICU_data_header U_ICUDATA_RAW = {
 	32,
 	0xDA, 0x27,
 	{ sizeof(UDataInfo),
@@ -61,3 +61,5 @@ extern "C" U_EXPORT const ICU_data_header U_ICUDATA_ENTRY_POINT = {
 	0, 0,
 	{ 0, 0, 0, 0 }
 };
+
+extern "C" U_EXPORT const unsigned char *U_ICUDATA_ENTRY_POINT = (const unsigned char *)&U_ICUDATA_RAW;

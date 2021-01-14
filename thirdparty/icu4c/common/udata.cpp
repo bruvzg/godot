@@ -643,7 +643,9 @@ U_NAMESPACE_END
  *----------------------------------------------------------------------*/
 #if !defined(ICU_DATA_DIR_WINDOWS)
 // When using the Windows system data, we expect only a single data file.
-extern "C" const DataHeader U_DATA_API U_ICUDATA_ENTRY_POINT;
+// -- GODOT start --
+extern "C" const unsigned char *U_DATA_API U_ICUDATA_ENTRY_POINT;
+// -- GODOT end --
 #endif
 
 /*
@@ -696,7 +698,9 @@ openCommonData(const char *path,          /*  Path from OpenChoice?          */
 // When using the Windows system data, we expect only a single data file.
             int32_t i;
             for(i = 0; i < commonDataIndex; ++i) {
-                if(gCommonICUDataArray[i]->pHeader == &U_ICUDATA_ENTRY_POINT) {
+// -- GODOT start --
+                if(gCommonICUDataArray[i]->pHeader == (const DataHeader *)U_ICUDATA_ENTRY_POINT) {
+// -- GODOT end --
                     /* The linked-in data is already in the list. */
                     return NULL;
                 }
@@ -719,7 +723,9 @@ openCommonData(const char *path,          /*  Path from OpenChoice?          */
         */
 #if !defined(ICU_DATA_DIR_WINDOWS)
 // When using the Windows system data, we expect only a single data file.
-        setCommonICUDataPointer(&U_ICUDATA_ENTRY_POINT, FALSE, pErrorCode);
+// -- GODOT start --
+        setCommonICUDataPointer(U_ICUDATA_ENTRY_POINT, FALSE, pErrorCode);
+// -- GODOT end --
         {
             Mutex lock;
             return gCommonICUDataArray[commonDataIndex];

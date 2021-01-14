@@ -2098,7 +2098,9 @@ ultag_parse(const char* tag, int32_t tagLen, int32_t* parsedLen, UErrorCode* sta
                 if (*redundantTagEnd  == '\0' || *redundantTagEnd == SEP) {
                     const char* preferredTag = REDUNDANT[i + 1];
                     size_t preferredTagLen = uprv_strlen(preferredTag);
-                    uprv_strncpy(t->buf, preferredTag, preferredTagLen);
+// -- GODOT start --
+                    uprv_memcpy(t->buf, preferredTag, preferredTagLen);
+// -- GODOT end --
                     if (*redundantTagEnd == SEP) {
                         uprv_memmove(tagBuf + preferredTagLen,
                                      redundantTagEnd,

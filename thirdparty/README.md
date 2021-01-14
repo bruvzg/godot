@@ -200,6 +200,9 @@ Files generated from upstream source:
   https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/buildtool.md
   for instructions)
 
+Important: Some files have Godot-made changes.
+They are marked with `// -- GODOT start --` and `// -- GODOT end --` comments.
+
 
 ## jpeg-compressor
 
