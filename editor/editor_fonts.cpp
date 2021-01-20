@@ -37,12 +37,18 @@
 #include "scene/resources/default_theme/default_theme.h"
 #include "scene/resources/dynamic_font.h"
 
-#define MAKE_FALLBACKS(m_name)          \
-	m_name->add_fallback(FontArabic);   \
-	m_name->add_fallback(FontHebrew);   \
-	m_name->add_fallback(FontThai);     \
-	m_name->add_fallback(FontHindi);    \
-	m_name->add_fallback(FontJapanese); \
+#define MAKE_FALLBACKS(m_name)           \
+	m_name->add_fallback(FontArabic);    \
+	m_name->add_fallback(FontBengali);   \
+	m_name->add_fallback(FontGeorgian);  \
+	m_name->add_fallback(FontHebrew);    \
+	m_name->add_fallback(FontMalayalam); \
+	m_name->add_fallback(FontOriya);     \
+	m_name->add_fallback(FontTamil);     \
+	m_name->add_fallback(FontTelugu);    \
+	m_name->add_fallback(FontThai);      \
+	m_name->add_fallback(FontHindi);     \
+	m_name->add_fallback(FontJapanese);  \
 	m_name->add_fallback(FontFallback);
 
 // Enable filtering and mipmaps on the editor fonts to improve text appearance
@@ -176,67 +182,116 @@ void editor_register_fonts(Ref<Theme> p_theme) {
 
 	Ref<DynamicFontData> DefaultFont;
 	DefaultFont.instance();
+	DefaultFont->set_font_ptr(_font_NotoSansUI_Regular, _font_NotoSansUI_Regular_size);
 	DefaultFont->set_antialiased(font_antialiased);
 	DefaultFont->set_hinting(font_hinting);
-	DefaultFont->set_font_ptr(_font_NotoSansUI_Regular, _font_NotoSansUI_Regular_size);
 	DefaultFont->set_force_autohinter(true); //just looks better..i think?
 
 	Ref<DynamicFontData> DefaultFontBold;
 	DefaultFontBold.instance();
+	DefaultFontBold->set_font_ptr(_font_NotoSansUI_Bold, _font_NotoSansUI_Bold_size);
 	DefaultFontBold->set_antialiased(font_antialiased);
 	DefaultFontBold->set_hinting(font_hinting);
-	DefaultFontBold->set_font_ptr(_font_NotoSansUI_Bold, _font_NotoSansUI_Bold_size);
 	DefaultFontBold->set_force_autohinter(true); // just looks better..i think?
 
 	Ref<DynamicFontData> FontFallback;
 	FontFallback.instance();
+	FontFallback->set_font_ptr(_font_DroidSansFallback, _font_DroidSansFallback_size);
 	FontFallback->set_antialiased(font_antialiased);
 	FontFallback->set_hinting(font_hinting);
-	FontFallback->set_font_ptr(_font_DroidSansFallback, _font_DroidSansFallback_size);
 	FontFallback->set_force_autohinter(true); //just looks better..i think?
 
 	Ref<DynamicFontData> FontJapanese;
 	FontJapanese.instance();
+	FontJapanese->set_font_ptr(_font_DroidSansJapanese, _font_DroidSansJapanese_size);
 	FontJapanese->set_antialiased(font_antialiased);
 	FontJapanese->set_hinting(font_hinting);
-	FontJapanese->set_font_ptr(_font_DroidSansJapanese, _font_DroidSansJapanese_size);
 	FontJapanese->set_force_autohinter(true); //just looks better..i think?
 
 	Ref<DynamicFontData> FontArabic;
 	FontArabic.instance();
+	FontArabic->set_font_ptr(_font_NotoNaskhArabicUI_Regular, _font_NotoNaskhArabicUI_Regular_size);
 	FontArabic->set_antialiased(font_antialiased);
 	FontArabic->set_hinting(font_hinting);
-	FontArabic->set_font_ptr(_font_NotoNaskhArabicUI_Regular, _font_NotoNaskhArabicUI_Regular_size);
 	FontArabic->set_force_autohinter(true); //just looks better..i think?
+
+	Ref<DynamicFontData> FontBengali;
+	FontBengali.instance();
+	FontBengali->set_font_ptr(_font_NotoSansBengali_Regular, _font_NotoSansBengali_Regular_size);
+	FontBengali->set_antialiased(font_antialiased);
+	FontBengali->set_hinting(font_hinting);
+	FontBengali->set_force_autohinter(true); //just looks better..i think?
+
+	Ref<DynamicFontData> FontGeorgian;
+	FontGeorgian.instance();
+	FontGeorgian->set_font_ptr(_font_NotoSansGeorgian_Regular, _font_NotoSansGeorgian_Regular_size);
+	FontGeorgian->set_antialiased(font_antialiased);
+	FontGeorgian->set_hinting(font_hinting);
+	FontGeorgian->set_force_autohinter(true); //just looks better..i think?
+
+	Ref<DynamicFontData> FontMalayalam;
+	FontMalayalam.instance();
+	FontMalayalam->set_font_ptr(_font_NotoSansMalayalamUI_Regular, _font_NotoSansMalayalamUI_Regular_size);
+	FontMalayalam->set_antialiased(font_antialiased);
+	FontMalayalam->set_hinting(font_hinting);
+	FontMalayalam->set_force_autohinter(true); //just looks better..i think?
+
+	Ref<DynamicFontData> FontOriya;
+	FontOriya.instance();
+	FontOriya->set_font_ptr(_font_NotoSansOriyaUI_Regular, _font_NotoSansOriyaUI_Regular_size);
+	FontOriya->set_antialiased(font_antialiased);
+	FontOriya->set_hinting(font_hinting);
+	FontOriya->set_force_autohinter(true); //just looks better..i think?
+
+	Ref<DynamicFontData> FontSinhala;
+	FontSinhala.instance();
+	FontSinhala->set_font_ptr(_font_NotoSansSinhalaUI_Regular, _font_NotoSansSinhalaUI_Regular_size);
+	FontSinhala->set_antialiased(font_antialiased);
+	FontSinhala->set_hinting(font_hinting);
+	FontSinhala->set_force_autohinter(true); //just looks better..i think?
+
+	Ref<DynamicFontData> FontTamil;
+	FontTamil.instance();
+	FontTamil->set_font_ptr(_font_NotoSansTamilUI_Regular, _font_NotoSansTamilUI_Regular_size);
+	FontTamil->set_antialiased(font_antialiased);
+	FontTamil->set_hinting(font_hinting);
+	FontTamil->set_force_autohinter(true); //just looks better..i think?
+
+	Ref<DynamicFontData> FontTelugu;
+	FontTelugu.instance();
+	FontTelugu->set_font_ptr(_font_NotoSansTeluguUI_Regular, _font_NotoSansTeluguUI_Regular_size);
+	FontTelugu->set_antialiased(font_antialiased);
+	FontTelugu->set_hinting(font_hinting);
+	FontTelugu->set_force_autohinter(true); //just looks better..i think?
 
 	Ref<DynamicFontData> FontHebrew;
 	FontHebrew.instance();
+	FontHebrew->set_font_ptr(_font_NotoSansHebrew_Regular, _font_NotoSansHebrew_Regular_size);
 	FontHebrew->set_antialiased(font_antialiased);
 	FontHebrew->set_hinting(font_hinting);
-	FontHebrew->set_font_ptr(_font_NotoSansHebrew_Regular, _font_NotoSansHebrew_Regular_size);
 	FontHebrew->set_force_autohinter(true); //just looks better..i think?
 
 	Ref<DynamicFontData> FontThai;
 	FontThai.instance();
+	FontThai->set_font_ptr(_font_NotoSansThaiUI_Regular, _font_NotoSansThaiUI_Regular_size);
 	FontThai->set_antialiased(font_antialiased);
 	FontThai->set_hinting(font_hinting);
-	FontThai->set_font_ptr(_font_NotoSansThaiUI_Regular, _font_NotoSansThaiUI_Regular_size);
 	FontThai->set_force_autohinter(true); //just looks better..i think?
 
 	Ref<DynamicFontData> FontHindi;
 	FontHindi.instance();
+	FontHindi->set_font_ptr(_font_NotoSansDevanagariUI_Regular, _font_NotoSansDevanagariUI_Regular_size);
 	FontHindi->set_antialiased(font_antialiased);
 	FontHindi->set_hinting(font_hinting);
-	FontHindi->set_font_ptr(_font_NotoSansDevanagariUI_Regular, _font_NotoSansDevanagariUI_Regular_size);
 	FontHindi->set_force_autohinter(true); //just looks better..i think?
 
 	/* Hack */
 
 	Ref<DynamicFontData> dfmono;
 	dfmono.instance();
+	dfmono->set_font_ptr(_font_Hack_Regular, _font_Hack_Regular_size);
 	dfmono->set_antialiased(font_antialiased);
 	dfmono->set_hinting(font_hinting);
-	dfmono->set_font_ptr(_font_Hack_Regular, _font_Hack_Regular_size);
 
 	int default_font_size = int(EDITOR_GET("interface/editor/main_font_size")) * EDSCALE;
 
