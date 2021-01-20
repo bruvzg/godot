@@ -91,6 +91,7 @@ public:
 
 	void set_locale(const String &p_locale);
 	String get_locale() const;
+	String get_tool_locale() const;
 
 	String get_locale_name(const String &p_locale) const;
 

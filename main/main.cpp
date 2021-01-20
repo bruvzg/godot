@@ -69,6 +69,7 @@
 #include "servers/physics_2d_server.h"
 #include "servers/physics_server.h"
 #include "servers/register_server_types.h"
+#include "servers/text_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/doc/doc_data.h"
@@ -96,6 +97,7 @@ static ZipArchive *zip_packed_data = NULL;
 static FileAccessNetworkClient *file_access_network_client = NULL;
 static ScriptDebugger *script_debugger = NULL;
 static MessageQueue *message_queue = NULL;
+static TextServerManager *tsman = nullptr;
 
 // Initialized in setup2()
 static AudioServer *audio_server = NULL;
@@ -108,6 +110,8 @@ static bool _start_success = false;
 
 // Drivers
 
+String text_driver = "";
+static int text_driver_idx = -1;
 static int video_driver_idx = -1;
 static int audio_driver_idx = -1;
 
@@ -252,6 +256,7 @@ void Main::print_help(const char *p_binary) {
 		OS::get_singleton()->print("'%s'", OS::get_singleton()->get_video_driver_name(i));
 	}
 	OS::get_singleton()->print(").\n");
+	OS::get_singleton()->print("  --text-driver <driver>           Text driver (Fonts, BiDi, shaping)\n");
 	OS::get_singleton()->print("\n");
 
 #ifndef SERVER_ENABLED
@@ -503,7 +508,15 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 				OS::get_singleton()->print("Missing audio driver argument, aborting.\n");
 				goto error;
 			}
+		} else if (I->get() == "--text-driver") {
 
+			if (I->next()) {
+				text_driver = I->next()->get();
+				N = I->next()->next();
+			} else {
+				OS::get_singleton()->print("Missing text driver argument, aborting.\n");
+				goto error;
+			}
 		} else if (I->get() == "--video-driver") { // force video driver
 
 			if (I->next()) {
@@ -1232,6 +1245,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 error:
 
+	text_driver = "";
 	video_driver = "";
 	audio_driver = "";
 	tablet_driver = "";
@@ -1275,6 +1289,8 @@ error:
 
 Error Main::setup2(Thread::ID p_main_tid_override) {
 
+	preregister_module_types();
+
 	// Print engine name and version
 	print_line(String(VERSION_NAME) + " v" + get_full_version_string() + " - " + String(VERSION_WEBSITE));
 
@@ -1287,6 +1303,65 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 	Error err = OS::get_singleton()->initialize(video_mode, video_driver_idx, audio_driver_idx);
 	if (err != OK) {
 		return err;
+	}
+
+	/* Determine text driver */
+
+	GLOBAL_DEF("display/window/text_name", "");
+	if (text_driver == "") {
+		text_driver = GLOBAL_GET("display/window/text_name");
+	}
+
+	if (text_driver != "") {
+		/* Load user selected text server. */
+		for (int i = 0; i < TextServerManager::get_interface_count(); i++) {
+			if (text_driver == TextServerManager::get_interface_name(i)) {
+				text_driver_idx = i;
+				break;
+			}
+		}
+	}
+
+	if (text_driver_idx < 0) {
+		/* If not selected, use one with the most features available. */
+		int max_features = 0;
+		for (int i = 0; i < TextServerManager::get_interface_count(); i++) {
+			uint32_t ftrs = TextServerManager::get_interface_features(i);
+			int features = 0;
+			while (ftrs) {
+				features += ftrs & 1;
+				ftrs >>= 1;
+			}
+			if (features >= max_features) {
+				max_features = features;
+				text_driver_idx = i;
+			}
+		}
+	}
+	printf("Using %s text server...\n", TextServerManager::get_interface_name(text_driver_idx).utf8().get_data());
+
+	/* Initialize Text Server */
+
+	{
+		tsman = memnew(TextServerManager);
+		Error err;
+		TextServer *text_server = TextServerManager::initialize(text_driver_idx, err);
+		if (err != OK || text_server == nullptr) {
+			for (int i = 0; i < TextServerManager::get_interface_count(); i++) {
+				if (i == text_driver_idx) {
+					continue; //don't try the same twice
+				}
+				text_server = TextServerManager::initialize(i, err);
+				if (err == OK && text_server != nullptr) {
+					break;
+				}
+			}
+		}
+
+		if (err != OK || text_server == nullptr) {
+			ERR_PRINT("Unable to create TextServer, all text drivers failed.");
+			return err;
+		}
 	}
 
 	print_line(" "); //add a blank line for readability
@@ -2262,6 +2337,10 @@ void Main::cleanup(bool p_force) {
 	unregister_platform_apis();
 	unregister_scene_types();
 	unregister_server_types();
+
+	if (tsman) {
+		memdelete(tsman);
+	}
 
 	if (audio_server) {
 		audio_server->finish();

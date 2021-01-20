@@ -63,6 +63,7 @@
 #include "physics_2d_server.h"
 #include "physics_server.h"
 #include "scene/debugger/script_debugger_remote.h"
+#include "text_server.h"
 #include "visual/shader_types.h"
 #include "visual_server.h"
 
@@ -113,6 +114,7 @@ void register_server_types() {
 	OS::get_singleton()->set_has_server_feature_callback(has_server_feature_callback);
 
 	ClassDB::register_virtual_class<VisualServer>();
+	ClassDB::register_virtual_class<TextServer>();
 	ClassDB::register_class<AudioServer>();
 	ClassDB::register_virtual_class<PhysicsServer>();
 	ClassDB::register_virtual_class<Physics2DServer>();

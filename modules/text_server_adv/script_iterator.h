@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_scene_types.h                                               */
+/*  script_iterator.h                                                    */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,11 +28,34 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef REGISTER_SCENE_TYPES_H
-#define REGISTER_SCENE_TYPES_H
+#ifndef SCRIPT_ITERATOR_H
+#define SCRIPT_ITERATOR_H
 
-void preregister_module_types();
-void register_scene_types();
-void unregister_scene_types();
+#include "servers/text_server.h"
 
-#endif
+#include <unicode/uchar.h>
+#include <unicode/uloc.h>
+#include <unicode/uscript.h>
+#include <unicode/ustring.h>
+#include <unicode/utypes.h>
+
+#include <hb-icu.h>
+#include <hb.h>
+
+class ScriptIterator {
+public:
+	struct ScriptRange {
+		int start;
+		int end;
+		hb_script_t script;
+	};
+	Vector<ScriptRange> script_ranges;
+
+private:
+	static bool same_script(int32_t p_script_one, int32_t p_script_two);
+
+public:
+	ScriptIterator(const String &p_string, int p_start, int p_length);
+};
+
+#endif //SCRIPT_ITERATOR_H

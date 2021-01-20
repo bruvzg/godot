@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_scene_types.h                                               */
+/*  register_types.h                                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,11 +28,13 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef REGISTER_SCENE_TYPES_H
-#define REGISTER_SCENE_TYPES_H
+#ifndef TEXT_SERVER_ADV_REGISTER_TYPES_H
+#define TEXT_SERVER_ADV_REGISTER_TYPES_H
 
-void preregister_module_types();
-void register_scene_types();
-void unregister_scene_types();
+#define MODULE_TEXT_SERVER_ADV_HAS_PREREGISTER
 
-#endif
+void preregister_text_server_adv_types();
+void register_text_server_adv_types();
+void unregister_text_server_adv_types();
+
+#endif // TEXT_SERVER_ADV_REGISTER_TYPES_H

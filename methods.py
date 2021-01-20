@@ -223,6 +223,7 @@ def is_module(path):
 def write_modules(modules):
     includes_cpp = ""
     register_cpp = ""
+    preregister_cpp = ""
     unregister_cpp = ""
 
     for name, path in modules.items():
@@ -232,6 +233,11 @@ def write_modules(modules):
                 register_cpp += "#ifdef MODULE_" + name.upper() + "_ENABLED\n"
                 register_cpp += "\tregister_" + name + "_types();\n"
                 register_cpp += "#endif\n"
+                preregister_cpp += "#ifdef MODULE_" + name.upper() + "_ENABLED\n"
+                preregister_cpp += "#ifdef MODULE_" + name.upper() + "_HAS_PREREGISTER\n"
+                preregister_cpp += "\tpreregister_" + name + "_types();\n"
+                preregister_cpp += "#endif\n"
+                preregister_cpp += "#endif\n"
                 unregister_cpp += "#ifdef MODULE_" + name.upper() + "_ENABLED\n"
                 unregister_cpp += "\tunregister_" + name + "_types();\n"
                 unregister_cpp += "#endif\n"
@@ -250,6 +256,12 @@ def write_modules(modules):
 void register_module_types() {
 """
         + register_cpp
+        + """
+}
+
+void preregister_module_types() {
+"""
+        + preregister_cpp
         + """
 }
 

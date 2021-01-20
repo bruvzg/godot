@@ -33,6 +33,7 @@
 #include "core/io/resource_loader.h"
 #include "core/os/os.h"
 #include "core/project_settings.h"
+#include "main/main.h"
 
 // ISO 639-1 language codes (and a couple of three-letter ISO 639-2 codes),
 // with the addition of glibc locales with their regional identifiers.
@@ -998,6 +999,18 @@ void TranslationServer::set_locale(const String &p_locale) {
 String TranslationServer::get_locale() const {
 
 	return locale;
+}
+
+String TranslationServer::get_tool_locale() const {
+#ifdef TOOLS_ENABLED
+	if (tool_translation.is_valid() && (Engine::get_singleton()->is_editor_hint() || Main::is_project_manager())) {
+		return tool_translation->get_locale();
+	} else {
+#else
+	{
+#endif
+		return get_locale();
+	}
 }
 
 String TranslationServer::get_locale_name(const String &p_locale) const {
