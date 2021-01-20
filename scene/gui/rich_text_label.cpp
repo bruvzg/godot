@@ -346,8 +346,8 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 				if (font.is_null())
 					font = p_base_font;
 
-				const CharType *c = text->text.c_str();
-				const CharType *cf = c;
+				const char32_t *c = text->text.c_str();
+				const char32_t *cf = c;
 				int ascent = font->get_ascent();
 				int descent = font->get_descent();
 
@@ -459,7 +459,7 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 								bool selected = false;
 								Color fx_color = Color(color);
 								Point2 fx_offset;
-								CharType fx_char = c[i];
+								char32_t fx_char = c[i];
 
 								if (selection.active) {
 

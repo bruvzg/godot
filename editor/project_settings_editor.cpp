@@ -161,7 +161,7 @@ void ProjectSettingsEditor::_notification(int p_what) {
 }
 
 static bool _validate_action_name(const String &p_name) {
-	const CharType *cstr = p_name.c_str();
+	const char32_t *cstr = p_name.c_str();
 	for (int i = 0; cstr[i]; i++)
 		if (cstr[i] == '/' || cstr[i] == ':' || cstr[i] == '"' ||
 				cstr[i] == '=' || cstr[i] == '\\' || cstr[i] < 32)

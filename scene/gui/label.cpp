@@ -247,8 +247,8 @@ void Label::_notification(int p_what) {
 					for (int i = 0; i < from->word_len; i++) {
 
 						if (visible_chars < 0 || chars_total_shadow < visible_chars) {
-							CharType c = xl_text[i + pos];
-							CharType n = xl_text[i + pos + 1];
+							char32_t c = xl_text[i + pos];
+							char32_t n = xl_text[i + pos + 1];
 							if (uppercase) {
 								c = String::char_uppercase(c);
 								n = String::char_uppercase(n);
@@ -268,8 +268,8 @@ void Label::_notification(int p_what) {
 				for (int i = 0; i < from->word_len; i++) {
 
 					if (visible_chars < 0 || chars_total < visible_chars) {
-						CharType c = xl_text[i + pos];
-						CharType n = xl_text[i + pos + 1];
+						char32_t c = xl_text[i + pos];
+						char32_t n = xl_text[i + pos + 1];
 						if (uppercase) {
 							c = String::char_uppercase(c);
 							n = String::char_uppercase(n);
@@ -325,7 +325,7 @@ int Label::get_longest_line_width() const {
 
 	for (int i = 0; i < xl_text.size(); i++) {
 
-		CharType current = xl_text[i];
+		char32_t current = xl_text[i];
 		if (uppercase)
 			current = String::char_uppercase(current);
 
@@ -408,7 +408,7 @@ void Label::regenerate_word_cache() {
 
 	for (int i = 0; i <= xl_text.length(); i++) {
 
-		CharType current = i < xl_text.length() ? xl_text[i] : L' '; //always a space at the end, so the algo works
+		char32_t current = i < xl_text.length() ? xl_text[i] : L' '; //always a space at the end, so the algo works
 
 		if (uppercase)
 			current = String::char_uppercase(current);

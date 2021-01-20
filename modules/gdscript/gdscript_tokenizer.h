@@ -216,7 +216,7 @@ class GDScriptTokenizerText : public GDScriptTokenizer {
 	String code;
 	int len;
 	int code_pos;
-	const CharType *_code;
+	const char32_t *_code;
 	int line;
 	int column;
 	TokenData tk_rb[TK_RB_SIZE * 2 + 1];

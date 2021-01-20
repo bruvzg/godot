@@ -17,7 +17,97 @@
           "major": 1,
           "minor": 2
         },
-        "next": null,
+        "next": {
+          "type": "CORE",
+          "version": {
+            "major": 1,
+            "minor": 3
+          },
+          "next": null,
+          "api": [
+            {
+              "name": "godot_char16_string_length",
+              "return_type": "godot_int",
+              "arguments": [
+                ["const godot_char16_string *", "p_cs"]
+              ]
+            },
+            {
+              "name": "godot_char16_string_get_data",
+              "return_type": "const char16_t *",
+              "arguments": [
+                ["const godot_char16_string *", "p_cs"]
+              ]
+            },
+            {
+              "name": "godot_char16_string_destroy",
+              "return_type": "void",
+              "arguments": [
+                ["godot_char16_string *", "p_cs"]
+              ]
+            },
+            {
+              "name": "godot_string_new_with_latin1_string",
+              "return_type": "void",
+              "arguments": [
+                ["godot_string *", "r_dest"],
+                ["const char *", "p_contents"],
+                ["const int", "p_size"]
+              ]
+            },
+            {
+              "name": "godot_string_new_with_utf8_string",
+              "return_type": "void",
+              "arguments": [
+                ["godot_string *", "r_dest"],
+                ["const char *", "p_contents"],
+                ["const int", "p_size"]
+              ]
+            },
+            {
+              "name": "godot_string_new_with_utf16_string",
+              "return_type": "void",
+              "arguments": [
+                ["godot_string *", "r_dest"],
+                ["const char16_t *", "p_contents"],
+                ["const int", "p_size"]
+              ]
+            },
+            {
+              "name": "godot_string_new_with_utf32_string",
+              "return_type": "void",
+              "arguments": [
+                ["godot_string *", "r_dest"],
+                ["const char32_t *", "p_contents"],
+                ["const int", "p_size"]
+              ]
+            },
+            {
+              "name": "godot_string_utf16",
+              "return_type": "godot_char16_string",
+              "arguments": [
+                ["const godot_string *", "p_self"]
+              ]
+            },
+            {
+              "name": "godot_string_parse_utf16",
+              "return_type": "godot_bool",
+              "arguments": [
+                ["godot_string *", "p_self"],
+                ["const char16_t *", "p_utf16"]
+              ]
+            },
+            {
+              "name": "godot_string_parse_utf16_with_len",
+              "return_type": "godot_bool",
+              "arguments": [
+                ["godot_string *", "p_self"],
+                ["const char16_t *", "p_utf16"],
+                ["godot_int", "p_len"]
+              ]
+            }
+          ]
+        },
         "api": [
           {
             "name": "godot_dictionary_duplicate",
@@ -4917,7 +5007,7 @@
       },
       {
         "name": "godot_string_operator_index",
-        "return_type": "const wchar_t *",
+        "return_type": "const char32_t *",
         "arguments": [
           ["godot_string *", "p_self"],
           ["const godot_int", "p_idx"]
@@ -4925,15 +5015,15 @@
       },
       {
         "name": "godot_string_operator_index_const",
-        "return_type": "wchar_t",
+        "return_type": "char32_t",
         "arguments": [
           ["const godot_string *", "p_self"],
           ["const godot_int", "p_idx"]
         ]
       },
       {
-        "name": "godot_string_wide_str",
-        "return_type": "const wchar_t *",
+        "name": "godot_string_get_data",
+        "return_type": "const char32_t *",
         "arguments": [
           ["const godot_string *", "p_self"]
         ]
@@ -5020,7 +5110,7 @@
         "name": "godot_string_chr",
         "return_type": "godot_string",
         "arguments": [
-          ["wchar_t", "p_character"]
+          ["char32_t", "p_character"]
         ]
       },
       {
@@ -5507,7 +5597,7 @@
         "return_type": "godot_string",
         "arguments": [
           ["const godot_string *", "p_self"],
-          ["wchar_t", "p_splitter"],
+          ["char32_t", "p_splitter"],
           ["godot_int", "p_slice"]
         ]
       },
@@ -5600,16 +5690,16 @@
       },
       {
         "name": "godot_string_char_lowercase",
-        "return_type": "wchar_t",
+        "return_type": "char32_t",
         "arguments": [
-          ["wchar_t", "p_char"]
+          ["char32_t", "p_char"]
         ]
       },
       {
         "name": "godot_string_char_uppercase",
-        "return_type": "wchar_t",
+        "return_type": "char32_t",
         "arguments": [
-          ["wchar_t", "p_char"]
+          ["char32_t", "p_char"]
         ]
       },
       {
@@ -5650,7 +5740,7 @@
       },
       {
         "name": "godot_string_ord_at",
-        "return_type": "wchar_t",
+        "return_type": "char32_t",
         "arguments": [
           ["const godot_string *", "p_self"],
           ["godot_int", "p_idx"]

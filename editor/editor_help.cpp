@@ -936,7 +936,7 @@ void EditorHelp::_update_doc() {
 					Vector<float> color = stripped.split_floats(",");
 					if (color.size() >= 3) {
 						class_desc->push_color(Color(color[0], color[1], color[2]));
-						static const CharType prefix[3] = { 0x25CF /* filled circle */, ' ', 0 };
+						static const char32_t prefix[3] = { 0x25CF /* filled circle */, ' ', 0 };
 						class_desc->add_text(String(prefix));
 						class_desc->pop();
 					}

@@ -33,30 +33,30 @@
 #include "editor/editor_settings.h"
 #include "scene/gui/text_edit.h"
 
-inline bool _is_symbol(CharType c) {
+inline bool _is_symbol(char32_t c) {
 
 	return is_symbol(c);
 }
 
-static bool _is_text_char(CharType c) {
+static bool _is_text_char(char32_t c) {
 
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
 
-static bool _is_char(CharType c) {
+static bool _is_char(char32_t c) {
 
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
-static bool _is_number(CharType c) {
+static bool _is_number(char32_t c) {
 	return (c >= '0' && c <= '9');
 }
 
-static bool _is_hex_symbol(CharType c) {
+static bool _is_hex_symbol(char32_t c) {
 	return ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
 }
 
-static bool _is_bin_symbol(CharType c) {
+static bool _is_bin_symbol(char32_t c) {
 	return (c == '0' || c == '1');
 }
 

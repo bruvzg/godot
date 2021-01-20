@@ -44,34 +44,34 @@
 
 #define TAB_PIXELS
 
-inline bool _is_symbol(CharType c) {
+inline bool _is_symbol(char32_t c) {
 
 	return is_symbol(c);
 }
 
-static bool _is_text_char(CharType c) {
+static bool _is_text_char(char32_t c) {
 
 	return !is_symbol(c);
 }
 
-static bool _is_whitespace(CharType c) {
+static bool _is_whitespace(char32_t c) {
 	return c == '\t' || c == ' ';
 }
 
-static bool _is_char(CharType c) {
+static bool _is_char(char32_t c) {
 
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
-static bool _is_number(CharType c) {
+static bool _is_number(char32_t c) {
 	return (c >= '0' && c <= '9');
 }
 
-static bool _is_hex_symbol(CharType c) {
+static bool _is_hex_symbol(char32_t c) {
 	return ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
 }
 
-static bool _is_pair_right_symbol(CharType c) {
+static bool _is_pair_right_symbol(char32_t c) {
 	return c == '"' ||
 		   c == '\'' ||
 		   c == ')' ||
@@ -79,7 +79,7 @@ static bool _is_pair_right_symbol(CharType c) {
 		   c == '}';
 }
 
-static bool _is_pair_left_symbol(CharType c) {
+static bool _is_pair_left_symbol(char32_t c) {
 	return c == '"' ||
 		   c == '\'' ||
 		   c == '(' ||
@@ -87,11 +87,11 @@ static bool _is_pair_left_symbol(CharType c) {
 		   c == '{';
 }
 
-static bool _is_pair_symbol(CharType c) {
+static bool _is_pair_symbol(char32_t c) {
 	return _is_pair_left_symbol(c) || _is_pair_right_symbol(c);
 }
 
-static CharType _get_right_pair_symbol(CharType c) {
+static char32_t _get_right_pair_symbol(char32_t c) {
 	if (c == '"')
 		return '"';
 	if (c == '\'')
@@ -127,7 +127,7 @@ void TextEdit::Text::_update_line_cache(int p_line) const {
 	int w = 0;
 
 	int len = text[p_line].data.length();
-	const CharType *str = text[p_line].data.c_str();
+	const char32_t *str = text[p_line].data.c_str();
 
 	// Update width.
 
@@ -161,7 +161,7 @@ void TextEdit::Text::_update_line_cache(int p_line) const {
 			/* BEGIN */
 
 			int lr = cr.begin_key.length();
-			const CharType *kc;
+			const char32_t *kc;
 			bool match;
 
 			if (lr != 0 && lr <= left) {
@@ -320,7 +320,7 @@ void TextEdit::Text::remove(int p_at) {
 	text.remove(p_at);
 }
 
-int TextEdit::Text::get_char_width(CharType c, CharType next_c, int px) const {
+int TextEdit::Text::get_char_width(char32_t c, char32_t next_c, int px) const {
 
 	int tab_w = font->get_char_size(' ').width * indent_size;
 	int w = 0;
@@ -752,8 +752,8 @@ void TextEdit::_notification(int p_what) {
 
 				if (cursor.column < text[cursor.line].length()) {
 					// Check for open.
-					CharType c = text[cursor.line][cursor.column];
-					CharType closec = 0;
+					char32_t c = text[cursor.line][cursor.column];
+					char32_t closec = 0;
 
 					if (c == '[') {
 						closec = ']';
@@ -772,10 +772,10 @@ void TextEdit::_notification(int p_what) {
 							int from = i == cursor.line ? cursor.column + 1 : 0;
 							for (int j = from; j < text[i].length(); j++) {
 
-								CharType cc = text[i][j];
+								char32_t cc = text[i][j];
 								// Ignore any brackets inside a string.
 								if (cc == '"' || cc == '\'') {
-									CharType quotation = cc;
+									char32_t quotation = cc;
 									do {
 										j++;
 										if (!(j < text[i].length())) {
@@ -818,8 +818,8 @@ void TextEdit::_notification(int p_what) {
 				}
 
 				if (cursor.column > 0) {
-					CharType c = text[cursor.line][cursor.column - 1];
-					CharType closec = 0;
+					char32_t c = text[cursor.line][cursor.column - 1];
+					char32_t closec = 0;
 
 					if (c == ']') {
 						closec = '[';
@@ -838,10 +838,10 @@ void TextEdit::_notification(int p_what) {
 							int from = i == cursor.line ? cursor.column - 2 : text[i].length() - 1;
 							for (int j = from; j >= 0; j--) {
 
-								CharType cc = text[i][j];
+								char32_t cc = text[i][j];
 								// Ignore any brackets inside a string.
 								if (cc == '"' || cc == '\'') {
-									CharType quotation = cc;
+									char32_t quotation = cc;
 									do {
 										j--;
 										if (!(j >= 0)) {
@@ -1438,8 +1438,8 @@ void TextEdit::_notification(int p_what) {
 									if (ofs >= ime_text.length())
 										break;
 
-									CharType cchar = ime_text[ofs];
-									CharType next = ime_text[ofs + 1];
+									char32_t cchar = ime_text[ofs];
+									char32_t next = ime_text[ofs + 1];
 									int im_char_width = cache.font->get_char_size(cchar, next).width;
 
 									if ((char_ofs + char_margin + im_char_width) >= xmargin_end)
@@ -1536,8 +1536,8 @@ void TextEdit::_notification(int p_what) {
 								if (ofs >= ime_text.length())
 									break;
 
-								CharType cchar = ime_text[ofs];
-								CharType next = ime_text[ofs + 1];
+								char32_t cchar = ime_text[ofs];
+								char32_t next = ime_text[ofs + 1];
 								int im_char_width = cache.font->get_char_size(cchar, next).width;
 
 								if ((char_ofs + char_margin + im_char_width) >= xmargin_end)
@@ -1839,13 +1839,13 @@ void TextEdit::_notification(int p_what) {
 	}
 }
 
-void TextEdit::_consume_pair_symbol(CharType ch) {
+void TextEdit::_consume_pair_symbol(char32_t ch) {
 
 	int cursor_position_to_move = cursor_get_column() + 1;
 
-	CharType ch_single[2] = { ch, 0 };
-	CharType ch_single_pair[2] = { _get_right_pair_symbol(ch), 0 };
-	CharType ch_pair[3] = { ch, _get_right_pair_symbol(ch), 0 };
+	char32_t ch_single[2] = { ch, 0 };
+	char32_t ch_single_pair[2] = { _get_right_pair_symbol(ch), 0 };
+	char32_t ch_pair[3] = { ch, _get_right_pair_symbol(ch), 0 };
 
 	if (is_selection_active()) {
 
@@ -1952,8 +1952,8 @@ void TextEdit::_consume_backspace_for_pair_symbol(int prev_line, int prev_column
 
 	if (cursor.column < text[cursor.line].length() && cursor.column > 0) {
 
-		CharType left_char = text[cursor.line][cursor.column - 1];
-		CharType right_char = text[cursor.line][cursor.column];
+		char32_t left_char = text[cursor.line][cursor.column - 1];
+		char32_t right_char = text[cursor.line][cursor.column];
 
 		if (right_char == _get_right_pair_symbol(left_char)) {
 			remove_right_symbol = true;
@@ -2749,7 +2749,7 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 
 					_reset_caret_blink_timer();
 
-					const CharType chr[2] = { (CharType)k->get_unicode(), 0 };
+					const char32_t chr[2] = { (char32_t)k->get_unicode(), 0 };
 					if (auto_brace_completion_enabled && _is_pair_symbol(chr[0])) {
 						_consume_pair_symbol(chr[0]);
 					} else {
@@ -3515,7 +3515,7 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 						// Compute whitespace symbols seq length.
 						int current_line_whitespace_len = 0;
 						while (current_line_whitespace_len < text[cursor.line].length()) {
-							CharType c = text[cursor.line][current_line_whitespace_len];
+							char32_t c = text[cursor.line][current_line_whitespace_len];
 							if (c != '\t' && c != ' ')
 								break;
 							current_line_whitespace_len++;
@@ -3654,7 +3654,7 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 
 					int current_line_whitespace_len = 0;
 					while (current_line_whitespace_len < text[cursor.line].length()) {
-						CharType c = text[cursor.line][current_line_whitespace_len];
+						char32_t c = text[cursor.line][current_line_whitespace_len];
 						if (c != '\t' && c != ' ')
 							break;
 						current_line_whitespace_len++;
@@ -3823,7 +3823,7 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 					}
 				}
 
-				const CharType chr[2] = { (CharType)k->get_unicode(), 0 };
+				const char32_t chr[2] = { (char32_t)k->get_unicode(), 0 };
 
 				if (completion_hint != "" && k->get_unicode() == ')') {
 					completion_hint = "";
@@ -4465,7 +4465,7 @@ Vector<String> TextEdit::get_wrap_rows_text(int p_line) const {
 	}
 
 	while (col < line_text.length()) {
-		CharType c = line_text[col];
+		char32_t c = line_text[col];
 		int w = text.get_char_width(c, line_text[col + 1], px + word_px);
 
 		int indent_ofs = (cur_wrap_index != 0 ? tab_offset_px : 0);
@@ -6493,9 +6493,9 @@ void TextEdit::_confirm_completion() {
 
 	// When inserted into the middle of an existing string/method, don't add an unnecessary quote/bracket.
 	String line = text[cursor.line];
-	CharType next_char = line[cursor.column];
-	CharType last_completion_char = completion_current.insert_text[completion_current.insert_text.length() - 1];
-	CharType last_completion_char_display = completion_current.display[completion_current.display.length() - 1];
+	char32_t next_char = line[cursor.column];
+	char32_t last_completion_char = completion_current.insert_text[completion_current.insert_text.length() - 1];
+	char32_t last_completion_char_display = completion_current.display[completion_current.display.length() - 1];
 
 	if ((last_completion_char == '"' || last_completion_char == '\'') && (last_completion_char == next_char || last_completion_char_display == next_char)) {
 		_remove_text(cursor.line, cursor.column, cursor.line, cursor.column + 1);
@@ -6542,7 +6542,7 @@ void TextEdit::_cancel_completion() {
 	update();
 }
 
-static bool _is_completable(CharType c) {
+static bool _is_completable(char32_t c) {
 
 	return !_is_symbol(c) || c == '"' || c == '\'';
 }
@@ -6758,7 +6758,7 @@ String TextEdit::get_word_at_pos(const Vector2 &p_pos) const {
 	if (select_word(s, col, beg, end)) {
 
 		bool inside_quotes = false;
-		CharType selected_quote = '\0';
+		char32_t selected_quote = '\0';
 		int qbegin = 0, qend = 0;
 		for (int i = 0; i < s.length(); i++) {
 			if (s[i] == '"' || s[i] == '\'') {

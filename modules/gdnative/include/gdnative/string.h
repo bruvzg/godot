@@ -38,10 +38,9 @@ extern "C" {
 #include <stdint.h>
 #include <wchar.h>
 
-typedef wchar_t godot_char_type;
-
 #define GODOT_STRING_SIZE sizeof(void *)
 #define GODOT_CHAR_STRING_SIZE sizeof(void *)
+#define GODOT_CHAR16_STRING_SIZE sizeof(void *)
 
 #ifndef GODOT_CORE_API_GODOT_STRING_TYPE_DEFINED
 #define GODOT_CORE_API_GODOT_STRING_TYPE_DEFINED
@@ -49,6 +48,13 @@ typedef struct {
 	uint8_t _dont_touch_that[GODOT_STRING_SIZE];
 } godot_string;
 
+#endif
+
+#ifndef GODOT_CORE_API_GODOT_CHAR16_STRING_TYPE_DEFINED
+#define GODOT_CORE_API_GODOT_CHAR16_STRING_TYPE_DEFINED
+typedef struct {
+	uint8_t _dont_touch_that[GODOT_CHAR16_STRING_SIZE];
+} godot_char16_string;
 #endif
 
 #ifndef GODOT_CORE_API_GODOT_CHAR_STRING_TYPE_DEFINED
@@ -75,13 +81,23 @@ godot_int GDAPI godot_char_string_length(const godot_char_string *p_cs);
 const char GDAPI *godot_char_string_get_data(const godot_char_string *p_cs);
 void GDAPI godot_char_string_destroy(godot_char_string *p_cs);
 
+godot_int GDAPI godot_char16_string_length(const godot_char16_string *p_cs);
+const char16_t GDAPI *godot_char16_string_get_data(const godot_char16_string *p_cs);
+void GDAPI godot_char16_string_destroy(godot_char16_string *p_cs);
+
 void GDAPI godot_string_new(godot_string *r_dest);
 void GDAPI godot_string_new_copy(godot_string *r_dest, const godot_string *p_src);
+
+void GDAPI godot_string_new_with_latin1_string(godot_string *r_dest, const char *p_contents, const int p_size);
+void GDAPI godot_string_new_with_utf8_string(godot_string *r_dest, const char *p_contents, const int p_size);
+void GDAPI godot_string_new_with_utf16_string(godot_string *r_dest, const char16_t *p_contents, const int p_size);
+void GDAPI godot_string_new_with_utf32_string(godot_string *r_dest, const char32_t *p_contents, const int p_size);
 void GDAPI godot_string_new_with_wide_string(godot_string *r_dest, const wchar_t *p_contents, const int p_size);
 
-const wchar_t GDAPI *godot_string_operator_index(godot_string *p_self, const godot_int p_idx);
-wchar_t GDAPI godot_string_operator_index_const(const godot_string *p_self, const godot_int p_idx);
-const wchar_t GDAPI *godot_string_wide_str(const godot_string *p_self);
+const char32_t GDAPI *godot_string_operator_index(godot_string *p_self, const godot_int p_idx);
+char32_t GDAPI godot_string_operator_index_const(const godot_string *p_self, const godot_int p_idx);
+
+const char32_t GDAPI *godot_string_get_data(const godot_string *p_self);
 
 godot_bool GDAPI godot_string_operator_equal(const godot_string *p_self, const godot_string *p_b);
 godot_bool GDAPI godot_string_operator_less(const godot_string *p_self, const godot_string *p_b);
@@ -100,7 +116,7 @@ signed char GDAPI godot_string_naturalnocasecmp_to(const godot_string *p_self, c
 godot_bool GDAPI godot_string_begins_with(const godot_string *p_self, const godot_string *p_string);
 godot_bool GDAPI godot_string_begins_with_char_array(const godot_string *p_self, const char *p_char_array);
 godot_array GDAPI godot_string_bigrams(const godot_string *p_self);
-godot_string GDAPI godot_string_chr(wchar_t p_character);
+godot_string GDAPI godot_string_chr(char32_t p_character);
 godot_bool GDAPI godot_string_ends_with(const godot_string *p_self, const godot_string *p_string);
 godot_int GDAPI godot_string_count(const godot_string *p_self, godot_string p_what, godot_int p_from, godot_int p_to);
 godot_int GDAPI godot_string_countn(const godot_string *p_self, godot_string p_what, godot_int p_from, godot_int p_to);
@@ -165,7 +181,7 @@ double GDAPI godot_string_unicode_char_to_double(const wchar_t *p_str, const wch
 
 godot_int GDAPI godot_string_get_slice_count(const godot_string *p_self, godot_string p_splitter);
 godot_string GDAPI godot_string_get_slice(const godot_string *p_self, godot_string p_splitter, godot_int p_slice);
-godot_string GDAPI godot_string_get_slicec(const godot_string *p_self, wchar_t p_splitter, godot_int p_slice);
+godot_string GDAPI godot_string_get_slicec(const godot_string *p_self, char32_t p_splitter, godot_int p_slice);
 
 godot_array GDAPI godot_string_split(const godot_string *p_self, const godot_string *p_splitter);
 godot_array GDAPI godot_string_split_allow_empty(const godot_string *p_self, const godot_string *p_splitter);
@@ -179,15 +195,15 @@ godot_array GDAPI godot_string_split_ints_mk(const godot_string *p_self, const g
 godot_array GDAPI godot_string_split_ints_mk_allows_empty(const godot_string *p_self, const godot_array *p_splitters);
 godot_array GDAPI godot_string_split_spaces(const godot_string *p_self);
 
-wchar_t GDAPI godot_string_char_lowercase(wchar_t p_char);
-wchar_t GDAPI godot_string_char_uppercase(wchar_t p_char);
+char32_t GDAPI godot_string_char_lowercase(char32_t p_char);
+char32_t GDAPI godot_string_char_uppercase(char32_t p_char);
 godot_string GDAPI godot_string_to_lower(const godot_string *p_self);
 godot_string GDAPI godot_string_to_upper(const godot_string *p_self);
 
 godot_string GDAPI godot_string_get_basename(const godot_string *p_self);
 godot_string GDAPI godot_string_get_extension(const godot_string *p_self);
 godot_string GDAPI godot_string_left(const godot_string *p_self, godot_int p_pos);
-wchar_t GDAPI godot_string_ord_at(const godot_string *p_self, godot_int p_idx);
+char32_t GDAPI godot_string_ord_at(const godot_string *p_self, godot_int p_idx);
 godot_string GDAPI godot_string_plus_file(const godot_string *p_self, const godot_string *p_file);
 godot_string GDAPI godot_string_right(const godot_string *p_self, godot_int p_pos);
 godot_string GDAPI godot_string_strip_edges(const godot_string *p_self, godot_bool p_left, godot_bool p_right);
@@ -197,11 +213,16 @@ void GDAPI godot_string_erase(godot_string *p_self, godot_int p_pos, godot_int p
 
 godot_char_string GDAPI godot_string_ascii(const godot_string *p_self);
 godot_char_string GDAPI godot_string_ascii_extended(const godot_string *p_self);
+
 godot_char_string GDAPI godot_string_utf8(const godot_string *p_self);
 godot_bool GDAPI godot_string_parse_utf8(godot_string *p_self, const char *p_utf8);
 godot_bool GDAPI godot_string_parse_utf8_with_len(godot_string *p_self, const char *p_utf8, godot_int p_len);
 godot_string GDAPI godot_string_chars_to_utf8(const char *p_utf8);
 godot_string GDAPI godot_string_chars_to_utf8_with_len(const char *p_utf8, godot_int p_len);
+
+godot_char16_string GDAPI godot_string_utf16(const godot_string *p_self);
+godot_bool GDAPI godot_string_parse_utf16(godot_string *p_self, const char16_t *p_utf16);
+godot_bool GDAPI godot_string_parse_utf16_with_len(godot_string *p_self, const char16_t *p_utf16, godot_int p_len);
 
 uint32_t GDAPI godot_string_hash(const godot_string *p_self);
 uint64_t GDAPI godot_string_hash64(const godot_string *p_self);

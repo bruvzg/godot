@@ -70,7 +70,7 @@ static void _parse_hex(const String &p_string, int p_start, uint8_t *p_dst) {
 		};
 
 		int n = 0;
-		CharType c = p_string[i];
+		char32_t c = p_string[i];
 		if (c >= '0' && c <= '9') {
 
 			n = c - '0';
@@ -103,7 +103,7 @@ void IP_Address::_parse_ipv6(const String &p_string) {
 
 	for (int i = 0; i < p_string.length(); i++) {
 
-		CharType c = p_string[i];
+		char32_t c = p_string[i];
 		if (c == ':') {
 
 			if (i == 0) {

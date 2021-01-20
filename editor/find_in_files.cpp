@@ -54,7 +54,7 @@ inline void pop_back(T &container) {
 }
 
 // TODO Copied from TextEdit private, would be nice to extract it in a single place
-static bool is_text_char(CharType c) {
+static bool is_text_char(char32_t c) {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
 
@@ -823,7 +823,7 @@ public:
 
 		_line_buffer.clear();
 
-		CharType c = f->get_8();
+		char32_t c = f->get_8();
 
 		while (!f->eof_reached()) {
 

@@ -40,9 +40,9 @@
 extern "C" {
 #endif
 
+static_assert(sizeof(godot_char16_string) == sizeof(Char16String), "Char16String size mismatch");
 static_assert(sizeof(godot_char_string) == sizeof(CharString), "CharString size mismatch");
 static_assert(sizeof(godot_string) == sizeof(String), "String size mismatch");
-static_assert(sizeof(godot_char_type) == sizeof(CharType), "CharType size mismatch");
 
 godot_int GDAPI godot_char_string_length(const godot_char_string *p_cs) {
 	const CharString *cs = (const CharString *)p_cs;
@@ -62,6 +62,24 @@ void GDAPI godot_char_string_destroy(godot_char_string *p_cs) {
 	cs->~CharString();
 }
 
+godot_int GDAPI godot_char16_string_length(const godot_char16_string *p_cs) {
+	const Char16String *cs = (const Char16String *)p_cs;
+
+	return cs->length();
+}
+
+const char16_t GDAPI *godot_char16_string_get_data(const godot_char16_string *p_cs) {
+	const Char16String *cs = (const Char16String *)p_cs;
+
+	return cs->get_data();
+}
+
+void GDAPI godot_char16_string_destroy(godot_char16_string *p_cs) {
+	Char16String *cs = (Char16String *)p_cs;
+
+	cs->~Char16String();
+}
+
 void GDAPI godot_string_new(godot_string *r_dest) {
 	String *dest = (String *)r_dest;
 	memnew_placement(dest, String);
@@ -73,22 +91,54 @@ void GDAPI godot_string_new_copy(godot_string *r_dest, const godot_string *p_src
 	memnew_placement(dest, String(*src));
 }
 
-void GDAPI godot_string_new_with_wide_string(godot_string *r_dest, const wchar_t *p_contents, const int p_size) {
+void GDAPI godot_string_new_with_latin1_string(godot_string *r_dest, const char *p_contents, const int p_size) {
 	String *dest = (String *)r_dest;
-	memnew_placement(dest, String(p_contents, p_size));
+	memnew_placement(dest, String);
+	*dest = String(p_contents, p_size);
 }
 
-const wchar_t GDAPI *godot_string_operator_index(godot_string *p_self, const godot_int p_idx) {
+void GDAPI godot_string_new_with_utf8_string(godot_string *r_dest, const char *p_contents, const int p_size) {
+	String *dest = (String *)r_dest;
+	memnew_placement(dest, String);
+	dest->parse_utf8(p_contents, p_size);
+}
+
+void GDAPI godot_string_new_with_utf16_string(godot_string *r_dest, const char16_t *p_contents, const int p_size) {
+	String *dest = (String *)r_dest;
+	memnew_placement(dest, String);
+	dest->parse_utf16(p_contents, p_size);
+}
+
+void GDAPI godot_string_new_with_utf32_string(godot_string *r_dest, const char32_t *p_contents, const int p_size) {
+	String *dest = (String *)r_dest;
+	memnew_placement(dest, String);
+	*dest = String((const char32_t *)p_contents, p_size);
+}
+
+void GDAPI godot_string_new_with_wide_string(godot_string *r_dest, const wchar_t *p_contents, const int p_size) {
+	String *dest = (String *)r_dest;
+	if (sizeof(wchar_t) == 2) {
+		// wchar_t is 16 bit, parse.
+		memnew_placement(dest, String);
+		dest->parse_utf16((const char16_t *)p_contents, p_size);
+	} else {
+		// wchar_t is 32 bit, copy.
+		memnew_placement(dest, String);
+		*dest = String((const char32_t *)p_contents, p_size);
+	}
+}
+
+const char32_t GDAPI *godot_string_operator_index(godot_string *p_self, const godot_int p_idx) {
 	String *self = (String *)p_self;
 	return &(self->operator[](p_idx));
 }
 
-wchar_t GDAPI godot_string_operator_index_const(const godot_string *p_self, const godot_int p_idx) {
+char32_t GDAPI godot_string_operator_index_const(const godot_string *p_self, const godot_int p_idx) {
 	const String *self = (const String *)p_self;
 	return self->operator[](p_idx);
 }
 
-const wchar_t GDAPI *godot_string_wide_str(const godot_string *p_self) {
+const char32_t GDAPI *godot_string_get_data(const godot_string *p_self) {
 	const String *self = (const String *)p_self;
 	return self->c_str();
 }
@@ -176,7 +226,7 @@ godot_array GDAPI godot_string_bigrams(const godot_string *p_self) {
 	return result;
 };
 
-godot_string GDAPI godot_string_chr(wchar_t p_character) {
+godot_string GDAPI godot_string_chr(char32_t p_character) {
 	godot_string result;
 	memnew_placement(&result, String(String::chr(p_character)));
 
@@ -635,7 +685,7 @@ godot_string GDAPI godot_string_get_slice(const godot_string *p_self, godot_stri
 	return result;
 }
 
-godot_string GDAPI godot_string_get_slicec(const godot_string *p_self, wchar_t p_splitter, godot_int p_slice) {
+godot_string GDAPI godot_string_get_slicec(const godot_string *p_self, char32_t p_splitter, godot_int p_slice) {
 	const String *self = (const String *)p_self;
 	godot_string result;
 	memnew_placement(&result, String(self->get_slicec(p_splitter, p_slice)));
@@ -853,11 +903,11 @@ godot_int GDAPI godot_string_get_slice_count(const godot_string *p_self, godot_s
 	return self->get_slice_count(*splitter);
 }
 
-wchar_t GDAPI godot_string_char_lowercase(wchar_t p_char) {
+char32_t GDAPI godot_string_char_lowercase(char32_t p_char) {
 	return String::char_lowercase(p_char);
 }
 
-wchar_t GDAPI godot_string_char_uppercase(wchar_t p_char) {
+char32_t GDAPI godot_string_char_uppercase(char32_t p_char) {
 	return String::char_uppercase(p_char);
 }
 
@@ -901,7 +951,7 @@ godot_string GDAPI godot_string_left(const godot_string *p_self, godot_int p_pos
 	return result;
 }
 
-wchar_t GDAPI godot_string_ord_at(const godot_string *p_self, godot_int p_idx) {
+char32_t GDAPI godot_string_ord_at(const godot_string *p_self, godot_int p_idx) {
 	const String *self = (const String *)p_self;
 
 	return self->ord_at(p_idx);
@@ -997,6 +1047,42 @@ godot_string GDAPI godot_string_chars_to_utf8(const char *p_utf8) {
 godot_string GDAPI godot_string_chars_to_utf8_with_len(const char *p_utf8, godot_int p_len) {
 	godot_string result;
 	memnew_placement(&result, String(String::utf8(p_utf8, p_len)));
+
+	return result;
+}
+
+godot_char16_string GDAPI godot_string_utf16(const godot_string *p_self) {
+	const String *self = (const String *)p_self;
+
+	godot_char16_string result;
+
+	memnew_placement(&result, Char16String(self->utf16()));
+
+	return result;
+}
+
+godot_bool GDAPI godot_string_parse_utf16(godot_string *p_self, const char16_t *p_utf16) {
+	String *self = (String *)p_self;
+
+	return self->parse_utf16(p_utf16);
+}
+
+godot_bool GDAPI godot_string_parse_utf16_with_len(godot_string *p_self, const char16_t *p_utf16, godot_int p_len) {
+	String *self = (String *)p_self;
+
+	return self->parse_utf16(p_utf16, p_len);
+}
+
+godot_string GDAPI godot_string_chars_to_utf16(const char16_t *p_utf16) {
+	godot_string result;
+	memnew_placement(&result, String(String::utf16(p_utf16)));
+
+	return result;
+}
+
+godot_string GDAPI godot_string_chars_to_utf16_with_len(const char16_t *p_utf16, godot_int p_len) {
+	godot_string result;
+	memnew_placement(&result, String(String::utf16(p_utf16, p_len)));
 
 	return result;
 }

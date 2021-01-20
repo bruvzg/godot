@@ -1363,7 +1363,7 @@ Variant::operator unsigned char() const {
 	}
 }
 
-Variant::operator CharType() const {
+Variant::operator char32_t() const {
 
 	return operator unsigned int();
 }
@@ -2250,7 +2250,7 @@ Variant::Variant(const char *const p_cstring) {
 	memnew_placement(_data._mem, String((const char *)p_cstring));
 }
 
-Variant::Variant(const CharType *p_wstring) {
+Variant::Variant(const char32_t *p_wstring) {
 
 	type = STRING;
 	memnew_placement(_data._mem, String(p_wstring));

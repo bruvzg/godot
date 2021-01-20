@@ -47,7 +47,7 @@ int sfind(const String &p_text, int p_from) {
 	if (len == 0)
 		return -1;
 
-	const CharType *src = p_text.c_str();
+	const char32_t *src = p_text.c_str();
 
 	for (int i = p_from; i <= (len - src_len); i++) {
 		bool found = true;
@@ -62,7 +62,7 @@ int sfind(const String &p_text, int p_from) {
 					found = src[read_pos] == '%';
 					break;
 				case 1: {
-					CharType c = src[read_pos];
+					char32_t c = src[read_pos];
 					found = src[read_pos] == 's' || (c >= '0' && c <= '4');
 					break;
 				}
@@ -116,7 +116,7 @@ String sformat(const String &p_text, const Variant &p1, const Variant &p2, const
 	int result = 0;
 
 	while ((result = sfind(p_text, search_from)) >= 0) {
-		CharType c = p_text[result + 1];
+		char32_t c = p_text[result + 1];
 
 		int req_index = (c == 's' ? findex++ : c - '0');
 

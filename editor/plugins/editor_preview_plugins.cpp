@@ -481,7 +481,7 @@ EditorMaterialPreviewPlugin::~EditorMaterialPreviewPlugin() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-static bool _is_text_char(CharType c) {
+static bool _is_text_char(char32_t c) {
 
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
@@ -544,7 +544,7 @@ Ref<Texture> EditorScriptPreviewPlugin::generate(const RES &p_from, const Size2 
 	bool in_keyword = false;
 	for (int i = 0; i < code.length(); i++) {
 
-		CharType c = code[i];
+		char32_t c = code[i];
 		if (c > 32) {
 			if (col < thumbnail_size) {
 				Color color = text_color;

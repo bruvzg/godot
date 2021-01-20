@@ -39,11 +39,11 @@ class VariantParser {
 public:
 	struct Stream {
 
-		virtual CharType get_char() = 0;
+		virtual char32_t get_char() = 0;
 		virtual bool is_utf8() const = 0;
 		virtual bool is_eof() const = 0;
 
-		CharType saved;
+		char32_t saved;
 
 		Stream() :
 				saved(0) {}
@@ -54,7 +54,7 @@ public:
 
 		FileAccess *f;
 
-		virtual CharType get_char();
+		virtual char32_t get_char();
 		virtual bool is_utf8() const;
 		virtual bool is_eof() const;
 
@@ -66,7 +66,7 @@ public:
 		String s;
 		int pos;
 
-		virtual CharType get_char();
+		virtual char32_t get_char();
 		virtual bool is_utf8() const;
 		virtual bool is_eof() const;
 

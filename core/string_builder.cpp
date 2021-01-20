@@ -62,7 +62,7 @@ String StringBuilder::as_string() const {
 	if (string_length == 0)
 		return "";
 
-	CharType *buffer = memnew_arr(CharType, string_length);
+	char32_t *buffer = memnew_arr(char32_t, string_length);
 
 	int current_position = 0;
 
@@ -74,7 +74,7 @@ String StringBuilder::as_string() const {
 			// Godot string
 			const String &s = strings[godot_string_elem];
 
-			memcpy(buffer + current_position, s.ptr(), s.length() * sizeof(CharType));
+			memcpy(buffer + current_position, s.ptr(), s.length() * sizeof(char32_t));
 
 			current_position += s.length();
 

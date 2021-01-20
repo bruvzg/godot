@@ -429,7 +429,7 @@ String _to_hex(float p_val) {
 
 	for (int i = 0; i < 2; i++) {
 
-		CharType c[2] = { 0, 0 };
+		char32_t c[2] = { 0, 0 };
 		int lv = v & 0xF;
 		if (lv < 10)
 			c[0] = '0' + lv;
@@ -437,7 +437,7 @@ String _to_hex(float p_val) {
 			c[0] = 'a' + lv - 10;
 
 		v >>= 4;
-		String cs = (const CharType *)c;
+		String cs = (const char32_t *)c;
 		ret = cs + ret;
 	}
 

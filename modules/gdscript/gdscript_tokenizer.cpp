@@ -360,22 +360,22 @@ StringName GDScriptTokenizer::get_token_literal(int p_offset) const {
 	ERR_FAIL_V_MSG("", "Failed to get token literal.");
 }
 
-static bool _is_text_char(CharType c) {
+static bool _is_text_char(char32_t c) {
 
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
 
-static bool _is_number(CharType c) {
+static bool _is_number(char32_t c) {
 
 	return (c >= '0' && c <= '9');
 }
 
-static bool _is_hex(CharType c) {
+static bool _is_hex(char32_t c) {
 
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-static bool _is_bin(CharType c) {
+static bool _is_bin(char32_t c) {
 
 	return (c == '0' || c == '1');
 }
@@ -749,7 +749,7 @@ void GDScriptTokenizerText::_advance() {
 				}
 			} break;
 			case '@':
-				if (CharType(GETCHAR(1)) != '"' && CharType(GETCHAR(1)) != '\'') {
+				if (char32_t(GETCHAR(1)) != '"' && char32_t(GETCHAR(1)) != '\'') {
 					_make_error("Unexpected '@'");
 					return;
 				}
@@ -770,33 +770,33 @@ void GDScriptTokenizerText::_advance() {
 
 				String str;
 				while (true) {
-					if (CharType(GETCHAR(i)) == 0) {
+					if (char32_t(GETCHAR(i)) == 0) {
 
 						_make_error("Unterminated String");
 						return;
-					} else if (string_mode == STRING_DOUBLE_QUOTE && CharType(GETCHAR(i)) == '"') {
+					} else if (string_mode == STRING_DOUBLE_QUOTE && char32_t(GETCHAR(i)) == '"') {
 						break;
-					} else if (string_mode == STRING_SINGLE_QUOTE && CharType(GETCHAR(i)) == '\'') {
+					} else if (string_mode == STRING_SINGLE_QUOTE && char32_t(GETCHAR(i)) == '\'') {
 						break;
-					} else if (string_mode == STRING_MULTILINE && CharType(GETCHAR(i)) == '\"' && CharType(GETCHAR(i + 1)) == '\"' && CharType(GETCHAR(i + 2)) == '\"') {
+					} else if (string_mode == STRING_MULTILINE && char32_t(GETCHAR(i)) == '\"' && char32_t(GETCHAR(i + 1)) == '\"' && char32_t(GETCHAR(i + 2)) == '\"') {
 						i += 2;
 						break;
-					} else if (string_mode != STRING_MULTILINE && CharType(GETCHAR(i)) == '\n') {
+					} else if (string_mode != STRING_MULTILINE && char32_t(GETCHAR(i)) == '\n') {
 						_make_error("Unexpected EOL at String.");
 						return;
-					} else if (CharType(GETCHAR(i)) == 0xFFFF) {
+					} else if (char32_t(GETCHAR(i)) == 0xFFFF) {
 						//string ends here, next will be TK
 						i--;
 						break;
-					} else if (CharType(GETCHAR(i)) == '\\') {
+					} else if (char32_t(GETCHAR(i)) == '\\') {
 						//escaped characters...
 						i++;
-						CharType next = GETCHAR(i);
+						char32_t next = GETCHAR(i);
 						if (next == 0) {
 							_make_error("Unterminated String");
 							return;
 						}
-						CharType res = 0;
+						char32_t res = 0;
 
 						switch (next) {
 
@@ -818,13 +818,13 @@ void GDScriptTokenizerText::_advance() {
 								//hexnumbarh - oct is deprecated
 								i += 1;
 								for (int j = 0; j < 4; j++) {
-									CharType c = GETCHAR(i + j);
+									char32_t c = GETCHAR(i + j);
 									if (c == 0) {
 										_make_error("Unterminated String");
 										return;
 									}
 
-									CharType v = 0;
+									char32_t v = 0;
 									if (c >= '0' && c <= '9') {
 										v = c - '0';
 									} else if (c >= 'a' && c <= 'f') {
@@ -854,12 +854,12 @@ void GDScriptTokenizerText::_advance() {
 						str += res;
 
 					} else {
-						if (CharType(GETCHAR(i)) == '\n') {
+						if (char32_t(GETCHAR(i)) == '\n') {
 							line++;
 							column = 1;
 						}
 
-						str += CharType(GETCHAR(i));
+						str += char32_t(GETCHAR(i));
 					}
 					i++;
 				}
@@ -938,7 +938,7 @@ void GDScriptTokenizerText::_advance() {
 						} else
 							break;
 
-						str += CharType(GETCHAR(i));
+						str += char32_t(GETCHAR(i));
 						i++;
 					}
 
@@ -974,11 +974,11 @@ void GDScriptTokenizerText::_advance() {
 				if (_is_text_char(GETCHAR(0))) {
 					// parse identifier
 					String str;
-					str += CharType(GETCHAR(0));
+					str += char32_t(GETCHAR(0));
 
 					int i = 1;
 					while (_is_text_char(GETCHAR(i))) {
-						str += CharType(GETCHAR(i));
+						str += char32_t(GETCHAR(i));
 						i++;
 					}
 

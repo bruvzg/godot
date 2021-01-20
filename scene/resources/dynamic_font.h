@@ -164,14 +164,14 @@ class DynamicFontAtSize : public Reference {
 		int y;
 	};
 
-	const Pair<const Character *, DynamicFontAtSize *> _find_char_with_font(CharType p_char, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const;
-	Character _make_outline_char(CharType p_char);
+	const Pair<const Character *, DynamicFontAtSize *> _find_char_with_font(char32_t p_char, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const;
+	Character _make_outline_char(char32_t p_char);
 	TexturePosition _find_texture_pos_for_glyph(int p_color_size, Image::Format p_image_format, int p_width, int p_height);
 	Character _bitmap_to_character(FT_Bitmap bitmap, int yofs, int xofs, float advance);
 
-	HashMap<CharType, Character> char_map;
+	HashMap<char32_t, Character> char_map;
 
-	_FORCE_INLINE_ void _update_char(CharType p_char);
+	_FORCE_INLINE_ void _update_char(char32_t p_char);
 
 	friend class DynamicFontData;
 	Ref<DynamicFontData> font;
@@ -187,10 +187,10 @@ public:
 	float get_ascent() const;
 	float get_descent() const;
 
-	Size2 get_char_size(CharType p_char, CharType p_next, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const;
+	Size2 get_char_size(char32_t p_char, char32_t p_next, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks) const;
 	String get_available_chars() const;
 
-	float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next, const Color &p_modulate, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks, bool p_advance_only = false, bool p_outline = false) const;
+	float draw_char(RID p_canvas_item, const Point2 &p_pos, char32_t p_char, char32_t p_next, const Color &p_modulate, const Vector<Ref<DynamicFontAtSize> > &p_fallbacks, bool p_advance_only = false, bool p_outline = false) const;
 
 	void set_texture_flags(uint32_t p_flags);
 	void update_oversampling();
@@ -275,14 +275,14 @@ public:
 	virtual float get_ascent() const;
 	virtual float get_descent() const;
 
-	virtual Size2 get_char_size(CharType p_char, CharType p_next = 0) const;
+	virtual Size2 get_char_size(char32_t p_char, char32_t p_next = 0) const;
 	String get_available_chars() const;
 
 	virtual bool is_distance_field_hint() const;
 
 	virtual bool has_outline() const;
 
-	virtual float draw_char(RID p_canvas_item, const Point2 &p_pos, CharType p_char, CharType p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const;
+	virtual float draw_char(RID p_canvas_item, const Point2 &p_pos, char32_t p_char, char32_t p_next = 0, const Color &p_modulate = Color(1, 1, 1), bool p_outline = false) const;
 
 	SelfList<DynamicFont> font_list;
 
