@@ -25,6 +25,30 @@
 		<link title="OS Test Demo">https://godotengine.org/asset-library/asset/677</link>
 	</tutorials>
 	<methods>
+		<method name="clear_opentype_features">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_opentype_feature" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="tag" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_opentype_feature">
+			<return type="void">
+			</return>
+			<argument index="0" name="tag" type="String">
+			</argument>
+			<argument index="1" name="value" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="align" type="int" setter="set_text_align" getter="get_text_align" enum="Button.TextAlign" default="1">
@@ -42,8 +66,12 @@
 		<member name="icon" type="Texture" setter="set_button_icon" getter="get_button_icon">
 			Button's icon, if text is present the icon will be placed before the text.
 		</member>
+		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;&quot;">
+		</member>
 		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;&quot;">
 			The button's text that will be displayed inside the button's area.
+		</member>
+		<member name="text_direction" type="int" setter="set_text_direction" getter="get_text_direction" enum="Control.TextDirection" default="0">
 		</member>
 	</members>
 	<constants>

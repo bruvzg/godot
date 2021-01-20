@@ -54,6 +54,14 @@
 				Resets the color for the given column to default.
 			</description>
 		</method>
+		<method name="clear_opentype_features">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="deselect">
 			<return type="void">
 			</return>
@@ -184,6 +192,14 @@
 				Returns the icon [Texture] region as [Rect2].
 			</description>
 		</method>
+		<method name="get_language" qualifiers="const">
+			<return type="String">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="get_metadata" qualifiers="const">
 			<return type="Variant">
 			</return>
@@ -208,6 +224,16 @@
 			<description>
 				Returns the next visible TreeItem in the tree or a null object if there is none.
 				If [code]wrap[/code] is enabled, the method will wrap around to the first visible element in the tree when called on the last visible element, otherwise it returns [code]null[/code].
+			</description>
+		</method>
+		<method name="get_opentype_feature" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="tag" type="String">
+			</argument>
+			<description>
 			</description>
 		</method>
 		<method name="get_parent">
@@ -252,6 +278,22 @@
 				Returns a dictionary containing the range parameters for a given column. The keys are "min", "max", "step", and "expr".
 			</description>
 		</method>
+		<method name="get_structured_text_bidi_override" qualifiers="const">
+			<return type="int" enum="Control.StructuredTextParser">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_structured_text_bidi_override_options" qualifiers="const">
+			<return type="Array">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="get_suffix" qualifiers="const">
 			<return type="String">
 			</return>
@@ -277,6 +319,14 @@
 			</argument>
 			<description>
 				Returns the given column's text alignment.
+			</description>
+		</method>
+		<method name="get_text_direction" qualifiers="const">
+			<return type="int" enum="Control.TextDirection">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
 			</description>
 		</method>
 		<method name="get_tooltip" qualifiers="const">
@@ -537,6 +587,16 @@
 				Sets the given column's icon's texture region.
 			</description>
 		</method>
+		<method name="set_language">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="language" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="set_metadata">
 			<return type="void">
 			</return>
@@ -546,6 +606,18 @@
 			</argument>
 			<description>
 				Sets the metadata value for the given column, which can be retrieved later using [method get_metadata]. This can be used, for example, to store a reference to the original data.
+			</description>
+		</method>
+		<method name="set_opentype_feature">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="tag" type="String">
+			</argument>
+			<argument index="2" name="value" type="int">
+			</argument>
+			<description>
 			</description>
 		</method>
 		<method name="set_range">
@@ -588,6 +660,26 @@
 				If [code]true[/code], the given column is selectable.
 			</description>
 		</method>
+		<method name="set_structured_text_bidi_override">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="parser" type="int" enum="Control.StructuredTextParser">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_structured_text_bidi_override_options">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="args" type="Array">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="set_suffix">
 			<return type="void">
 			</return>
@@ -619,6 +711,16 @@
 			</argument>
 			<description>
 				Sets the given column's text alignment. See [enum TextAlign] for possible values.
+			</description>
+		</method>
+		<method name="set_text_direction">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="direction" type="int" enum="Control.TextDirection">
+			</argument>
+			<description>
 			</description>
 		</method>
 		<method name="set_tooltip">

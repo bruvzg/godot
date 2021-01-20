@@ -50,6 +50,26 @@
 				Draw character [code]char[/code] into a canvas item using the font at a given position, with [code]modulate[/code] color, and optionally kerning if [code]next[/code] is passed. clipping the width. [code]position[/code] specifies the baseline, not the top. To draw from the top, [i]ascent[/i] must be added to the Y axis. The width used by the character is returned, making this function useful for drawing strings character by character.
 			</description>
 		</method>
+		<method name="draw_wordwrap_string" qualifiers="const">
+			<return type="void">
+			</return>
+			<argument index="0" name="canvas_item" type="RID">
+			</argument>
+			<argument index="1" name="position" type="Vector2">
+			</argument>
+			<argument index="2" name="align" type="int" enum="HAlign">
+			</argument>
+			<argument index="3" name="string" type="float">
+			</argument>
+			<argument index="4" name="clip_w" type="String" default="Color( 1, 1, 1, 1 )">
+			</argument>
+			<argument index="5" name="modulate" type="Color" default="-1">
+			</argument>
+			<argument index="6" name="outline_modulate" type="Color" default="Color( 1, 1, 1, 1 )">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="get_ascent" qualifiers="const">
 			<return type="float">
 			</return>
@@ -80,6 +100,18 @@
 			</return>
 			<description>
 				Returns the total font height (ascent plus descent) in pixels.
+			</description>
+		</method>
+		<method name="get_outline_size" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_size" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
 			</description>
 		</method>
 		<method name="get_string_size" qualifiers="const">
@@ -124,5 +156,9 @@
 		</method>
 	</methods>
 	<constants>
+		<constant name="SPACING_TOP" value="0" enum="SpacingType">
+		</constant>
+		<constant name="SPACING_BOTTOM" value="1" enum="SpacingType">
+		</constant>
 	</constants>
 </class>

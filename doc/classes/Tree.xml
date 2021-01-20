@@ -35,6 +35,14 @@
 				Clears the tree. This removes all items.
 			</description>
 		</method>
+		<method name="clear_column_title_opentype_features">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="create_item">
 			<return type="TreeItem">
 			</return>
@@ -80,6 +88,32 @@
 			</argument>
 			<description>
 				Returns the column's title.
+			</description>
+		</method>
+		<method name="get_column_title_direction" qualifiers="const">
+			<return type="int" enum="Control.TextDirection">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_column_title_language" qualifiers="const">
+			<return type="String">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_column_title_opentype_feature" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="tag" type="String">
+			</argument>
+			<description>
 			</description>
 		</method>
 		<method name="get_column_width" qualifiers="const">
@@ -238,6 +272,38 @@
 			</argument>
 			<description>
 				Sets the title of a column.
+			</description>
+		</method>
+		<method name="set_column_title_direction">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="direction" type="int" enum="Control.TextDirection">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_column_title_language">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="language" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_column_title_opentype_feature">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="tag" type="String">
+			</argument>
+			<argument index="2" name="value" type="int">
+			</argument>
+			<description>
 			</description>
 		</method>
 		<method name="set_column_titles_visible">

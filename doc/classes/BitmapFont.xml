@@ -92,6 +92,30 @@
 				Returns the number of textures in the BitmapFont atlas.
 			</description>
 		</method>
+		<method name="get_variation" qualifiers="const">
+			<return type="float">
+			</return>
+			<argument index="0" name="tag" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_variation_list" qualifiers="const">
+			<return type="Dictionary">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="set_variation">
+			<return type="void">
+			</return>
+			<argument index="0" name="tag" type="String">
+			</argument>
+			<argument index="1" name="value" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="ascent" type="float" setter="set_ascent" getter="get_ascent" default="0.0">
@@ -103,7 +127,7 @@
 		<member name="fallback" type="BitmapFont" setter="set_fallback" getter="get_fallback">
 			The fallback font.
 		</member>
-		<member name="height" type="float" setter="set_height" getter="get_height" default="1.0">
+		<member name="height" type="float" setter="set_height" getter="get_height" default="0.0">
 			Total font height (ascent plus descent) in pixels.
 		</member>
 	</members>

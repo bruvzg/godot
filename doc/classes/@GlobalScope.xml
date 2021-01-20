@@ -127,6 +127,8 @@
 		<constant name="HALIGN_RIGHT" value="2" enum="HAlign">
 			Horizontal right alignment, usually for text-derived classes.
 		</constant>
+		<constant name="HALIGN_FILL" value="3" enum="HAlign">
+		</constant>
 		<constant name="VALIGN_TOP" value="0" enum="VAlign">
 			Vertical top alignment, usually for text-derived classes.
 		</constant>

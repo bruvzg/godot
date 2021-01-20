@@ -10,15 +10,39 @@
 		<link title="3D Voxel Demo">https://godotengine.org/asset-library/asset/676</link>
 	</tutorials>
 	<methods>
+		<method name="get_variation" qualifiers="const">
+			<return type="float">
+			</return>
+			<argument index="0" name="tag" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_variation_list" qualifiers="const">
+			<return type="Dictionary">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="set_variation">
+			<return type="void">
+			</return>
+			<argument index="0" name="tag" type="String">
+			</argument>
+			<argument index="1" name="value" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
-		<member name="antialiased" type="bool" setter="set_antialiased" getter="is_antialiased" default="true">
+		<member name="antialiased" type="bool" setter="set_antialiased" getter="is_antialiased" default="false">
 			If [code]true[/code], the font is rendered with anti-aliasing. This property applies both to the main font and its outline (if it has one).
 		</member>
 		<member name="font_path" type="String" setter="set_font_path" getter="get_font_path" default="&quot;&quot;">
 			The path to the vector font file.
 		</member>
-		<member name="hinting" type="int" setter="set_hinting" getter="get_hinting" enum="DynamicFontData.Hinting" default="2">
+		<member name="hinting" type="int" setter="set_hinting" getter="get_hinting" enum="DynamicFontData.Hinting" default="0">
 			The font hinting mode used by FreeType. See [enum Hinting] for options.
 		</member>
 	</members>

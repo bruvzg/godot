@@ -110,7 +110,7 @@
 		<member name="font_data" type="DynamicFontData" setter="set_font_data" getter="get_font_data">
 			The font data.
 		</member>
-		<member name="outline_color" type="Color" setter="set_outline_color" getter="get_outline_color" default="Color( 1, 1, 1, 1 )">
+		<member name="outline_color" type="Color" setter="set_outline_color" getter="get_outline_color" default="Color( 0, 0, 0, 1 )">
 			The font outline's color.
 			[b]Note:[/b] It's recommended to leave this at the default value so that you can adjust it in individual controls. For example, if the outline is made black here, it won't be possible to change its color using a Label's font outline modulate theme item.
 		</member>
