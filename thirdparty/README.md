@@ -115,6 +115,11 @@ comments.
   * Upstream: https://android.googlesource.com/platform/frameworks/base/+/master/data/fonts/
   * Version: ? (pre-2014 commit when DroidSansJapanese.ttf was obsoleted)
   * License: Apache 2.0
+- `Tamsyn*.png`:
+  * Upstream: http://www.fial.com/~scott/tamsyn-font/
+  * Version: 1.11 (2015)
+  * License: Tamsyn
+  * Comment: Extracted "0..9,A..F" characters for hex code printing.
 
 
 ## freetype
@@ -139,6 +144,49 @@ Files extracted from upstream source:
 The files we package are automatically generated.
 See the header of glad.c for instructions on how to generate them for
 the GLES version Godot targets.
+
+
+## graphite
+
+- Upstream: https://github.com/silnrsi/graphite
+- Version: 1.3.14 (92f59dcc52f73ce747f1cdc831579ed2546884aa, 2020)
+- License: MPL-2.0
+
+Files extracted from upstream source:
+
+- the `include` folder
+- the `src` folder
+- `COPYING`, `ChangeLog`
+
+
+## harfbuzz
+
+- Upstream: https://github.com/harfbuzz/harfbuzz
+- Version: 2.7.4 (7236c7e29cef1c2d76c7a284c5081ff4d3aa1127, 2020)
+- License: MIT
+
+Files extracted from upstream source:
+
+- the `src` folder
+- `AUTHORS`, `COPYING`, `NEWS`, `THANKS`
+
+
+## icu4c
+
+- Upstream: https://github.com/unicode-org/icu
+- Version: 68.2 (84e1f26ea77152936e70d53178a816dbfbf69989, 2020)
+- License: Unicode
+
+Files extracted from upstream source:
+
+- the `common` folder
+- `APIChangeReport.md`, `LICENSE`
+
+Files generated from upstream source:
+
+- the `icudt68l.dat` built with the provided `godot_data.json` config file (see
+  https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/buildtool.md
+  for instructions)
 
 
 ## jpeg-compressor
