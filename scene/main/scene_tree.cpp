@@ -497,9 +497,8 @@ bool SceneTree::iteration(float p_time) {
 
 void SceneTree::_update_font_oversampling(float p_ratio) {
 
-	if (use_font_oversampling) {
-		DynamicFontAtSize::font_oversampling = p_ratio;
-		DynamicFont::update_oversampling();
+	if (use_font_oversampling && (TS != nullptr)) {
+		TS->font_set_oversampling(p_ratio);
 	}
 }
 

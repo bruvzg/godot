@@ -160,6 +160,8 @@
 #include "scene/resources/sphere_shape.h"
 #include "scene/resources/surface_tool.h"
 #include "scene/resources/text_file.h"
+#include "scene/resources/text_line.h"
+#include "scene/resources/text_paragraph.h"
 #include "scene/resources/texture.h"
 #include "scene/resources/tile_set.h"
 #include "scene/resources/video_stream.h"
@@ -676,7 +678,8 @@ void register_scene_types() {
 	ClassDB::register_class<DynamicFontData>();
 	ClassDB::register_class<DynamicFont>();
 
-	DynamicFont::initialize_dynamic_fonts();
+	ClassDB::register_class<TextLine>();
+	ClassDB::register_class<TextParagraph>();
 
 	ClassDB::register_virtual_class<StyleBox>();
 	ClassDB::register_class<StyleBoxEmpty>();
@@ -785,8 +788,6 @@ void unregister_scene_types() {
 
 	ResourceLoader::remove_resource_format_loader(resource_loader_stream_texture);
 	resource_loader_stream_texture.unref();
-
-	DynamicFont::finish_dynamic_fonts();
 
 	ResourceSaver::remove_resource_format_saver(resource_saver_text);
 	resource_saver_text.unref();
