@@ -32,6 +32,7 @@
 #define GRAPH_NODE_H
 
 #include "scene/gui/container.h"
+#include "scene/resources/text_line.h"
 
 class GraphNode : public Container {
 
@@ -66,6 +67,12 @@ private:
 	};
 
 	String title;
+	Ref<TextLine> title_buf;
+
+	Dictionary opentype_features;
+	String language;
+	TextDirection text_direction = TEXT_DIRECTION_AUTO;
+
 	bool show_close;
 	Vector2 offset;
 	bool comment;
@@ -94,6 +101,7 @@ private:
 
 	void _connpos_update();
 	void _resort();
+	void _shape();
 
 	Vector2 drag_from;
 	bool selected;
@@ -124,6 +132,16 @@ public:
 
 	void set_title(const String &p_title);
 	String get_title() const;
+
+	void set_text_direction(TextDirection p_text_direction);
+	TextDirection get_text_direction() const;
+
+	void set_opentype_feature(const String &p_name, int p_value);
+	int get_opentype_feature(const String &p_name) const;
+	void clear_opentype_features();
+
+	void set_language(const String &p_language);
+	String get_language() const;
 
 	void set_offset(const Vector2 &p_offset);
 	Vector2 get_offset() const;

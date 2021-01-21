@@ -221,7 +221,7 @@ EditorAbout::EditorAbout() {
 
 		const ComponentCopyright &component = COPYRIGHT_INFO[component_index];
 		TreeItem *ti = _tpl_tree->create_item(tpl_ti_tp);
-		String component_name = component.name;
+		String component_name = String::utf8(component.name);
 		ti->set_text(0, component_name);
 		String text = component_name + "\n";
 		long_text += "- " + component_name + "\n";
@@ -229,7 +229,7 @@ EditorAbout::EditorAbout() {
 			const ComponentCopyrightPart &part = component.parts[part_index];
 			text += "\n    Files:";
 			for (int file_num = 0; file_num < part.file_count; file_num++) {
-				text += "\n        " + String(part.files[file_num]);
+				text += "\n        " + String::utf8(part.files[file_num]);
 			}
 			String copyright;
 			for (int copyright_index = 0; copyright_index < part.copyright_count; copyright_index++) {
@@ -237,7 +237,7 @@ EditorAbout::EditorAbout() {
 			}
 			text += copyright;
 			long_text += copyright;
-			String license = "\n    License: " + String(part.license) + "\n";
+			String license = "\n    License: " + String::utf8(part.license) + "\n";
 			text += license;
 			long_text += license + "\n";
 		}
@@ -246,10 +246,10 @@ EditorAbout::EditorAbout() {
 	for (int i = 0; i < LICENSE_COUNT; i++) {
 
 		TreeItem *ti = _tpl_tree->create_item(tpl_ti_lc);
-		String licensename = String(LICENSE_NAMES[i]);
+		String licensename = String::utf8(LICENSE_NAMES[i]);
 		ti->set_text(0, licensename);
 		long_text += "- " + licensename + "\n\n";
-		String licensebody = String(LICENSE_BODIES[i]);
+		String licensebody = String::utf8(LICENSE_BODIES[i]);
 		ti->set_metadata(0, licensebody);
 		long_text += "    " + licensebody.replace("\n", "\n    ") + "\n\n";
 	}

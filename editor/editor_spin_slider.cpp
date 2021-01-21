@@ -36,13 +36,13 @@
 
 String EditorSpinSlider::get_tooltip(const Point2 &p_pos) const {
 	if (grabber->is_visible()) {
-		return rtos(get_value()) + "\n\n" + TTR("Hold Ctrl to round to integers. Hold Shift for more precise changes.");
+		return TS->format_number(rtos(get_value())) + "\n\n" + TTR("Hold Ctrl to round to integers. Hold Shift for more precise changes.");
 	}
-	return rtos(get_value());
+	return TS->format_number(rtos(get_value()));
 }
 
 String EditorSpinSlider::get_text_value() const {
-	return String::num(get_value(), Math::range_step_decimals(get_step()));
+	return TS->format_number(String::num(get_value(), Math::range_step_decimals(get_step())));
 }
 
 void EditorSpinSlider::_gui_input(const Ref<InputEvent> &p_event) {
@@ -384,7 +384,7 @@ void EditorSpinSlider::_evaluate_input_text() {
 	// This prevents using functions like `pow()`, but using functions
 	// in EditorSpinSlider is a barely known (and barely used) feature.
 	// Instead, we'd rather support German/French keyboard layouts out of the box.
-	const String text = value_input->get_text().replace(",", ".");
+	const String text = TS->parse_number(value_input->get_text().replace(",", "."));
 
 	Ref<Expression> expr;
 	expr.instance();

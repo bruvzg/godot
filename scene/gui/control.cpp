@@ -2641,6 +2641,95 @@ bool Control::is_text_field() const {
 	return false;
 }
 
+Vector<Vector2i> Control::structured_text_parser(StructuredTextParser p_node_type, const Array &p_args, const String p_text) const {
+	Vector<Vector2i> ret;
+	switch (p_node_type) {
+		case STRUCTURED_TEXT_URI: {
+			int prev = 0;
+			for (int i = 0; i < p_text.length(); i++) {
+				if ((p_text[i] == '\\') || (p_text[i] == '/') || (p_text[i] == '.') || (p_text[i] == ':') || (p_text[i] == '&') || (p_text[i] == '=') || (p_text[i] == '@') || (p_text[i] == '?') || (p_text[i] == '#')) {
+					if (prev != i) {
+						ret.push_back(Vector2i(prev, i));
+					}
+					ret.push_back(Vector2i(i, i + 1));
+					prev = i + 1;
+				}
+			}
+			if (prev != p_text.length()) {
+				ret.push_back(Vector2i(prev, p_text.length()));
+			}
+		} break;
+		case STRUCTURED_TEXT_FILE: {
+			int prev = 0;
+			for (int i = 0; i < p_text.length(); i++) {
+				if ((p_text[i] == '\\') || (p_text[i] == '/') || (p_text[i] == ':')) {
+					if (prev != i) {
+						ret.push_back(Vector2i(prev, i));
+					}
+					ret.push_back(Vector2i(i, i + 1));
+					prev = i + 1;
+				}
+			}
+			if (prev != p_text.length()) {
+				ret.push_back(Vector2i(prev, p_text.length()));
+			}
+		} break;
+		case STRUCTURED_TEXT_EMAIL: {
+			bool local = true;
+			int prev = 0;
+			for (int i = 0; i < p_text.length(); i++) {
+				if ((p_text[i] == '@') && local) { // Add full "local" as single context.
+					local = false;
+					ret.push_back(Vector2i(prev, i));
+					ret.push_back(Vector2i(i, i + 1));
+					prev = i + 1;
+				} else if (!local & (p_text[i] == '.')) { // Add each dot separated "domain" part as context.
+					if (prev != i) {
+						ret.push_back(Vector2i(prev, i));
+					}
+					ret.push_back(Vector2i(i, i + 1));
+					prev = i + 1;
+				}
+			}
+			if (prev != p_text.length()) {
+				ret.push_back(Vector2i(prev, p_text.length()));
+			}
+		} break;
+		case STRUCTURED_TEXT_LIST: {
+			if (p_args.size() == 1 && p_args[0].get_type() == Variant::STRING) {
+				Vector<String> tags = p_text.split(String(p_args[0]));
+				int prev = 0;
+				for (int i = 0; i < tags.size(); i++) {
+					if (prev != i) {
+						ret.push_back(Vector2i(prev, prev + tags[i].length()));
+					}
+					ret.push_back(Vector2i(prev + tags[i].length(), prev + tags[i].length() + 1));
+					prev = prev + tags[i].length() + 1;
+				}
+			}
+		} break;
+		case STRUCTURED_TEXT_CUSTOM: {
+			if (get_script_instance()) {
+				Variant data = get_script_instance()->call(SceneStringNames::get_singleton()->_structured_text_parser, p_args, p_text);
+				if (data.get_type() == Variant::ARRAY) {
+					Array _data = data;
+					for (int i = 0; i < _data.size(); i++) {
+						if (_data[i].get_type() == Variant::VECTOR2) {
+							ret.push_back(Vector2(_data[i]));
+						}
+					}
+				}
+			}
+		} break;
+		case STRUCTURED_TEXT_NONE:
+		case STRUCTURED_TEXT_DEFAULT:
+		default: {
+			ret.push_back(Vector2i(0, p_text.length()));
+		}
+	}
+	return ret;
+}
+
 void Control::set_rotation(float p_radians) {
 
 	data.rotation = p_radians;
@@ -2955,6 +3044,8 @@ void Control::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("_override_changed"), &Control::_override_changed);
 
+	BIND_VMETHOD(MethodInfo("_structured_text_parser", PropertyInfo(Variant::ARRAY, "args"), PropertyInfo(Variant::STRING, "text")));
+
 	BIND_VMETHOD(MethodInfo("_gui_input", PropertyInfo(Variant::OBJECT, "event", PROPERTY_HINT_RESOURCE_TYPE, "InputEvent")));
 	BIND_VMETHOD(MethodInfo(Variant::VECTOR2, "_get_minimum_size"));
 
@@ -3089,6 +3180,18 @@ void Control::_bind_methods() {
 
 	BIND_ENUM_CONSTANT(ANCHOR_BEGIN);
 	BIND_ENUM_CONSTANT(ANCHOR_END);
+
+	BIND_ENUM_CONSTANT(TEXT_DIRECTION_AUTO);
+	BIND_ENUM_CONSTANT(TEXT_DIRECTION_LTR);
+	BIND_ENUM_CONSTANT(TEXT_DIRECTION_RTL);
+
+	BIND_ENUM_CONSTANT(STRUCTURED_TEXT_DEFAULT);
+	BIND_ENUM_CONSTANT(STRUCTURED_TEXT_URI);
+	BIND_ENUM_CONSTANT(STRUCTURED_TEXT_FILE);
+	BIND_ENUM_CONSTANT(STRUCTURED_TEXT_EMAIL);
+	BIND_ENUM_CONSTANT(STRUCTURED_TEXT_LIST);
+	BIND_ENUM_CONSTANT(STRUCTURED_TEXT_NONE);
+	BIND_ENUM_CONSTANT(STRUCTURED_TEXT_CUSTOM);
 
 	ADD_SIGNAL(MethodInfo("resized"));
 	ADD_SIGNAL(MethodInfo("gui_input", PropertyInfo(Variant::OBJECT, "event", PROPERTY_HINT_RESOURCE_TYPE, "InputEvent")));

@@ -296,6 +296,7 @@ EditorPropertyPath::EditorPropertyPath() {
 	HBoxContainer *path_hb = memnew(HBoxContainer);
 	add_child(path_hb);
 	path = memnew(LineEdit);
+	path->set_structured_text_bidi_override(Control::STRUCTURED_TEXT_FILE);
 	path_hb->add_child(path);
 	path->connect("text_entered", this, "_path_selected");
 	path->connect("focus_exited", this, "_path_focus_exited");
@@ -1084,7 +1085,7 @@ void EditorPropertyEasing::_set_preset(int p_preset) {
 void EditorPropertyEasing::_setup_spin() {
 	setting = true;
 	spin->setup_and_show();
-	spin->get_line_edit()->set_text(rtos(get_edited_object()->get(get_edited_property())));
+	spin->get_line_edit()->set_text(TS->format_number(rtos(get_edited_object()->get(get_edited_property()))));
 	setting = false;
 	spin->show();
 }

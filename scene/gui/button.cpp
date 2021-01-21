@@ -35,7 +35,7 @@
 
 Size2 Button::get_minimum_size() const {
 
-	Size2 minsize = get_font("font")->get_string_size(xl_text);
+	Size2 minsize = text_buf->get_size();
 	if (clip_text)
 		minsize.width = 0;
 
@@ -69,6 +69,14 @@ void Button::_notification(int p_what) {
 		case NOTIFICATION_TRANSLATION_CHANGED: {
 
 			xl_text = tr(text);
+			_shape();
+
+			minimum_size_changed();
+			update();
+		} break;
+		case NOTIFICATION_THEME_CHANGED: {
+
+			_shape();
 			minimum_size_changed();
 			update();
 		} break;
@@ -173,7 +181,7 @@ void Button::_notification(int p_what) {
 					Size2 _size = get_size() - style->get_offset() * 2;
 					_size.width -= get_constant("hseparation") + icon_ofs_region;
 					if (!clip_text)
-						_size.width -= get_font("font")->get_string_size(xl_text).width;
+						_size.width -= text_buf->get_size().width;
 					float icon_width = _icon->get_width() * _size.height / _icon->get_height();
 					float icon_height = _size.height;
 
@@ -190,6 +198,9 @@ void Button::_notification(int p_what) {
 
 			Point2 icon_ofs = !_icon.is_null() ? Point2(icon_region.size.width + get_constant("hseparation"), 0) : Point2();
 			int text_clip = size.width - style->get_minimum_size().width - icon_ofs.width;
+			text_buf->set_width(clip_text ? text_clip : -1);
+			int text_width = clip_text ? MIN(text_clip, text_buf->get_size().x) : text_buf->get_size().x;
+
 			if (_internal_margin[MARGIN_LEFT] > 0) {
 				text_clip -= _internal_margin[MARGIN_LEFT] + get_constant("hseparation");
 			}
@@ -197,7 +208,7 @@ void Button::_notification(int p_what) {
 				text_clip -= _internal_margin[MARGIN_RIGHT] + get_constant("hseparation");
 			}
 
-			Point2 text_ofs = (size - style->get_minimum_size() - icon_ofs - font->get_string_size(xl_text) - Point2(_internal_margin[MARGIN_RIGHT] - _internal_margin[MARGIN_LEFT], 0)) / 2.0;
+			Point2 text_ofs = (size - style->get_minimum_size() - icon_ofs - text_buf->get_size() - Point2(_internal_margin[MARGIN_RIGHT] - _internal_margin[MARGIN_LEFT], 0)) / 2.0;
 
 			switch (align) {
 				case ALIGN_LEFT: {
@@ -216,16 +227,21 @@ void Button::_notification(int p_what) {
 				} break;
 				case ALIGN_RIGHT: {
 					if (_internal_margin[MARGIN_RIGHT] > 0) {
-						text_ofs.x = size.x - style->get_margin(MARGIN_RIGHT) - font->get_string_size(xl_text).x - _internal_margin[MARGIN_RIGHT] - get_constant("hseparation");
+						text_ofs.x = size.x - style->get_margin(MARGIN_RIGHT) - text_width - _internal_margin[MARGIN_RIGHT] - get_constant("hseparation");
 					} else {
-						text_ofs.x = size.x - style->get_margin(MARGIN_RIGHT) - font->get_string_size(xl_text).x;
+						text_ofs.x = size.x - style->get_margin(MARGIN_RIGHT) - text_width;
 					}
 					text_ofs.y += style->get_offset().y;
 				} break;
 			}
 
-			text_ofs.y += font->get_ascent();
-			font->draw(ci, text_ofs.floor(), xl_text, color, clip_text ? text_clip : -1);
+			Color font_outline_modulate = get_color("font_outline_modulate");
+			int outline_size = get_constant("outline_size");
+			if (outline_size > 0 && font_outline_modulate.a > 0) {
+				text_buf->draw_outline(ci, text_ofs.floor(), outline_size, font_outline_modulate);
+			}
+
+			text_buf->draw(ci, text_ofs.floor(), color);
 
 			if (!_icon.is_null() && icon_region.size.width > 0) {
 				draw_texture_rect_region(_icon, icon_region, Rect2(Point2(), _icon->get_size()), color_icon);
@@ -234,19 +250,80 @@ void Button::_notification(int p_what) {
 	}
 }
 
+void Button::_shape() {
+	Ref<Font> font = get_font("font");
+	int font_size = font->get_size();
+
+	text_buf->clear();
+	text_buf->set_direction((TextServer::Direction)text_direction);
+	text_buf->add_string(xl_text, font, font_size, opentype_features, (language != "") ? language : TranslationServer::get_singleton()->get_tool_locale());
+}
+
 void Button::set_text(const String &p_text) {
 
-	if (text == p_text)
-		return;
-	text = p_text;
-	xl_text = tr(p_text);
-	update();
-	_change_notify("text");
-	minimum_size_changed();
+	if (text != p_text) {
+		text = p_text;
+		xl_text = tr(text);
+		_shape();
+
+		update();
+		_change_notify("text");
+		minimum_size_changed();
+	}
 }
+
 String Button::get_text() const {
 
 	return text;
+}
+
+void Button::set_text_direction(Control::TextDirection p_text_direction) {
+
+	ERR_FAIL_COND((int)p_text_direction < 0 || (int)p_text_direction > 3);
+	if (text_direction != p_text_direction) {
+		text_direction = p_text_direction;
+		_shape();
+		update();
+	}
+}
+
+Control::TextDirection Button::get_text_direction() const {
+	return text_direction;
+}
+
+void Button::clear_opentype_features() {
+	opentype_features.clear();
+	_shape();
+	update();
+}
+
+void Button::set_opentype_feature(const String &p_name, int p_value) {
+	int32_t tag = TS->name_to_tag(p_name);
+	if (!opentype_features.has(tag) || (int)opentype_features[tag] != p_value) {
+		opentype_features[tag] = p_value;
+		_shape();
+		update();
+	}
+}
+
+int Button::get_opentype_feature(const String &p_name) const {
+	int32_t tag = TS->name_to_tag(p_name);
+	if (!opentype_features.has(tag)) {
+		return -1;
+	}
+	return opentype_features[tag];
+}
+
+void Button::set_language(const String &p_language) {
+	if (language != p_language) {
+		language = p_language;
+		_shape();
+		update();
+	}
+}
+
+String Button::get_language() const {
+	return language;
 }
 
 void Button::set_icon(const Ref<Texture> &p_icon) {
@@ -311,10 +388,66 @@ Button::TextAlign Button::get_text_align() const {
 	return align;
 }
 
+bool Button::_set(const StringName &p_name, const Variant &p_value) {
+	String str = p_name;
+	if (str.begins_with("opentype_features/")) {
+		String name = str.get_slicec('/', 1);
+		int32_t tag = TS->name_to_tag(name);
+		double value = p_value;
+		if (value == -1) {
+			if (opentype_features.has(tag)) {
+				opentype_features.erase(tag);
+				_shape();
+				update();
+			}
+		} else {
+			if ((double)opentype_features[tag] != value) {
+				opentype_features[tag] = value;
+				_shape();
+				update();
+			}
+		}
+		_change_notify();
+		return true;
+	}
+
+	return false;
+}
+
+bool Button::_get(const StringName &p_name, Variant &r_ret) const {
+	String str = p_name;
+	if (str.begins_with("opentype_features/")) {
+		String name = str.get_slicec('/', 1);
+		int32_t tag = TS->name_to_tag(name);
+		if (opentype_features.has(tag)) {
+			r_ret = opentype_features[tag];
+			return true;
+		} else {
+			r_ret = -1;
+			return true;
+		}
+	}
+	return false;
+}
+
+void Button::_get_property_list(List<PropertyInfo> *p_list) const {
+	for (const Variant *ftr = opentype_features.next(nullptr); ftr != nullptr; ftr = opentype_features.next(ftr)) {
+		String name = TS->tag_to_name(*ftr);
+		p_list->push_back(PropertyInfo(Variant::REAL, "opentype_features/" + name));
+	}
+}
+
 void Button::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_text", "text"), &Button::set_text);
 	ClassDB::bind_method(D_METHOD("get_text"), &Button::get_text);
+	ClassDB::bind_method(D_METHOD("set_text_direction", "direction"), &Button::set_text_direction);
+	ClassDB::bind_method(D_METHOD("get_text_direction"), &Button::get_text_direction);
+	ClassDB::bind_method(D_METHOD("set_opentype_feature", "tag", "value"), &Button::set_opentype_feature);
+	ClassDB::bind_method(D_METHOD("get_opentype_feature", "tag"), &Button::get_opentype_feature);
+	ClassDB::bind_method(D_METHOD("clear_opentype_features"), &Button::clear_opentype_features);
+	ClassDB::bind_method(D_METHOD("set_language", "language"), &Button::set_language);
+	ClassDB::bind_method(D_METHOD("get_language"), &Button::get_language);
 	ClassDB::bind_method(D_METHOD("set_button_icon", "texture"), &Button::set_icon);
 	ClassDB::bind_method(D_METHOD("get_button_icon"), &Button::get_icon);
 	ClassDB::bind_method(D_METHOD("set_expand_icon"), &Button::set_expand_icon);
@@ -330,7 +463,9 @@ void Button::_bind_methods() {
 	BIND_ENUM_CONSTANT(ALIGN_CENTER);
 	BIND_ENUM_CONSTANT(ALIGN_RIGHT);
 
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT_INTL), "set_text", "get_text");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text", PROPERTY_HINT_MULTILINE_TEXT, "", PROPERTY_USAGE_DEFAULT_INTL), "set_text", "get_text");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "text_direction", PROPERTY_HINT_ENUM, "Auto,LTR,RTL"), "set_text_direction", "get_text_direction");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "language"), "set_language", "get_language");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "icon", PROPERTY_HINT_RESOURCE_TYPE, "Texture"), "set_button_icon", "get_button_icon");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "flat"), "set_flat", "is_flat");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "clip_text"), "set_clip_text", "get_clip_text");
@@ -339,6 +474,8 @@ void Button::_bind_methods() {
 }
 
 Button::Button(const String &p_text) {
+	text_buf.instance();
+	text_buf->set_flags(TextServer::BREAK_MANDATORY);
 
 	flat = false;
 	clip_text = false;

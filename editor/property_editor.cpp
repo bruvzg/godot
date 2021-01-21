@@ -537,7 +537,7 @@ bool CustomPropertyEditor::edit(Object *p_owner, const String &p_name, Variant::
 				List<String> names;
 				names.push_back("value:");
 				config_value_editors(1, 1, 50, names);
-				value_editor[0]->set_text(String::num(v));
+				value_editor[0]->set_text(TS->format_number(String::num(v)));
 			}
 
 		} break;
@@ -1549,7 +1549,7 @@ void CustomPropertyEditor::_modified(String p_string) {
 	updating = true;
 	switch (type) {
 		case Variant::INT: {
-			String text = value_editor[0]->get_text();
+			String text = TS->parse_number(value_editor[0]->get_text());
 			Ref<Expression> expr;
 			expr.instance();
 			Error err = expr->parse(text);
@@ -1565,7 +1565,7 @@ void CustomPropertyEditor::_modified(String p_string) {
 		case Variant::REAL: {
 
 			if (hint != PROPERTY_HINT_EXP_EASING) {
-				String text = value_editor[0]->get_text();
+				String text = TS->parse_number(value_editor[0]->get_text());
 				v = _parse_real_expression(text);
 				emit_signal("variant_changed");
 			}

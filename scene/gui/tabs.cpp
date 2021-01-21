@@ -31,6 +31,7 @@
 #include "tabs.h"
 
 #include "core/message_queue.h"
+#include "core/translation.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/label.h"
 #include "scene/gui/texture_rect.h"
@@ -40,9 +41,9 @@ Size2 Tabs::get_minimum_size() const {
 	Ref<StyleBox> tab_bg = get_stylebox("tab_bg");
 	Ref<StyleBox> tab_fg = get_stylebox("tab_fg");
 	Ref<StyleBox> tab_disabled = get_stylebox("tab_disabled");
-	Ref<Font> font = get_font("font");
 
-	Size2 ms(0, MAX(MAX(tab_bg->get_minimum_size().height, tab_fg->get_minimum_size().height), tab_disabled->get_minimum_size().height) + font->get_height());
+	int y_margin = MAX(MAX(tab_bg->get_minimum_size().height, tab_fg->get_minimum_size().height), tab_disabled->get_minimum_size().height);
+	Size2 ms(0, 0);
 
 	for (int i = 0; i < tabs.size(); i++) {
 
@@ -53,7 +54,8 @@ Size2 Tabs::get_minimum_size() const {
 				ms.width += get_constant("hseparation");
 		}
 
-		ms.width += Math::ceil(font->get_string_size(tabs[i].xl_text).width);
+		ms.width += Math::ceil(tabs[i].text_buf->get_size().x);
+		ms.height = MAX(ms.height, tabs[i].text_buf->get_size().y + y_margin);
 
 		if (tabs[i].disabled)
 			ms.width += tab_disabled->get_minimum_size().width;
@@ -218,14 +220,26 @@ void Tabs::_gui_input(const Ref<InputEvent> &p_event) {
 	}
 }
 
+void Tabs::_shape(int p_tab) {
+	Ref<Font> font = get_font("font");
+	int font_size = font->get_size();
+
+	tabs.write[p_tab].xl_text = tr(tabs[p_tab].text);
+	tabs.write[p_tab].text_buf->clear();
+	tabs.write[p_tab].text_buf->set_direction((TextServer::Direction)tabs[p_tab].text_direction);
+
+	tabs.write[p_tab].text_buf->add_string(tabs.write[p_tab].xl_text, font, font_size, tabs[p_tab].opentype_features, (tabs[p_tab].language != "") ? tabs[p_tab].language : TranslationServer::get_singleton()->get_tool_locale());
+}
+
 void Tabs::_notification(int p_what) {
 
 	switch (p_what) {
 
 		case NOTIFICATION_TRANSLATION_CHANGED: {
 			for (int i = 0; i < tabs.size(); ++i) {
-				tabs.write[i].xl_text = tr(tabs[i].text);
+				_shape(i);
 			}
+			_update_cache();
 			minimum_size_changed();
 			update();
 		} break;
@@ -241,7 +255,6 @@ void Tabs::_notification(int p_what) {
 			Ref<StyleBox> tab_bg = get_stylebox("tab_bg");
 			Ref<StyleBox> tab_fg = get_stylebox("tab_fg");
 			Ref<StyleBox> tab_disabled = get_stylebox("tab_disabled");
-			Ref<Font> font = get_font("font");
 			Color color_fg = get_color("font_color_fg");
 			Color color_bg = get_color("font_color_bg");
 			Color color_disabled = get_color("font_color_disabled");
@@ -321,7 +334,7 @@ void Tabs::_notification(int p_what) {
 						w += icon->get_width() + get_constant("hseparation");
 				}
 
-				font->draw(ci, Point2i(w, sb->get_margin(MARGIN_TOP) + ((sb_rect.size.y - sb_ms.y) - font->get_height()) / 2 + font->get_ascent()), tabs[i].xl_text, col, tabs[i].size_text);
+				tabs[i].text_buf->draw(ci, Point2i(w, sb->get_margin(MARGIN_TOP) + ((sb_rect.size.y - sb_ms.y) - tabs[i].text_buf->get_size().y) / 2), col);
 
 				w += tabs[i].size_text;
 
@@ -444,6 +457,7 @@ void Tabs::set_tab_title(int p_tab, const String &p_title) {
 	ERR_FAIL_INDEX(p_tab, tabs.size());
 	tabs.write[p_tab].text = p_title;
 	tabs.write[p_tab].xl_text = tr(p_title);
+	_shape(p_tab);
 	update();
 	minimum_size_changed();
 }
@@ -452,6 +466,61 @@ String Tabs::get_tab_title(int p_tab) const {
 
 	ERR_FAIL_INDEX_V(p_tab, tabs.size(), "");
 	return tabs[p_tab].text;
+}
+
+void Tabs::set_tab_text_direction(int p_tab, Control::TextDirection p_text_direction) {
+	ERR_FAIL_INDEX(p_tab, tabs.size());
+	ERR_FAIL_COND((int)p_text_direction < 0 || (int)p_text_direction > 3);
+	if (tabs[p_tab].text_direction != p_text_direction) {
+		tabs.write[p_tab].text_direction = p_text_direction;
+		_shape(p_tab);
+		update();
+	}
+}
+
+Control::TextDirection Tabs::get_tab_text_direction(int p_tab) const {
+	ERR_FAIL_INDEX_V(p_tab, tabs.size(), Control::TEXT_DIRECTION_AUTO);
+	return tabs[p_tab].text_direction;
+}
+
+void Tabs::clear_tab_opentype_features(int p_tab) {
+	ERR_FAIL_INDEX(p_tab, tabs.size());
+	tabs.write[p_tab].opentype_features.clear();
+	_shape(p_tab);
+	update();
+}
+
+void Tabs::set_tab_opentype_feature(int p_tab, const String &p_name, int p_value) {
+	ERR_FAIL_INDEX(p_tab, tabs.size());
+	int32_t tag = TS->name_to_tag(p_name);
+	if (!tabs[p_tab].opentype_features.has(tag) || (int)tabs[p_tab].opentype_features[tag] != p_value) {
+		tabs.write[p_tab].opentype_features[tag] = p_value;
+		_shape(p_tab);
+		update();
+	}
+}
+
+int Tabs::get_tab_opentype_feature(int p_tab, const String &p_name) const {
+	ERR_FAIL_INDEX_V(p_tab, tabs.size(), -1);
+	int32_t tag = TS->name_to_tag(p_name);
+	if (!tabs[p_tab].opentype_features.has(tag)) {
+		return -1;
+	}
+	return tabs[p_tab].opentype_features[tag];
+}
+
+void Tabs::set_tab_language(int p_tab, const String &p_language) {
+	ERR_FAIL_INDEX(p_tab, tabs.size());
+	if (tabs[p_tab].language != p_language) {
+		tabs.write[p_tab].language = p_language;
+		_shape(p_tab);
+		update();
+	}
+}
+
+String Tabs::get_tab_language(int p_tab) const {
+	ERR_FAIL_INDEX_V(p_tab, tabs.size(), "");
+	return tabs[p_tab].language;
 }
 
 void Tabs::set_tab_icon(int p_tab, const Ref<Texture> &p_icon) {
@@ -540,7 +609,6 @@ void Tabs::_update_cache() {
 	Ref<StyleBox> tab_disabled = get_stylebox("tab_disabled");
 	Ref<StyleBox> tab_bg = get_stylebox("tab_bg");
 	Ref<StyleBox> tab_fg = get_stylebox("tab_fg");
-	Ref<Font> font = get_font("font");
 	Ref<Texture> incr = get_icon("increment");
 	Ref<Texture> decr = get_icon("decrement");
 	int limit = get_size().width - incr->get_width() - decr->get_width();
@@ -552,7 +620,8 @@ void Tabs::_update_cache() {
 	for (int i = 0; i < tabs.size(); i++) {
 		tabs.write[i].ofs_cache = mw;
 		tabs.write[i].size_cache = get_tab_width(i);
-		tabs.write[i].size_text = Math::ceil(font->get_string_size(tabs[i].xl_text).width);
+		tabs.write[i].size_text = Math::ceil(tabs[i].text_buf->get_size().x);
+		tabs.write[i].text_buf->set_width(-1);
 		mw += tabs[i].size_cache;
 		if (tabs[i].size_cache <= min_width || i == current) {
 			size_fixed += tabs[i].size_cache;
@@ -596,6 +665,7 @@ void Tabs::_update_cache() {
 		tabs.write[i].ofs_cache = w;
 		tabs.write[i].size_cache = lsize;
 		tabs.write[i].size_text = slen;
+		tabs.write[i].text_buf->set_width(slen);
 		w += lsize;
 	}
 }
@@ -614,6 +684,9 @@ void Tabs::add_tab(const String &p_str, const Ref<Texture> &p_icon) {
 	Tab t;
 	t.text = p_str;
 	t.xl_text = tr(p_str);
+	t.text_buf.instance();
+	t.text_buf->set_direction(TextServer::DIRECTION_LTR);
+	t.text_buf->add_string(t.xl_text, get_font("font"), get_font("font")->get_size(), Dictionary(), TranslationServer::get_singleton()->get_tool_locale());
 	t.icon = p_icon;
 	t.disabled = false;
 	t.ofs_cache = 0;
@@ -810,7 +883,6 @@ int Tabs::get_tab_width(int p_idx) const {
 	Ref<StyleBox> tab_bg = get_stylebox("tab_bg");
 	Ref<StyleBox> tab_fg = get_stylebox("tab_fg");
 	Ref<StyleBox> tab_disabled = get_stylebox("tab_disabled");
-	Ref<Font> font = get_font("font");
 
 	int x = 0;
 
@@ -821,7 +893,7 @@ int Tabs::get_tab_width(int p_idx) const {
 			x += get_constant("hseparation");
 	}
 
-	x += Math::ceil(font->get_string_size(tabs[p_idx].xl_text).width);
+	x += Math::ceil(tabs[p_idx].text_buf->get_size().x);
 
 	if (tabs[p_idx].disabled)
 		x += tab_disabled->get_minimum_size().width;
@@ -971,6 +1043,13 @@ void Tabs::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_previous_tab"), &Tabs::get_previous_tab);
 	ClassDB::bind_method(D_METHOD("set_tab_title", "tab_idx", "title"), &Tabs::set_tab_title);
 	ClassDB::bind_method(D_METHOD("get_tab_title", "tab_idx"), &Tabs::get_tab_title);
+	ClassDB::bind_method(D_METHOD("set_tab_text_direction", "tab_idx", "direction"), &Tabs::set_tab_text_direction);
+	ClassDB::bind_method(D_METHOD("get_tab_text_direction", "tab_idx"), &Tabs::get_tab_text_direction);
+	ClassDB::bind_method(D_METHOD("set_tab_opentype_feature", "tab_idx", "tag", "values"), &Tabs::set_tab_opentype_feature);
+	ClassDB::bind_method(D_METHOD("get_tab_opentype_feature", "tab_idx", "tag"), &Tabs::get_tab_opentype_feature);
+	ClassDB::bind_method(D_METHOD("clear_tab_opentype_features", "tab_idx"), &Tabs::clear_tab_opentype_features);
+	ClassDB::bind_method(D_METHOD("set_tab_language", "tab_idx", "language"), &Tabs::set_tab_language);
+	ClassDB::bind_method(D_METHOD("get_tab_language", "tab_idx"), &Tabs::get_tab_language);
 	ClassDB::bind_method(D_METHOD("set_tab_icon", "tab_idx", "icon"), &Tabs::set_tab_icon);
 	ClassDB::bind_method(D_METHOD("get_tab_icon", "tab_idx"), &Tabs::get_tab_icon);
 	ClassDB::bind_method(D_METHOD("set_tab_disabled", "tab_idx", "disabled"), &Tabs::set_tab_disabled);

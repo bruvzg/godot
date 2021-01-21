@@ -111,10 +111,8 @@ public:
 
 	int get_size() const;
 	void set_size(int p_size);
-	int get_size() const;
 
 	void set_outline_size(int p_size);
-	int get_outline_size() const;
 
 	void set_outline_color(Color p_color);
 	Color get_outline_color() const;

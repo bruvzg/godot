@@ -36,6 +36,7 @@
 #include "core/os/os.h"
 #include "core/print_string.h"
 #include "core/project_settings.h"
+#include "core/translation.h"
 #include "scene/main/viewport.h"
 
 #ifdef TOOLS_ENABLED
@@ -129,6 +130,7 @@ void TreeItem::set_cell_mode(int p_column, TreeCellMode p_mode) {
 	c.step = 1;
 	c.val = 0;
 	c.checked = false;
+	c.dirty = true;
 	c.icon = Ref<Texture>();
 	c.text = "";
 	c.icon_max_w = 0;
@@ -159,6 +161,7 @@ void TreeItem::set_text(int p_column, String p_text) {
 
 	ERR_FAIL_INDEX(p_column, cells.size());
 	cells.write[p_column].text = p_text;
+	cells.write[p_column].dirty = true;
 
 	if (cells[p_column].mode == TreeItem::CELL_MODE_RANGE) {
 
@@ -182,6 +185,87 @@ String TreeItem::get_text(int p_column) const {
 
 	ERR_FAIL_INDEX_V(p_column, cells.size(), "");
 	return cells[p_column].text;
+}
+
+void TreeItem::set_text_direction(int p_column, Control::TextDirection p_text_direction) {
+	ERR_FAIL_INDEX(p_column, cells.size());
+	ERR_FAIL_COND((int)p_text_direction < 0 || (int)p_text_direction > 3);
+	if (cells[p_column].text_direction != p_text_direction) {
+		cells.write[p_column].text_direction = p_text_direction;
+		cells.write[p_column].dirty = true;
+		_changed_notify(p_column);
+	}
+}
+
+Control::TextDirection TreeItem::get_text_direction(int p_column) const {
+	ERR_FAIL_INDEX_V(p_column, cells.size(), Control::TEXT_DIRECTION_AUTO);
+	return cells[p_column].text_direction;
+}
+
+void TreeItem::clear_opentype_features(int p_column) {
+	ERR_FAIL_INDEX(p_column, cells.size());
+	cells.write[p_column].opentype_features.clear();
+	cells.write[p_column].dirty = true;
+	_changed_notify(p_column);
+}
+
+void TreeItem::set_opentype_feature(int p_column, const String &p_name, int p_value) {
+	ERR_FAIL_INDEX(p_column, cells.size());
+	int32_t tag = TS->name_to_tag(p_name);
+	if (!cells[p_column].opentype_features.has(tag) || (int)cells[p_column].opentype_features[tag] != p_value) {
+		cells.write[p_column].opentype_features[tag] = p_value;
+		cells.write[p_column].dirty = true;
+		_changed_notify(p_column);
+	}
+}
+
+int TreeItem::get_opentype_feature(int p_column, const String &p_name) const {
+	ERR_FAIL_INDEX_V(p_column, cells.size(), -1);
+	int32_t tag = TS->name_to_tag(p_name);
+	if (!cells[p_column].opentype_features.has(tag)) {
+		return -1;
+	}
+	return cells[p_column].opentype_features[tag];
+}
+
+void TreeItem::set_structured_text_bidi_override(int p_column, Control::StructuredTextParser p_parser) {
+	ERR_FAIL_INDEX(p_column, cells.size());
+	if (cells[p_column].st_parser != p_parser) {
+		cells.write[p_column].st_parser = p_parser;
+		cells.write[p_column].dirty = true;
+		_changed_notify(p_column);
+	}
+}
+
+Control::StructuredTextParser TreeItem::get_structured_text_bidi_override(int p_column) const {
+	ERR_FAIL_INDEX_V(p_column, cells.size(), Control::STRUCTURED_TEXT_NONE);
+	return cells[p_column].st_parser;
+}
+
+void TreeItem::set_structured_text_bidi_override_options(int p_column, Array p_args) {
+	ERR_FAIL_INDEX(p_column, cells.size());
+	cells.write[p_column].st_args = p_args;
+	cells.write[p_column].dirty = true;
+	_changed_notify(p_column);
+}
+
+Array TreeItem::get_structured_text_bidi_override_options(int p_column) const {
+	ERR_FAIL_INDEX_V(p_column, cells.size(), Array());
+	return cells[p_column].st_args;
+}
+
+void TreeItem::set_language(int p_column, const String &p_language) {
+	ERR_FAIL_INDEX(p_column, cells.size());
+	if (cells[p_column].language != p_language) {
+		cells.write[p_column].language = p_language;
+		cells.write[p_column].dirty = true;
+		_changed_notify(p_column);
+	}
+}
+
+String TreeItem::get_language(int p_column) const {
+	ERR_FAIL_INDEX_V(p_column, cells.size(), "");
+	return cells[p_column].language;
 }
 
 void TreeItem::set_suffix(int p_column, String p_suffix) {
@@ -262,6 +346,7 @@ void TreeItem::set_range(int p_column, double p_value) {
 		p_value = cells[p_column].max;
 
 	cells.write[p_column].val = p_value;
+	cells.write[p_column].dirty = true;
 	_changed_notify(p_column);
 }
 
@@ -777,6 +862,22 @@ void TreeItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_text", "column", "text"), &TreeItem::set_text);
 	ClassDB::bind_method(D_METHOD("get_text", "column"), &TreeItem::get_text);
 
+	ClassDB::bind_method(D_METHOD("set_text_direction", "column", "direction"), &TreeItem::set_text_direction);
+	ClassDB::bind_method(D_METHOD("get_text_direction", "column"), &TreeItem::get_text_direction);
+
+	ClassDB::bind_method(D_METHOD("set_opentype_feature", "column", "tag", "value"), &TreeItem::set_opentype_feature);
+	ClassDB::bind_method(D_METHOD("get_opentype_feature", "column", "tag"), &TreeItem::get_opentype_feature);
+	ClassDB::bind_method(D_METHOD("clear_opentype_features", "column"), &TreeItem::clear_opentype_features);
+
+	ClassDB::bind_method(D_METHOD("set_structured_text_bidi_override", "column", "parser"), &TreeItem::set_structured_text_bidi_override);
+	ClassDB::bind_method(D_METHOD("get_structured_text_bidi_override", "column"), &TreeItem::get_structured_text_bidi_override);
+
+	ClassDB::bind_method(D_METHOD("set_structured_text_bidi_override_options", "column", "args"), &TreeItem::set_structured_text_bidi_override_options);
+	ClassDB::bind_method(D_METHOD("get_structured_text_bidi_override_options", "column"), &TreeItem::get_structured_text_bidi_override_options);
+
+	ClassDB::bind_method(D_METHOD("set_language", "column", "language"), &TreeItem::set_language);
+	ClassDB::bind_method(D_METHOD("get_language", "column"), &TreeItem::get_language);
+
 	ClassDB::bind_method(D_METHOD("set_suffix", "column", "text"), &TreeItem::set_suffix);
 	ClassDB::bind_method(D_METHOD("get_suffix", "column"), &TreeItem::get_suffix);
 
@@ -1004,9 +1105,13 @@ int Tree::compute_item_height(TreeItem *p_item) const {
 		return 0;
 
 	ERR_FAIL_COND_V(cache.font.is_null(), 0);
-	int height = cache.font->get_height();
+	int height = 0;
 
 	for (int i = 0; i < columns.size(); i++) {
+		if (p_item->cells[i].dirty) {
+			const_cast<Tree *>(this)->update_item_cell(p_item, i);
+		}
+		height = MAX(height, p_item->cells[i].text_buf->get_size().y);
 
 		for (int j = 0; j < p_item->cells[i].buttons.size(); j++) {
 
@@ -1077,12 +1182,12 @@ int Tree::get_item_height(TreeItem *p_item) const {
 	return height;
 }
 
-void Tree::draw_item_rect(const TreeItem::Cell &p_cell, const Rect2i &p_rect, const Color &p_color, const Color &p_icon_color) {
+void Tree::draw_item_rect(TreeItem::Cell &p_cell, const Rect2i &p_rect, const Color &p_color, const Color &p_icon_color) {
 
 	ERR_FAIL_COND(cache.font.is_null());
 
 	Rect2i rect = p_rect;
-	Ref<Font> font = cache.font;
+	Size2 ts = p_cell.text_buf->get_size();
 	String text = p_cell.text;
 	if (p_cell.suffix != String())
 		text += " " + p_cell.suffix;
@@ -1095,8 +1200,11 @@ void Tree::draw_item_rect(const TreeItem::Cell &p_cell, const Rect2i &p_rect, co
 			bmsize.width = p_cell.icon_max_w;
 		}
 		w += bmsize.width + cache.hseparation;
+		if (rect.size.width > 0 && (w + ts.width) > rect.size.width) {
+			ts.width = rect.size.width - w;
+		}
 	}
-	w += font->get_string_size(text).width;
+	w += ts.width;
 
 	switch (p_cell.text_align) {
 		case TreeItem::ALIGN_LEFT:
@@ -1123,8 +1231,70 @@ void Tree::draw_item_rect(const TreeItem::Cell &p_cell, const Rect2i &p_rect, co
 		rect.size.x -= bmsize.x + cache.hseparation;
 	}
 
-	rect.position.y += Math::floor((rect.size.y - font->get_height()) / 2.0) + font->get_ascent();
-	font->draw(ci, rect.position, text, p_color, rect.size.x);
+	Point2 draw_pos = rect.position;
+	draw_pos.y += Math::floor((rect.size.y - p_cell.text_buf->get_size().y) / 2.0);
+	p_cell.text_buf->set_width(MAX(0, rect.size.width));
+	p_cell.text_buf->draw(ci, draw_pos, p_color);
+}
+
+void Tree::update_column(int p_col) {
+	columns.write[p_col].text_buf->clear();
+	columns.write[p_col].text_buf->set_direction((TextServer::Direction)columns[p_col].text_direction);
+	columns.write[p_col].text_buf->add_string(columns[p_col].title, cache.font, cache.font->get_size(), columns[p_col].opentype_features, (columns[p_col].language != "") ? columns[p_col].language : TranslationServer::get_singleton()->get_tool_locale());
+}
+
+void Tree::update_item_cell(TreeItem *p_item, int p_col) {
+	String valtext;
+
+	p_item->cells.write[p_col].text_buf->clear();
+	if (p_item->cells[p_col].mode == TreeItem::CELL_MODE_RANGE) {
+		if (p_item->cells[p_col].text != "") {
+			if (!p_item->cells[p_col].editable) {
+				return;
+			}
+
+			int option = (int)p_item->cells[p_col].val;
+
+			valtext = RTR("(Other)");
+			Vector<String> strings = p_item->cells[p_col].text.split(",");
+			for (int j = 0; j < strings.size(); j++) {
+				int value = j;
+				if (!strings[j].get_slicec(':', 1).empty()) {
+					value = strings[j].get_slicec(':', 1).to_int();
+				}
+				if (option == value) {
+					valtext = strings[j].get_slicec(':', 0);
+					break;
+				}
+			}
+
+		} else {
+			valtext = String::num(p_item->cells[p_col].val, Math::range_step_decimals(p_item->cells[p_col].step));
+		}
+	} else {
+		valtext = p_item->cells[p_col].text;
+	}
+
+	if (p_item->cells[p_col].suffix != String()) {
+		valtext += " " + p_item->cells[p_col].suffix;
+	}
+
+	p_item->cells.write[p_col].text_buf->set_direction((TextServer::Direction)p_item->cells[p_col].text_direction);
+	p_item->cells.write[p_col].text_buf->add_string(valtext, cache.font, cache.font->get_size(), p_item->cells[p_col].opentype_features, (p_item->cells[p_col].language != "") ? p_item->cells[p_col].language : TranslationServer::get_singleton()->get_tool_locale());
+	TS->shaped_text_set_bidi_override(p_item->cells[p_col].text_buf->get_rid(), structured_text_parser(p_item->cells[p_col].st_parser, p_item->cells[p_col].st_args, valtext));
+	p_item->cells.write[p_col].dirty = false;
+}
+
+void Tree::update_item_cache(TreeItem *p_item) {
+	for (int i = 0; i < p_item->cells.size(); i++) {
+		update_item_cell(p_item, i);
+	}
+
+	TreeItem *c = p_item->children;
+	while (c) {
+		update_item_cache(c);
+		c = c->next;
+	}
 }
 
 int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 &p_draw_size, TreeItem *p_item) {
@@ -1151,9 +1321,6 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 		//if (p_item->get_parent()!=root || !hide_root)
 
 		ERR_FAIL_COND_V(cache.font.is_null(), -1);
-		Ref<Font> font = cache.font;
-
-		int font_ascent = font->get_ascent();
 
 		int ofs = p_pos.x + ((p_item->disable_folding || hide_folding) ? cache.hseparation : cache.item_margin);
 		int skip2 = 0;
@@ -1239,15 +1406,6 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 
 			if ((select_mode == SELECT_ROW && selected_item == p_item) || p_item->cells[i].selected) {
 				Rect2i r(cell_rect.position, cell_rect.size);
-
-				if (p_item->cells[i].text.size() > 0) {
-					float icon_width = p_item->cells[i].get_icon_size().width;
-					if (p_item->get_icon_max_width(i) > 0) {
-						icon_width = p_item->get_icon_max_width(i);
-					}
-					r.position.x += icon_width;
-					r.size.x -= icon_width;
-				}
 				p_item->set_meta("__focus_rect", Rect2(r.position, r.size));
 
 				if (p_item->cells[i].selected) {
@@ -1301,14 +1459,18 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 			Color col = p_item->cells[i].custom_color ? p_item->cells[i].color : get_color(p_item->cells[i].selected ? "font_color_selected" : "font_color");
 			Color icon_col = p_item->cells[i].icon_color;
 
+			if (p_item->cells[i].dirty) {
+				const_cast<Tree *>(this)->update_item_cell(p_item, i);
+			}
+
 			Point2i text_pos = item_rect.position;
-			text_pos.y += Math::floor((item_rect.size.y - font->get_height()) / 2) + font_ascent;
+			text_pos.y += Math::floor((item_rect.size.y - p_item->cells[i].text_buf->get_size().y) / 2);
 
 			switch (p_item->cells[i].mode) {
 
 				case TreeItem::CELL_MODE_STRING: {
 
-					draw_item_rect(p_item->cells[i], item_rect, col, icon_col);
+					draw_item_rect(p_item->cells.write[i], item_rect, col, icon_col);
 				} break;
 				case TreeItem::CELL_MODE_CHECK: {
 
@@ -1330,7 +1492,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 					item_rect.size.x -= check_w;
 					item_rect.position.x += check_w;
 
-					draw_item_rect(p_item->cells[i], item_rect, col, icon_col);
+					draw_item_rect(p_item->cells.write[i], item_rect, col, icon_col);
 
 				} break;
 				case TreeItem::CELL_MODE_RANGE: {
@@ -1339,27 +1501,11 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 						if (!p_item->cells[i].editable)
 							break;
 
-						int option = (int)p_item->cells[i].val;
-
-						String s = RTR("(Other)");
-						Vector<String> strings = p_item->cells[i].text.split(",");
-						for (int j = 0; j < strings.size(); j++) {
-							int value = j;
-							if (!strings[j].get_slicec(':', 1).empty()) {
-								value = strings[j].get_slicec(':', 1).to_int();
-							}
-							if (option == value) {
-								s = strings[j].get_slicec(':', 0);
-								break;
-							}
-						}
-
-						if (p_item->cells[i].suffix != String())
-							s += " " + p_item->cells[i].suffix;
-
 						Ref<Texture> downarrow = cache.select_arrow;
+						int cell_width = item_rect.size.x - downarrow->get_width();
+						p_item->cells.write[i].text_buf->set_width(cell_width);
 
-						font->draw(ci, text_pos, s, col, item_rect.size.x - downarrow->get_width());
+						p_item->cells[i].text_buf->draw(ci, text_pos, col);
 
 						Point2i arrow_pos = item_rect.position;
 						arrow_pos.x += item_rect.size.x - downarrow->get_width();
@@ -1370,12 +1516,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 
 						Ref<Texture> updown = cache.updown;
 
-						String valtext = String::num(p_item->cells[i].val, Math::range_step_decimals(p_item->cells[i].step));
-
-						if (p_item->cells[i].suffix != String())
-							valtext += " " + p_item->cells[i].suffix;
-
-						font->draw(ci, text_pos, valtext, col, item_rect.size.x - updown->get_width());
+						p_item->cells[i].text_buf->draw(ci, text_pos, col);
 
 						if (!p_item->cells[i].editable)
 							break;
@@ -1415,7 +1556,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 
 					if (!p_item->cells[i].editable) {
 
-						draw_item_rect(p_item->cells[i], item_rect, col, icon_col);
+						draw_item_rect(p_item->cells.write[i], item_rect, col, icon_col);
 						break;
 					}
 
@@ -1443,7 +1584,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 						ir.position += cache.custom_button->get_offset();
 					}
 
-					draw_item_rect(p_item->cells[i], ir, col, icon_col);
+					draw_item_rect(p_item->cells.write[i], ir, col, icon_col);
 
 					downarrow->draw(ci, arrow_pos);
 
@@ -2917,7 +3058,13 @@ void Tree::update_scrollbars() {
 int Tree::_get_title_button_height() const {
 
 	ERR_FAIL_COND_V(cache.font.is_null() || cache.title_button.is_null(), 0);
-	return show_column_titles ? cache.font->get_height() + cache.title_button->get_minimum_size().height : 0;
+	int h = 0;
+	if (show_column_titles) {
+		for (int i = 0; i < columns.size(); i++) {
+			h = MAX(h, columns[i].text_buf->get_size().y + cache.title_button->get_minimum_size().height);
+		}
+	}
+	return h;
 }
 
 void Tree::_notification(int p_what) {
@@ -3064,13 +3211,15 @@ void Tree::_notification(int p_what) {
 				ofs2 += tbrect.size.width;
 				//text
 				int clip_w = tbrect.size.width - sb->get_minimum_size().width;
-				f->draw_halign(ci, tbrect.position + Point2i(sb->get_offset().x, (tbrect.size.height - f->get_height()) / 2 + f->get_ascent()), HALIGN_CENTER, clip_w, columns[i].title, cache.title_button_color);
+				columns.write[i].text_buf->set_width(clip_w);
+				columns[i].text_buf->draw(ci, tbrect.position + Point2i(sb->get_offset().x + (tbrect.size.width - columns[i].text_buf->get_size().x) / 2, (tbrect.size.height - columns[i].text_buf->get_size().y) / 2), cache.title_button_color);
 			}
 		}
 	}
 
-	if (p_what == NOTIFICATION_THEME_CHANGED) {
+	if (p_what == NOTIFICATION_THEME_CHANGED || p_what == NOTIFICATION_TRANSLATION_CHANGED) {
 		update_cache();
+		_update_all();
 	}
 
 	if (p_what == NOTIFICATION_RESIZED || p_what == NOTIFICATION_TRANSFORM_CHANGED) {
@@ -3086,6 +3235,15 @@ void Tree::_notification(int p_what) {
 				value_editor->set_position(textedpos + Point2i(0, text_editor->get_size().height));
 			}
 		}
+	}
+}
+
+void Tree::_update_all() {
+	for (int i = 0; i < columns.size(); i++) {
+		update_column(i);
+	}
+	if (root) {
+		update_item_cache(root);
 	}
 }
 
@@ -3169,6 +3327,9 @@ void Tree::item_edited(int p_column, TreeItem *p_item, bool p_lmb) {
 
 	edited_item = p_item;
 	edited_col = p_column;
+	if (p_item != nullptr && p_column >= 0 && p_column < p_item->cells.size()) {
+		edited_item->cells.write[p_column].dirty = true;
+	}
 	if (p_lmb)
 		emit_signal("item_edited");
 	else
@@ -3176,7 +3337,9 @@ void Tree::item_edited(int p_column, TreeItem *p_item, bool p_lmb) {
 }
 
 void Tree::item_changed(int p_column, TreeItem *p_item) {
-
+	if (p_item != nullptr && p_column >= 0 && p_column < p_item->cells.size()) {
+		p_item->cells.write[p_column].dirty = true;
+	}
 	update();
 }
 
@@ -3406,7 +3569,7 @@ void Tree::propagate_set_columns(TreeItem *p_item) {
 	while (c) {
 
 		propagate_set_columns(c);
-		c = c->get_next();
+		c = c->next;
 	}
 }
 
@@ -3573,7 +3736,11 @@ bool Tree::are_column_titles_visible() const {
 void Tree::set_column_title(int p_column, const String &p_title) {
 
 	ERR_FAIL_INDEX(p_column, columns.size());
+	if (cache.font.is_null()) { // avoid a strange case that may corrupt stuff
+		update_cache();
+	}
 	columns.write[p_column].title = p_title;
+	update_column(p_column);
 	update();
 }
 
@@ -3581,6 +3748,61 @@ String Tree::get_column_title(int p_column) const {
 
 	ERR_FAIL_INDEX_V(p_column, columns.size(), "");
 	return columns[p_column].title;
+}
+
+void Tree::set_column_title_direction(int p_column, Control::TextDirection p_text_direction) {
+	ERR_FAIL_INDEX(p_column, columns.size());
+	ERR_FAIL_COND((int)p_text_direction < 0 || (int)p_text_direction > 3);
+	if (columns[p_column].text_direction != p_text_direction) {
+		columns.write[p_column].text_direction = p_text_direction;
+		update_column(p_column);
+		update();
+	}
+}
+
+Control::TextDirection Tree::get_column_title_direction(int p_column) const {
+	ERR_FAIL_INDEX_V(p_column, columns.size(), TEXT_DIRECTION_AUTO);
+	return columns[p_column].text_direction;
+}
+
+void Tree::clear_column_title_opentype_features(int p_column) {
+	ERR_FAIL_INDEX(p_column, columns.size());
+	columns.write[p_column].opentype_features.clear();
+	update_column(p_column);
+	update();
+}
+
+void Tree::set_column_title_opentype_feature(int p_column, const String &p_name, int p_value) {
+	ERR_FAIL_INDEX(p_column, columns.size());
+	int32_t tag = TS->name_to_tag(p_name);
+	if (!columns[p_column].opentype_features.has(tag) || (int)columns[p_column].opentype_features[tag] != p_value) {
+		columns.write[p_column].opentype_features[tag] = p_value;
+		update_column(p_column);
+		update();
+	}
+}
+
+int Tree::get_column_title_opentype_feature(int p_column, const String &p_name) const {
+	ERR_FAIL_INDEX_V(p_column, columns.size(), -1);
+	int32_t tag = TS->name_to_tag(p_name);
+	if (!columns[p_column].opentype_features.has(tag)) {
+		return -1;
+	}
+	return columns[p_column].opentype_features[tag];
+}
+
+void Tree::set_column_title_language(int p_column, const String &p_language) {
+	ERR_FAIL_INDEX(p_column, columns.size());
+	if (columns[p_column].language != p_language) {
+		columns.write[p_column].language = p_language;
+		update_column(p_column);
+		update();
+	}
+}
+
+String Tree::get_column_title_language(int p_column) const {
+	ERR_FAIL_INDEX_V(p_column, columns.size(), "");
+	return columns[p_column].language;
 }
 
 Point2 Tree::get_scroll() const {
@@ -4027,6 +4249,17 @@ void Tree::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_column_title", "column", "title"), &Tree::set_column_title);
 	ClassDB::bind_method(D_METHOD("get_column_title", "column"), &Tree::get_column_title);
+
+	ClassDB::bind_method(D_METHOD("set_column_title_direction", "column", "direction"), &Tree::set_column_title_direction);
+	ClassDB::bind_method(D_METHOD("get_column_title_direction", "column"), &Tree::get_column_title_direction);
+
+	ClassDB::bind_method(D_METHOD("set_column_title_opentype_feature", "column", "tag", "value"), &Tree::set_column_title_opentype_feature);
+	ClassDB::bind_method(D_METHOD("get_column_title_opentype_feature", "column", "tag"), &Tree::get_column_title_opentype_feature);
+	ClassDB::bind_method(D_METHOD("clear_column_title_opentype_features", "column"), &Tree::clear_column_title_opentype_features);
+
+	ClassDB::bind_method(D_METHOD("set_column_title_language", "column", "language"), &Tree::set_column_title_language);
+	ClassDB::bind_method(D_METHOD("get_column_title_language", "column"), &Tree::get_column_title_language);
+
 	ClassDB::bind_method(D_METHOD("get_scroll"), &Tree::get_scroll);
 	ClassDB::bind_method(D_METHOD("scroll_to_item", "item"), &Tree::_scroll_to_item);
 

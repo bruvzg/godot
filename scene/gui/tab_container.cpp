@@ -31,6 +31,7 @@
 #include "tab_container.h"
 
 #include "core/message_queue.h"
+#include "core/translation.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/label.h"
 #include "scene/gui/texture_rect.h"
@@ -48,11 +49,11 @@ int TabContainer::_get_top_margin() const {
 	int tab_height = MAX(MAX(tab_bg->get_minimum_size().height, tab_fg->get_minimum_size().height), tab_disabled->get_minimum_size().height);
 
 	// Font height or higher icon wins.
-	Ref<Font> font = get_font("font");
-	int content_height = font->get_height();
+	int content_height = 0;
 
 	Vector<Control *> tabs = _get_tabs();
 	for (int i = 0; i < tabs.size(); i++) {
+		content_height = MAX(content_height, text_buf[i]->get_size().y);
 
 		Control *c = tabs[i];
 		if (!c->has_meta("_tab_icon"))
@@ -218,11 +219,6 @@ void TabContainer::_notification(int p_what) {
 
 	switch (p_what) {
 
-		case NOTIFICATION_TRANSLATION_CHANGED: {
-
-			minimum_size_changed();
-			update();
-		} break;
 		case NOTIFICATION_RESIZED: {
 
 			Vector<Control *> tabs = _get_tabs();
@@ -281,7 +277,6 @@ void TabContainer::_notification(int p_what) {
 			Ref<Texture> decrement_hl = get_icon("decrement_highlight");
 			Ref<Texture> menu = get_icon("menu");
 			Ref<Texture> menu_hl = get_icon("menu_highlight");
-			Ref<Font> font = get_font("font");
 			Color font_color_fg = get_color("font_color_fg");
 			Color font_color_bg = get_color("font_color_bg");
 			Color font_color_disabled = get_color("font_color_disabled");
@@ -415,9 +410,14 @@ void TabContainer::_notification(int p_what) {
 				}
 			}
 		} break;
+		case NOTIFICATION_TRANSLATION_CHANGED:
 		case NOTIFICATION_THEME_CHANGED: {
 
-			minimum_size_changed();
+			Vector<Control *> tabs = _get_tabs();
+			for (int i = 0; i < tabs.size(); i++) {
+				text_buf.write[i]->clear();
+			}
+			_theme_changing = true;
 			call_deferred("_on_theme_changed"); // Wait until all changed theme.
 		} break;
 	}
@@ -426,7 +426,6 @@ void TabContainer::_notification(int p_what) {
 void TabContainer::_draw_tab(Ref<StyleBox> &p_tab_style, Color &p_font_color, int p_index, float p_x) {
 	Vector<Control *> tabs = _get_tabs();
 	RID canvas = get_canvas_item();
-	Ref<Font> font = get_font("font");
 	int icon_text_distance = get_constant("hseparation");
 	int tab_width = _get_tab_width(p_index);
 	int header_height = _get_top_margin();
@@ -456,15 +455,35 @@ void TabContainer::_draw_tab(Ref<StyleBox> &p_tab_style, Color &p_font_color, in
 	}
 
 	// Draw the tab text.
-	Point2i text_pos(x_content, y_center - (font->get_height() / 2) + font->get_ascent());
-	font->draw(canvas, text_pos, text, p_font_color);
+	Point2i text_pos(x_content, y_center - text_buf[p_index + first_tab_cache]->get_size().y / 2);
+	text_buf[p_index + first_tab_cache]->draw(canvas, text_pos, p_font_color);
 }
 
 void TabContainer::_on_theme_changed() {
+	if (!_theme_changing) {
+		return;
+	}
+
+	text_buf.clear();
+	Ref<Font> font = get_font("font");
+	int font_size = font->get_size();
+	Vector<Control *> tabs = _get_tabs();
+	for (int i = 0; i < tabs.size(); i++) {
+		Control *control = Object::cast_to<Control>(tabs[i]);
+		String text = control->has_meta("_tab_name") ? String(tr(String(control->get_meta("_tab_name")))) : String(tr(control->get_name()));
+		Ref<TextLine> name;
+		name.instance();
+		name->set_direction(TextServer::DIRECTION_LTR);
+		name->add_string(text, font, font_size, Dictionary(), TranslationServer::get_singleton()->get_tool_locale());
+		text_buf.push_back(name);
+	}
+
+	minimum_size_changed();
 	if (get_tab_count() > 0) {
 		_repaint();
 		update();
 	}
+	_theme_changing = false;
 }
 
 void TabContainer::_repaint() {
@@ -549,7 +568,19 @@ Vector<Control *> TabContainer::_get_tabs() const {
 }
 
 void TabContainer::_child_renamed_callback() {
-
+	text_buf.clear();
+	Vector<Control *> tabs = _get_tabs();
+	Ref<Font> font = get_font("font");
+	int font_size = font->get_size();
+	for (int i = 0; i < tabs.size(); i++) {
+		Control *control = Object::cast_to<Control>(tabs[i]);
+		String text = control->has_meta("_tab_name") ? String(tr(String(control->get_meta("_tab_name")))) : String(tr(control->get_name()));
+		Ref<TextLine> name;
+		name.instance();
+		name->set_direction(TextServer::DIRECTION_LTR);
+		name->add_string(text, font, font_size, Dictionary(), TranslationServer::get_singleton()->get_tool_locale());
+		text_buf.push_back(name);
+	}
 	update();
 }
 
@@ -565,7 +596,21 @@ void TabContainer::add_child_notify(Node *p_child) {
 
 	bool first = false;
 
-	if (get_tab_count() != 1)
+	text_buf.clear();
+	Vector<Control *> tabs = _get_tabs();
+	Ref<Font> font = get_font("font");
+	int font_size = font->get_size();
+	for (int i = 0; i < tabs.size(); i++) {
+		Control *control = Object::cast_to<Control>(tabs[i]);
+		String text = control->has_meta("_tab_name") ? String(tr(String(control->get_meta("_tab_name")))) : String(tr(control->get_name()));
+		Ref<TextLine> name;
+		name.instance();
+		name->set_direction(TextServer::DIRECTION_LTR);
+		name->add_string(text, font, font_size, Dictionary(), TranslationServer::get_singleton()->get_tool_locale());
+		text_buf.push_back(name);
+	}
+
+	if (tabs.size() != 1)
 		c->hide();
 	else {
 		c->show();
@@ -661,7 +706,21 @@ void TabContainer::remove_child_notify(Node *p_child) {
 
 void TabContainer::_update_current_tab() {
 
-	int tc = get_tab_count();
+	text_buf.clear();
+	Vector<Control *> tabs = _get_tabs();
+	Ref<Font> font = get_font("font");
+	int font_size = font->get_size();
+	for (int i = 0; i < tabs.size(); i++) {
+		Control *control = Object::cast_to<Control>(tabs[i]);
+		String text = control->has_meta("_tab_name") ? String(tr(String(control->get_meta("_tab_name")))) : String(tr(control->get_name()));
+		Ref<TextLine> name;
+		name.instance();
+		name->set_direction(TextServer::DIRECTION_LTR);
+		name->add_string(text, font, font_size, Dictionary(), TranslationServer::get_singleton()->get_tool_locale());
+		text_buf.push_back(name);
+	}
+
+	int tc = tabs.size();
 	if (current >= tc)
 		current = tc - 1;
 	if (current < 0)

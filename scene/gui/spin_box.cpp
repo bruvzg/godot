@@ -41,7 +41,7 @@ Size2 SpinBox::get_minimum_size() const {
 
 void SpinBox::_value_changed(double) {
 
-	String value = String::num(get_value(), Math::range_step_decimals(get_step()));
+	String value = TS->format_number(String::num(get_value(), Math::range_step_decimals(get_step())));
 	if (prefix != "")
 		value = prefix + " " + value;
 	if (suffix != "")
@@ -53,8 +53,9 @@ void SpinBox::_text_entered(const String &p_string) {
 
 	Ref<Expression> expr;
 	expr.instance();
+	String num = TS->parse_number(p_string);
 	// Ignore the prefix and suffix in the expression
-	Error err = expr->parse(p_string.trim_prefix(prefix + " ").trim_suffix(" " + suffix));
+	Error err = expr->parse(num.trim_prefix(prefix + " ").trim_suffix(" " + suffix));
 	if (err != OK) {
 		return;
 	}
@@ -215,7 +216,11 @@ void SpinBox::_notification(int p_what) {
 		_adjust_width_for_icon(get_icon("updown"));
 		_value_changed(0);
 	} else if (p_what == NOTIFICATION_EXIT_TREE) {
+
 		_release_mouse();
+	} else if (p_what == NOTIFICATION_TRANSLATION_CHANGED) {
+
+		_value_changed(0);
 	} else if (p_what == NOTIFICATION_THEME_CHANGED) {
 
 		call_deferred("minimum_size_changed");

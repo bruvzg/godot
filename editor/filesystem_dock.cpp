@@ -67,6 +67,7 @@ bool FileSystemDock::_create_tree(TreeItem *p_parent, EditorFileSystemDirectory 
 		dname = "res://";
 
 	subdirectory_item->set_text(0, dname);
+	subdirectory_item->set_structured_text_bidi_override(0, STRUCTURED_TEXT_FILE);
 	subdirectory_item->set_icon(0, get_icon("Folder", "EditorIcons"));
 	subdirectory_item->set_icon_modulate(0, get_color("folder_icon_modulate", "FileDialog"));
 	subdirectory_item->set_selectable(0, true);
@@ -116,6 +117,7 @@ bool FileSystemDock::_create_tree(TreeItem *p_parent, EditorFileSystemDirectory 
 			}
 
 			TreeItem *file_item = tree->create_item(subdirectory_item);
+			file_item->set_structured_text_bidi_override(0, STRUCTURED_TEXT_FILE);
 			file_item->set_text(0, file_name);
 			file_item->set_icon(0, _get_tree_item_icon(p_dir, i));
 			String file_metadata = lpath.plus_file(file_name);
@@ -2609,6 +2611,7 @@ FileSystemDock::FileSystemDock(EditorNode *p_editor) {
 	toolbar_hbc->add_child(button_hist_next);
 
 	current_path = memnew(LineEdit);
+	current_path->set_structured_text_bidi_override(Control::STRUCTURED_TEXT_FILE);
 	current_path->set_h_size_flags(SIZE_EXPAND_FILL);
 	_set_current_path_text(path);
 	toolbar_hbc->add_child(current_path);

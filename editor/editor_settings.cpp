@@ -361,6 +361,9 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	hints["interface/editor/main_font_size"] = PropertyInfo(Variant::INT, "interface/editor/main_font_size", PROPERTY_HINT_RANGE, "8,48,1", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED);
 	_initial_set("interface/editor/code_font_size", 14);
 	hints["interface/editor/code_font_size"] = PropertyInfo(Variant::INT, "interface/editor/code_font_size", PROPERTY_HINT_RANGE, "8,48,1", PROPERTY_USAGE_DEFAULT);
+	_initial_set("interface/editor/code_font_contextual_ligatures", 0);
+	hints["interface/editor/code_font_contextual_ligatures"] = PropertyInfo(Variant::INT, "interface/editor/code_font_contextual_ligatures", PROPERTY_HINT_ENUM, "Default,Disable contextual alternates (coding ligatures),Use custom OpenType feature set", PROPERTY_USAGE_DEFAULT);
+	_initial_set("interface/editor/code_font_custom_opentype_features", "");
 	_initial_set("interface/editor/font_antialiased", true);
 	_initial_set("interface/editor/font_hinting", 0);
 #ifdef OSX_ENABLED

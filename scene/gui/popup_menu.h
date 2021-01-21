@@ -32,6 +32,7 @@
 #define POPUP_MENU_H
 
 #include "scene/gui/popup.h"
+#include "scene/resources/text_line.h"
 
 class PopupMenu : public Popup {
 
@@ -41,6 +42,13 @@ class PopupMenu : public Popup {
 		Ref<Texture> icon;
 		String text;
 		String xl_text;
+		Ref<TextLine> text_buf;
+		Ref<TextLine> accel_text_buf;
+
+		Dictionary opentype_features;
+		String language;
+		Control::TextDirection text_direction = Control::TEXT_DIRECTION_AUTO;
+
 		bool checked;
 		enum {
 			CHECKABLE_TYPE_NONE,
@@ -51,6 +59,7 @@ class PopupMenu : public Popup {
 		int state;
 		bool separator;
 		bool disabled;
+		bool dirty;
 		int id;
 		Variant metadata;
 		String submenu;
@@ -63,6 +72,9 @@ class PopupMenu : public Popup {
 		bool shortcut_is_disabled;
 
 		Item() {
+			text_buf.instance();
+			accel_text_buf.instance();
+			dirty = true;
 			checked = false;
 			checkable_type = CHECKABLE_TYPE_NONE;
 			separator = false;
@@ -85,7 +97,7 @@ class PopupMenu : public Popup {
 	int mouse_over;
 	int submenu_over;
 	Rect2 parent_rect;
-	String _get_accel_text(int p_item) const;
+	String _get_accel_text(const Item &p_item) const;
 	int _get_mouse_over(const Point2 &p_over) const;
 	virtual Size2 get_minimum_size() const;
 	void _scroll(float p_factor, const Point2 &p_over);
@@ -107,6 +119,8 @@ class PopupMenu : public Popup {
 
 	void _ref_shortcut(Ref<ShortCut> p_sc);
 	void _unref_shortcut(Ref<ShortCut> p_sc);
+
+	void _shape_item(int p_item);
 
 	bool allow_search;
 	uint64_t search_time_msec;
@@ -139,6 +153,10 @@ public:
 	void add_submenu_item(const String &p_label, const String &p_submenu, int p_id = -1);
 
 	void set_item_text(int p_idx, const String &p_text);
+	void set_item_text_direction(int p_idx, Control::TextDirection p_text_direction);
+	void set_item_opentype_feature(int p_idx, const String &p_name, int p_value);
+	void clear_item_opentype_features(int p_idx);
+	void set_item_language(int p_idx, const String &p_language);
 	void set_item_icon(int p_idx, const Ref<Texture> &p_icon);
 	void set_item_checked(int p_idx, bool p_checked);
 	void set_item_id(int p_idx, int p_id);
@@ -159,6 +177,9 @@ public:
 	void toggle_item_checked(int p_idx);
 
 	String get_item_text(int p_idx) const;
+	Control::TextDirection get_item_text_direction(int p_idx) const;
+	int get_item_opentype_feature(int p_idx, const String &p_name) const;
+	String get_item_language(int p_idx) const;
 	int get_item_idx_from_text(const String &text) const;
 	Ref<Texture> get_item_icon(int p_idx) const;
 	bool is_item_checked(int p_idx) const;

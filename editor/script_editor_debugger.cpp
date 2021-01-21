@@ -874,7 +874,7 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 			if (i < perf_items.size()) {
 
 				const float value = p[i];
-				String label = rtos(value);
+				String label = TS->format_number(rtos(value));
 				String tooltip = label;
 				switch (Performance::MonitorType((int)perf_items[i]->get_metadata(1))) {
 					case Performance::MONITOR_TYPE_MEMORY: {
@@ -882,7 +882,7 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 						tooltip = label;
 					} break;
 					case Performance::MONITOR_TYPE_TIME: {
-						label = rtos(value * 1000).pad_decimals(2) + " ms";
+						label = TS->format_number(rtos(value * 1000).pad_decimals(2)) + " " + RTR("ms");
 						tooltip = label;
 					} break;
 					default: {
@@ -1245,13 +1245,13 @@ void ScriptEditorDebugger::_performance_draw() {
 			String label;
 			switch (Performance::MonitorType((int)perf_items[pi]->get_metadata(1))) {
 				case Performance::MONITOR_TYPE_MEMORY: {
-					label = String::humanize_size(Math::ceil((1 - inv_nb_lines - inv_nb_lines * line) * perf_max[pi]));
+					label = TS->format_number(String::humanize_size(Math::ceil((1 - inv_nb_lines - inv_nb_lines * line) * perf_max[pi])));
 				} break;
 				case Performance::MONITOR_TYPE_TIME: {
-					label = rtos((1 - inv_nb_lines - inv_nb_lines * line) * perf_max[pi] * 1000).pad_decimals(2) + " ms";
+					label = TS->format_number(rtos((1 - inv_nb_lines - inv_nb_lines * line) * perf_max[pi] * 1000).pad_decimals(2)) + " ms";
 				} break;
 				default: {
-					label = itos(Math::ceil((1 - inv_nb_lines - inv_nb_lines * line) * perf_max[pi]));
+					label = TS->format_number(itos(Math::ceil((1 - inv_nb_lines - inv_nb_lines * line) * perf_max[pi])));
 				} break;
 			}
 

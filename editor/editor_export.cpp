@@ -950,6 +950,15 @@ Error EditorExportPlatform::export_project_files(const Ref<EditorExportPreset> &
 		}
 	}
 
+	// Store text server data if exists.
+	if (TS->has_feature(TextServer::FEATURE_USE_SUPPORT_DATA)) {
+		String ts_data = "res://" + TS->get_support_data_filename();
+		if (FileAccess::exists(ts_data)) {
+			Vector<uint8_t> array = FileAccess::get_file_as_array(ts_data);
+			p_func(p_udata, ts_data, array, idx, total);
+		}
+	}
+
 	String config_file = "project.binary";
 	String engine_cfb = EditorSettings::get_singleton()->get_cache_dir().plus_file("tmp" + config_file);
 	ProjectSettings::get_singleton()->save_custom(engine_cfb, custom_map, custom_list);

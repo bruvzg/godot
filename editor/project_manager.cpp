@@ -2515,7 +2515,12 @@ ProjectManager::ProjectManager() {
 	String cp;
 	cp += 0xA9;
 	// TRANSLATORS: This refers to the application where users manage their Godot projects.
-	OS::get_singleton()->set_window_title(VERSION_NAME + String(" - ") + TTR("Project Manager") + " - " + cp + " 2007-2021 Juan Linietsky, Ariel Manzur & Godot Contributors");
+	if (TS->is_locale_right_to_left(TranslationServer::get_singleton()->get_tool_locale())) {
+		// For RTL languages, embed translated part of the title (using control characters) to ensure correct order.
+		OS::get_singleton()->set_window_title(VERSION_NAME + String(" - ") + String::chr(0x202B) + TTR("Project Manager") + String::chr(0x202C) + String::chr(0x200E) + " - " + String::chr(0xA9) + " 2007-2021 Juan Linietsky, Ariel Manzur & Godot Contributors");
+	} else {
+		OS::get_singleton()->set_window_title(VERSION_NAME + String(" - ") + TTR("Project Manager") + " - " + String::chr(0xA9) + " 2007-2021 Juan Linietsky, Ariel Manzur & Godot Contributors");
+	}
 
 	Control *center_box = memnew(Control);
 	center_box->set_v_size_flags(SIZE_EXPAND_FILL);

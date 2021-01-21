@@ -190,20 +190,12 @@ void DynamicFont::set_size(int p_size) {
 	_reload_cache();
 }
 
-int DynamicFont::get_size() const {
-	return base_size;
-}
-
 void DynamicFont::set_outline_size(int p_size) {
 	if (outline_size == p_size)
 		return;
 	ERR_FAIL_COND(p_size < 0 || p_size > UINT8_MAX);
 	outline_size = p_size;
 	_reload_cache();
-}
-
-int DynamicFont::get_outline_size() const {
-	return outline_size;
 }
 
 void DynamicFont::set_outline_color(Color p_color) {
@@ -257,6 +249,10 @@ int DynamicFont::get_spacing(int p_type) const {
 		return spacing_top;
 	} else if (p_type == SPACING_BOTTOM) {
 		return spacing_bottom;
+	} else if (p_type == SPACING_CHAR) {
+		return TS->font_get_spacing_glyph(data->get_rid());
+	} else if (p_type == SPACING_SPACE) {
+		return TS->font_get_spacing_space(data->get_rid());
 	}
 
 	return 0;
@@ -267,6 +263,16 @@ void DynamicFont::set_spacing(int p_type, int p_value) {
 		spacing_top = p_value;
 	} else if (p_type == SPACING_BOTTOM) {
 		spacing_bottom = p_value;
+	} else if (p_type == SPACING_CHAR) {
+		TS->font_set_spacing_glyph(data->get_rid(), p_value);
+		for (int i = 0; i < fallbacks.size(); i++) {
+			TS->font_set_spacing_glyph(fallbacks[i]->get_rid(), p_value);
+		}
+	} else if (p_type == SPACING_SPACE) {
+		TS->font_set_spacing_space(data->get_rid(), p_value);
+		for (int i = 0; i < fallbacks.size(); i++) {
+			TS->font_set_spacing_space(fallbacks[i]->get_rid(), p_value);
+		}
 	}
 
 	emit_changed();
@@ -348,7 +354,10 @@ void DynamicFont::set_fallback(int p_idx, const Ref<DynamicFontData> &p_data) {
 
 void DynamicFont::add_fallback(const Ref<DynamicFontData> &p_data) {
 	ERR_FAIL_COND(p_data.is_null());
+	TS->font_set_spacing_glyph(p_data->get_rid(), TS->font_get_spacing_glyph(data->get_rid()));
+	TS->font_set_spacing_space(p_data->get_rid(), TS->font_get_spacing_space(data->get_rid()));
 	fallbacks.push_back(p_data);
+
 	cache.clear();
 	cache_wrap.clear();
 
@@ -433,10 +442,8 @@ void DynamicFont::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_available_chars"), &DynamicFont::get_available_chars);
 
 	ClassDB::bind_method(D_METHOD("set_size", "data"), &DynamicFont::set_size);
-	ClassDB::bind_method(D_METHOD("get_size"), &DynamicFont::get_size);
 
 	ClassDB::bind_method(D_METHOD("set_outline_size", "size"), &DynamicFont::set_outline_size);
-	ClassDB::bind_method(D_METHOD("get_outline_size"), &DynamicFont::get_outline_size);
 
 	ClassDB::bind_method(D_METHOD("set_outline_color", "color"), &DynamicFont::set_outline_color);
 	ClassDB::bind_method(D_METHOD("get_outline_color"), &DynamicFont::get_outline_color);

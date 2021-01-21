@@ -29,6 +29,7 @@
 /*************************************************************************/
 
 #include "progress_bar.h"
+#include "scene/resources/text_line.h"
 
 Size2 ProgressBar::get_minimum_size() const {
 
@@ -40,7 +41,9 @@ Size2 ProgressBar::get_minimum_size() const {
 	minimum_size.height = MAX(minimum_size.height, fg->get_minimum_size().height);
 	minimum_size.width = MAX(minimum_size.width, fg->get_minimum_size().width);
 	if (percent_visible) {
-		minimum_size.height = MAX(minimum_size.height, bg->get_minimum_size().height + font->get_height());
+		String txt = "100%";
+		Ref<TextLine> tl = memnew(TextLine(txt, font, font->get_size()));
+		minimum_size.height = MAX(minimum_size.height, bg->get_minimum_size().height + tl->get_size().y);
 	} else { // this is needed, else the progressbar will collapse
 		minimum_size.width = MAX(minimum_size.width, 1);
 		minimum_size.height = MAX(minimum_size.height, 1);
@@ -67,8 +70,10 @@ void ProgressBar::_notification(int p_what) {
 		}
 
 		if (percent_visible) {
-			String txt = itos(int(get_as_ratio() * 100)) + "%";
+			String txt = TS->format_number(itos(int(get_as_ratio() * 100))) + TS->percent_sign();
 			font->draw_halign(get_canvas_item(), Point2(0, font->get_ascent() + (get_size().height - font->get_height()) / 2), HALIGN_CENTER, get_size().width, txt, font_color);
+			Ref<TextLine> tl = memnew(TextLine(txt, font, font->get_size()));
+			tl->draw(get_canvas_item(), Point2(get_size().width - tl->get_size().x, get_size().height - tl->get_size().y) / 2, font_color);
 		}
 	}
 }

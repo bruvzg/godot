@@ -66,6 +66,8 @@ public:
 
 	virtual float get_ascent() const = 0;
 	virtual float get_descent() const = 0;
+	virtual int get_size() const { return base_size; };
+	virtual int get_outline_size() const { return outline_size; };
 
 	int get_spacing(int p_type) const;
 

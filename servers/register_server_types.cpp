@@ -114,7 +114,9 @@ void register_server_types() {
 	OS::get_singleton()->set_has_server_feature_callback(has_server_feature_callback);
 
 	ClassDB::register_virtual_class<VisualServer>();
+	ClassDB::register_class<TextServerManager>();
 	ClassDB::register_virtual_class<TextServer>();
+	TextServer::initialize_hex_code_box_fonts();
 	ClassDB::register_class<AudioServer>();
 	ClassDB::register_virtual_class<PhysicsServer>();
 	ClassDB::register_virtual_class<Physics2DServer>();
@@ -209,6 +211,7 @@ void register_server_types() {
 
 void unregister_server_types() {
 
+	TextServer::finish_hex_code_box_fonts();
 	memdelete(shader_types);
 }
 

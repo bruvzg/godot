@@ -426,17 +426,17 @@ Error BitmapFontDataAdvanced::load_from_memory(const uint8_t *p_data, size_t p_s
 
 float BitmapFontDataAdvanced::get_height(int p_size) const {
 	ERR_FAIL_COND_V(!valid, 0.f);
-	return height * (float(p_size) / float(base_size));
+	return height;
 }
 
 float BitmapFontDataAdvanced::get_ascent(int p_size) const {
 	ERR_FAIL_COND_V(!valid, 0.f);
-	return ascent * (float(p_size) / float(base_size));
+	return ascent;
 }
 
 float BitmapFontDataAdvanced::get_descent(int p_size) const {
 	ERR_FAIL_COND_V(!valid, 0.f);
-	return (height - ascent) * (float(p_size) / float(base_size));
+	return (height - ascent);
 }
 
 void BitmapFontDataAdvanced::legacy_bitmap_set_height(float p_value) {
@@ -527,12 +527,12 @@ void BitmapFontDataAdvanced::legacy_bitmap_clear() {
 
 float BitmapFontDataAdvanced::get_underline_position(int p_size) const {
 	ERR_FAIL_COND_V(!valid, 0.f);
-	return 2 * (float(p_size) / float(base_size));
+	return 2;
 }
 
 float BitmapFontDataAdvanced::get_underline_thickness(int p_size) const {
 	ERR_FAIL_COND_V(!valid, 0.f);
-	return 1 * (float(p_size) / float(base_size));
+	return 1;
 }
 
 void BitmapFontDataAdvanced::set_distance_field_hint(bool p_distance_field) {
@@ -579,7 +579,7 @@ Vector2 BitmapFontDataAdvanced::get_advance(uint32_t p_char, int p_size) const {
 	const Character *c = char_map.getptr(p_char);
 	ERR_FAIL_COND_V(c == nullptr, Vector2());
 
-	return c->advance * (float(p_size) / float(base_size));
+	return c->advance;
 }
 
 Vector2 BitmapFontDataAdvanced::get_align(uint32_t p_char, int p_size) const {
@@ -588,7 +588,7 @@ Vector2 BitmapFontDataAdvanced::get_align(uint32_t p_char, int p_size) const {
 	const Character *c = char_map.getptr(p_char);
 	ERR_FAIL_COND_V(c == nullptr, Vector2());
 
-	return c->align * (float(p_size) / float(base_size));
+	return c->align;
 }
 
 Vector2 BitmapFontDataAdvanced::get_size(uint32_t p_char, int p_size) const {
@@ -597,7 +597,7 @@ Vector2 BitmapFontDataAdvanced::get_size(uint32_t p_char, int p_size) const {
 	const Character *c = char_map.getptr(p_char);
 	ERR_FAIL_COND_V(c == nullptr, Vector2());
 
-	return c->rect.size * (float(p_size) / float(base_size));
+	return c->rect.size;
 }
 
 Vector2 BitmapFontDataAdvanced::get_kerning(uint32_t p_char, uint32_t p_next, int p_size) const {
@@ -609,7 +609,7 @@ Vector2 BitmapFontDataAdvanced::get_kerning(uint32_t p_char, uint32_t p_next, in
 
 	const Map<KerningPairKey, int>::Element *E = kerning_map.find(kpk);
 	if (E) {
-		return Vector2(-E->get() * (float(p_size) / float(base_size)), 0.f);
+		return Vector2(-E->get(), 0.f);
 	} else {
 		return Vector2();
 	}
@@ -627,20 +627,20 @@ Vector2 BitmapFontDataAdvanced::draw_glyph(RID p_canvas, int p_size, const Vecto
 	ERR_FAIL_COND_V(c->texture_idx < -1 || c->texture_idx >= textures.size(), Vector2());
 	if (c->texture_idx != -1) {
 		Point2i cpos = p_pos;
-		cpos += c->align * (float(p_size) / float(base_size));
-		cpos.y -= ascent * (float(p_size) / float(base_size));
+		cpos += c->align;
+		cpos.y -= ascent;
 		if (VisualServer::get_singleton() != nullptr) {
 			//if (distance_field_hint) { // Not implemented.
 			//	RenderingServer::get_singleton()->canvas_item_set_distance_field_mode(p_canvas, true);
 			//}
-			VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas, Rect2(cpos, c->rect.size * (float(p_size) / float(base_size))), textures[c->texture_idx]->get_rid(), c->rect, p_color, false, RID(), false);
+			VisualServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas, Rect2(cpos, c->rect.size), textures[c->texture_idx]->get_rid(), c->rect, p_color, false, RID(), false);
 			//if (distance_field_hint) {
 			//	RenderingServer::get_singleton()->canvas_item_set_distance_field_mode(p_canvas, false);
 			//}
 		}
 	}
 
-	return c->advance * (float(p_size) / float(base_size));
+	return c->advance;
 }
 
 Vector2 BitmapFontDataAdvanced::draw_glyph_outline(RID p_canvas, int p_size, int p_outline_size, const Vector2 &p_pos, uint32_t p_index, const Color &p_color) const {
@@ -656,7 +656,7 @@ Vector2 BitmapFontDataAdvanced::draw_glyph_outline(RID p_canvas, int p_size, int
 
 	// Not supported, return advance for compatibility.
 
-	return c->advance * (float(p_size) / float(base_size));
+	return c->advance;
 }
 
 BitmapFontDataAdvanced::~BitmapFontDataAdvanced() {

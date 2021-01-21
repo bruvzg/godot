@@ -130,6 +130,22 @@ public:
 		PRESET_MODE_KEEP_SIZE
 	};
 
+	enum TextDirection {
+		TEXT_DIRECTION_AUTO = TextServer::DIRECTION_AUTO,
+		TEXT_DIRECTION_LTR = TextServer::DIRECTION_LTR,
+		TEXT_DIRECTION_RTL = TextServer::DIRECTION_RTL,
+	};
+
+	enum StructuredTextParser {
+		STRUCTURED_TEXT_DEFAULT,
+		STRUCTURED_TEXT_URI,
+		STRUCTURED_TEXT_FILE,
+		STRUCTURED_TEXT_EMAIL,
+		STRUCTURED_TEXT_LIST,
+		STRUCTURED_TEXT_NONE,
+		STRUCTURED_TEXT_CUSTOM
+	};
+
 private:
 	struct CComparator {
 
@@ -250,6 +266,8 @@ protected:
 	virtual void remove_child_notify(Node *p_child);
 
 	//virtual void _window_gui_input(InputEvent p_event);
+
+	virtual Vector<Vector2i> structured_text_parser(StructuredTextParser p_node_type, const Array &p_args, const String p_text) const;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -499,5 +517,7 @@ VARIANT_ENUM_CAST(Control::LayoutPresetMode);
 VARIANT_ENUM_CAST(Control::MouseFilter);
 VARIANT_ENUM_CAST(Control::GrowDirection);
 VARIANT_ENUM_CAST(Control::Anchor);
+VARIANT_ENUM_CAST(Control::TextDirection);
+VARIANT_ENUM_CAST(Control::StructuredTextParser);
 
 #endif

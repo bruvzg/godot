@@ -33,6 +33,7 @@
 
 #include "scene/gui/control.h"
 #include "scene/gui/scroll_bar.h"
+#include "scene/resources/text_paragraph.h"
 
 class ItemList : public Control {
 
@@ -58,6 +59,11 @@ private:
 		Color icon_modulate;
 		Ref<Texture> tag_icon;
 		String text;
+		Ref<TextParagraph> text_buf;
+		Dictionary opentype_features;
+		String language;
+		TextDirection text_direction = TEXT_DIRECTION_AUTO;
+
 		bool selectable;
 		bool selected;
 		bool disabled;
@@ -119,6 +125,7 @@ private:
 
 	void _scroll_changed(double);
 	void _gui_input(const Ref<InputEvent> &p_event);
+	void _shape(int p_idx);
 
 protected:
 	void _notification(int p_what);
@@ -130,6 +137,16 @@ public:
 
 	void set_item_text(int p_idx, const String &p_text);
 	String get_item_text(int p_idx) const;
+
+	void set_item_text_direction(int p_idx, TextDirection p_text_direction);
+	TextDirection get_item_text_direction(int p_idx) const;
+
+	void set_item_opentype_feature(int p_idx, const String &p_name, int p_value);
+	int get_item_opentype_feature(int p_idx, const String &p_name) const;
+	void clear_item_opentype_features(int p_idx);
+
+	void set_item_language(int p_idx, const String &p_language);
+	String get_item_language(int p_idx) const;
 
 	void set_item_icon(int p_idx, const Ref<Texture> &p_icon);
 	Ref<Texture> get_item_icon(int p_idx) const;
