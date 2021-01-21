@@ -597,8 +597,6 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 		characters = (NSString *)aString;
 	}
 
-	NSUInteger i, length = [characters length];
-
 	NSCharacterSet *ctrlChars = [NSCharacterSet controlCharacterSet];
 	NSCharacterSet *wsnlChars = [NSCharacterSet whitespaceAndNewlineCharacterSet];
 	if ([characters rangeOfCharacterFromSet:ctrlChars].length && [characters rangeOfCharacterFromSet:wsnlChars].length == 0) {
@@ -608,8 +606,15 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 		return;
 	}
 
-	for (i = 0; i < length; i++) {
-		const unichar codepoint = [characters characterAtIndex:i];
+	Char16String text;
+	text.resize([characters length] + 1);
+	[characters getCharacters:(unichar *)text.ptrw() range:NSMakeRange(0, [characters length])];
+
+	String u32text;
+	u32text.parse_utf16(text.ptr(), text.length());
+
+	for (int i = 0; i < u32text.length(); i++) {
+		const char32_t codepoint = u32text[i];
 		if ((codepoint & 0xFF00) == 0xF700)
 			continue;
 
@@ -1201,7 +1206,16 @@ static int remapKey(unsigned int key, unsigned int state) {
 
 		if (!OS_OSX::singleton->im_active && length > 0 && keycode_has_unicode(remapKey([event keyCode], [event modifierFlags]))) {
 			// Fallback unicode character handler used if IME is not active
-			for (NSUInteger i = 0; i < length; i++) {
+			Char16String text;
+			text.resize([characters length] + 1);
+			[characters getCharacters:(unichar *)text.ptrw() range:NSMakeRange(0, [characters length])];
+
+			String u32text;
+			u32text.parse_utf16(text.ptr(), text.length());
+
+			for (int i = 0; i < u32text.length(); i++) {
+				const char32_t codepoint = u32text[i];
+
 				OS_OSX::KeyEvent ke;
 
 				ke.osx_state = [event modifierFlags];
@@ -1209,7 +1223,7 @@ static int remapKey(unsigned int key, unsigned int state) {
 				ke.echo = [event isARepeat];
 				ke.scancode = remapKey([event keyCode], [event modifierFlags]);
 				ke.raw = true;
-				ke.unicode = [characters characterAtIndex:i];
+				ke.unicode = codepoint;
 
 				push_to_key_event_buffer(ke);
 			}
@@ -1295,7 +1309,15 @@ static int remapKey(unsigned int key, unsigned int state) {
 
 		// Fallback unicode character handler used if IME is not active
 		if (!OS_OSX::singleton->im_active && length > 0 && keycode_has_unicode(remapKey([event keyCode], [event modifierFlags]))) {
-			for (NSUInteger i = 0; i < length; i++) {
+			Char16String text;
+			text.resize([characters length] + 1);
+			[characters getCharacters:(unichar *)text.ptrw() range:NSMakeRange(0, [characters length])];
+
+			String u32text;
+			u32text.parse_utf16(text.ptr(), text.length());
+
+			for (int i = 0; i < u32text.length(); i++) {
+				const char32_t codepoint = u32text[i];
 				OS_OSX::KeyEvent ke;
 
 				ke.osx_state = [event modifierFlags];
@@ -1303,7 +1325,7 @@ static int remapKey(unsigned int key, unsigned int state) {
 				ke.echo = [event isARepeat];
 				ke.scancode = remapKey([event keyCode], [event modifierFlags]);
 				ke.raw = true;
-				ke.unicode = [characters characterAtIndex:i];
+				ke.unicode = codepoint;
 
 				push_to_key_event_buffer(ke);
 			}
