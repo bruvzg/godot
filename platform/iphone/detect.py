@@ -36,6 +36,7 @@ def get_opts():
         ),
         BoolVariable("ios_simulator", "Build for iOS Simulator", False),
         BoolVariable("ios_exceptions", "Enable exceptions", False),
+        BoolVariable("use_thinlto", "Use ThinLTO", False),
         ("ios_triple", "Triple for ios toolchain", ""),
     ]
 
@@ -65,9 +66,13 @@ def configure(env):
         env.Append(CCFLAGS=["-gdwarf-2", "-O0"])
         env.Append(CPPDEFINES=["_DEBUG", ("DEBUG", 1), "DEBUG_ENABLED"])
 
-    if env["use_lto"]:
-        env.Append(CCFLAGS=["-flto"])
-        env.Append(LINKFLAGS=["-flto"])
+    # LTO
+    if env["use_thinlto"]:
+        env.Append(CCFLAGS=["-flto=thin"])
+        env.Append(LINKFLAGS=["-flto=thin"])
+    elif env["use_lto"]:
+        env.Append(CCFLAGS=["-flto=full"])
+        env.Append(LINKFLAGS=["-flto=full"])
 
     ## Architecture
     if env["arch"] == "x86":  # i386

@@ -36,6 +36,7 @@ def get_opts():
         BoolVariable("use_ubsan", "Use LLVM/GCC compiler undefined behavior sanitizer (UBSAN)", False),
         BoolVariable("use_asan", "Use LLVM/GCC compiler address sanitizer (ASAN))", False),
         BoolVariable("use_tsan", "Use LLVM/GCC compiler thread sanitizer (TSAN))", False),
+        BoolVariable("use_thinlto", "Use ThinLTO", False),
     ]
 
 
@@ -153,6 +154,14 @@ def configure(env):
             env["x86_libtheora_opt_gcc"] = True
 
     ## Flags
+
+    # LTO
+    if env["use_thinlto"]:
+        env.Append(CCFLAGS=["-flto=thin"])
+        env.Append(LINKFLAGS=["-flto=thin"])
+    elif env["use_lto"]:
+        env.Append(CCFLAGS=["-flto=full"])
+        env.Append(LINKFLAGS=["-flto=full"])
 
     env.Prepend(CPPPATH=["#platform/osx"])
     env.Append(CPPDEFINES=["OSX_ENABLED", "UNIX_ENABLED", "APPLE_STYLE_KEYS", "COREAUDIO_ENABLED", "COREMIDI_ENABLED"])
