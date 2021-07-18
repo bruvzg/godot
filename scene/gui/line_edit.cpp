@@ -1602,7 +1602,6 @@ void LineEdit::set_editable(bool p_editable) {
 	}
 
 	editable = p_editable;
-	_generate_context_menu();
 
 	minimum_size_changed();
 	update();
@@ -1822,6 +1821,7 @@ bool LineEdit::is_menu_visible() const {
 
 PopupMenu *LineEdit::get_menu() const {
 	const_cast<LineEdit *>(this)->_ensure_menu();
+	const_cast<LineEdit *>(this)->_generate_context_menu();
 	return menu;
 }
 
@@ -1858,8 +1858,6 @@ bool LineEdit::is_clear_button_enabled() const {
 
 void LineEdit::set_shortcut_keys_enabled(bool p_enabled) {
 	shortcut_keys_enabled = p_enabled;
-
-	_generate_context_menu();
 }
 
 bool LineEdit::is_shortcut_keys_enabled() const {
@@ -1880,8 +1878,6 @@ void LineEdit::set_selecting_enabled(bool p_enabled) {
 	if (!selecting_enabled) {
 		deselect();
 	}
-
-	_generate_context_menu();
 }
 
 bool LineEdit::is_selecting_enabled() const {
@@ -2020,7 +2016,6 @@ int LineEdit::_get_menu_action_accelerator(const String &p_action) {
 
 void LineEdit::_generate_context_menu() {
 	// Reorganize context menu.
-	_ensure_menu();
 	menu->clear();
 	if (editable) {
 		menu->add_item(RTR("Cut"), MENU_CUT, is_shortcut_keys_enabled() ? _get_menu_action_accelerator("ui_cut") : 0);
@@ -2043,6 +2038,7 @@ void LineEdit::_generate_context_menu() {
 	menu->add_submenu_item(RTR("Text writing direction"), "DirMenu");
 	menu->add_separator();
 	menu->add_check_item(RTR("Display control characters"), MENU_DISPLAY_UCC);
+	menu->set_item_checked(menu->get_item_index(MENU_DISPLAY_UCC), draw_control_chars);
 	if (editable) {
 		menu->add_submenu_item(RTR("Insert control character"), "CTLMenu");
 	}

@@ -3216,7 +3216,6 @@ int TextEdit::_get_menu_action_accelerator(const String &p_action) {
 
 void TextEdit::_generate_context_menu() {
 	// Reorganize context menu.
-	_ensure_menu();
 	menu->clear();
 	if (!readonly) {
 		menu->add_item(RTR("Cut"), MENU_CUT, is_shortcut_keys_enabled() ? _get_menu_action_accelerator("ui_cut") : 0);
@@ -3239,6 +3238,7 @@ void TextEdit::_generate_context_menu() {
 	menu->add_submenu_item(RTR("Text writing direction"), "DirMenu");
 	menu->add_separator();
 	menu->add_check_item(RTR("Display control characters"), MENU_DISPLAY_UCC);
+	menu->set_item_checked(menu->get_item_index(MENU_DISPLAY_UCC), draw_control_chars);
 	if (!readonly) {
 		menu->add_submenu_item(RTR("Insert control character"), "CTLMenu");
 	}
@@ -3995,7 +3995,6 @@ void TextEdit::set_readonly(bool p_readonly) {
 	}
 
 	readonly = p_readonly;
-	_generate_context_menu();
 
 	update();
 }
@@ -5571,8 +5570,6 @@ bool TextEdit::is_context_menu_enabled() {
 
 void TextEdit::set_shortcut_keys_enabled(bool p_enabled) {
 	shortcut_keys_enabled = p_enabled;
-
-	_generate_context_menu();
 }
 
 void TextEdit::set_virtual_keyboard_enabled(bool p_enable) {
@@ -5585,8 +5582,6 @@ void TextEdit::set_selecting_enabled(bool p_enabled) {
 	if (!selecting_enabled) {
 		deselect();
 	}
-
-	_generate_context_menu();
 }
 
 bool TextEdit::is_selecting_enabled() const {
@@ -5607,6 +5602,7 @@ bool TextEdit::is_menu_visible() const {
 
 PopupMenu *TextEdit::get_menu() const {
 	const_cast<TextEdit *>(this)->_ensure_menu();
+	const_cast<TextEdit *>(this)->_generate_context_menu();
 	return menu;
 }
 
