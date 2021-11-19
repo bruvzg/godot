@@ -787,12 +787,12 @@ static GDNativeVariantPtr gdnative_array_operator_index_const(const GDNativeType
 
 static GDNativeVariantPtr gdnative_dictionary_operator_index(GDNativeTypePtr p_self, const GDNativeVariantPtr p_key) {
 	Dictionary *self = (Dictionary *)p_self;
-	return (GDNativeTypePtr)self->getptr(*(const Variant *)p_key);
+	return (GDNativeVariantPtr)&self->operator[](*(const Variant *)p_key);
 }
 
 static GDNativeVariantPtr gdnative_dictionary_operator_index_const(const GDNativeTypePtr p_self, const GDNativeVariantPtr p_key) {
 	const Dictionary *self = (const Dictionary *)p_self;
-	return (GDNativeTypePtr)self->getptr(*(const Variant *)p_key);
+	return (GDNativeVariantPtr)&self->operator[](*(const Variant *)p_key);
 }
 
 /* OBJECT API */
