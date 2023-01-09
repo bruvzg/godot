@@ -120,6 +120,31 @@ have been removed as they caused massive quality regressions. Apply the patches
 in the `patches/` folder when syncing on newer upstream commits.
 
 
+## d3d12ma
+
+- Upstream: https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator
+- Version: 2.1.0-development (4d16e802e0b9451c9d3c27cd308928c13b73acd6, 2023)
+- License: MIT
+
+Files extracted from upstream source:
+
+- `src/D3D12MemAlloc.cpp`, `src/D3D12MemAlloc.natvis`
+- `include/D3D12MemAlloc.h`
+- `LICENSE.txt`, `NOTICES.txt`
+
+
+## directx_headers
+
+- Upstream: https://github.com/microsoft/DirectX-Headers
+- Version: 1.606.3 (fd329244e62201bf959331d28514928fc1d45005, 2022)
+- License: MIT
+
+Files extracted from upstream source:
+
+- `include/directx/*.h`
+- `LICENSE`
+
+
 ## doctest
 
 - Upstream: https://github.com/onqtam/doctest
@@ -496,6 +521,25 @@ File extracted from upstream release tarball:
   providing configuration for light bundling with core
 - Added the file `godot_module_mbedtls_config.h` to customize the build
   configuration when bundling the full library
+
+
+## mesa
+
+- Upstream: https://gitlab.freedesktop.org/mesa/mesa
+- Version: 23.1.0-devel (9085c9d43e37c643ee9c9fb01b6184fa7c60bffd, 2023)
+- License: MIT
+
+Only the portions of Mesa needed for the Direct3D 12 rendering driver are used; namely,
+those needed to translate SPIR-V into DXIL. There's a script to reconstruct our `thirdparty/mesa/`
+directory from a clone of the Mesa repo. It's advised to read its contents for details on
+how that process can be approached in case it's wished to upgrade Mesa.
+
+On a Bash-like shell, run:
+```
+$ cd <godot_repo>/drivers/d3d12/
+$ export MESA_PATH=<path_to_mesa_repo>
+$ ./update_mesa.sh
+```
 
 
 ## meshoptimizer
