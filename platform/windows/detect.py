@@ -190,6 +190,7 @@ def get_opts():
         BoolVariable("debug_crt", "Compile with MSVC's debug CRT (/MDd)", False),
         BoolVariable("incremental_link", "Use MSVC incremental linking. May increase or decrease build times.", False),
         ("angle_libs", "Path to the ANGLE static libraries", ""),
+        ("mesa_libs", "Path to the MESA/NIR static libraries", ""),
     ]
 
 
@@ -453,6 +454,10 @@ def configure_msvc(env, vcvars_msvc_config):
             env.Append(LIBPATH=[env["PIX_PATH"] + "/bin/" + arch_subdir])
             LIBS += ["WinPixEventRuntime"]
 
+        if env["mesa_libs"] != "":
+            env.Append(LIBPATH=[env["mesa_libs"] + "/bin"])
+            LIBS += ["libNIR.windows." + env["arch"]]
+
     if env["opengl3"]:
         env.AppendUnique(CPPDEFINES=["GLES3_ENABLED"])
         if env["angle_libs"] != "":
@@ -657,6 +662,10 @@ def configure_mingw(env):
         if env["PIX_PATH"] != "":
             print("PIX runtime is not supported with MinGW.")
             sys.exit(255)
+
+        if env["mesa_libs"] != "":
+            env.Append(LIBPATH=[env["mesa_libs"] + "/bin"])
+            env.Append(LIBS=["libNIR.windows." + env["arch"]])
 
     if env["opengl3"]:
         env.Append(CPPDEFINES=["GLES3_ENABLED"])

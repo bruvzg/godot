@@ -37,11 +37,8 @@ if env["PIX_PATH"] != "":
 
 # Mesa (SPIR-V to DXIL functionality).
 
-env_thirdparty_mesa = env.Clone()
-env_thirdparty_mesa.disable_warnings()
-
-mesa_dir = "#thirdparty/mesa"
-mesa_gen_dir = "#thirdparty/mesa/generated"
+mesa_dir = (env["mesa_libs"] + "/godot-mesa").replace("\\", "/")
+mesa_gen_dir = (env["mesa_libs"] + "/godot-mesa/generated").replace("\\", "/")
 mesa_absdir = Dir(mesa_dir).abspath
 mesa_gen_absdir = Dir(mesa_dir + "/generated").abspath
 
@@ -70,9 +67,6 @@ custom_build_steps = [
     ["src/util/format", "u_format_table.py u_format.csv > %s/u_format_table.c", "u_format_table.c"],
 ]
 
-mesa_sources = []
-mesa_gen_headers = []
-mesa_gen_sources = []
 mesa_gen_include_paths = [mesa_gen_dir + "/src"]
 
 # See update_mesa.sh for explanation.
@@ -82,21 +76,11 @@ for v in custom_build_steps:
     gen_filename = v[2]
 
     in_dir = str(Path(mesa_absdir + "/" + subdir))
-    out_dir = str(Path(mesa_absdir + "/generated/" + subdir))
-    script_filename = cmd.split()[0]
     out_full_path = mesa_dir + "/generated/" + subdir
     out_file_full_path = out_full_path + "/" + gen_filename
-    env.Command(
-        out_file_full_path,
-        mesa_dir + "/" + subdir + "/" + script_filename,
-        ["cd " + in_dir + " && python " + (cmd % (out_dir))],
-    )
 
     if gen_filename.endswith(".h"):
-        mesa_gen_include_paths += [out_full_path]
-        mesa_gen_headers += [out_file_full_path]
-    else:
-        mesa_gen_sources += [out_file_full_path]
+        mesa_gen_include_paths += [out_full_path.replace("\\", "/")]
 
 mesa_private_inc_paths = [v[0] for v in os.walk(mesa_absdir)]
 mesa_private_inc_paths = [v.replace(mesa_absdir, mesa_dir) for v in mesa_private_inc_paths]
@@ -113,27 +97,6 @@ mesa_blacklist_inc_paths = [
 ]
 mesa_blacklist_inc_paths = [mesa_dir + "/" + v for v in mesa_blacklist_inc_paths]
 mesa_private_inc_paths = [v for v in mesa_private_inc_paths if v not in mesa_blacklist_inc_paths]
-# Prepending these to avoid some conflicts, at least with OS GL headers.
-env_thirdparty_mesa.Prepend(CPPPATH=mesa_private_inc_paths)
-
-if not env["vulkan"]:
-    # Some Mesa file needs to use Vulkan includes.
-    env_thirdparty_mesa.Append(CPPPATH="#thirdparty/vulkan/include")
-
-mesa_sources += [v for v in list(Path(mesa_absdir).rglob("*.c"))]
-mesa_sources += [v for v in list(Path(mesa_absdir).rglob("*.cpp"))]
-mesa_sources = [str(v).replace(mesa_absdir, mesa_dir) for v in mesa_sources]
-mesa_sources = [v.replace("\\", "/") for v in mesa_sources]
-# Avoid build results depending on if generated files already exist.
-mesa_sources = [v for v in mesa_sources if not v.startswith(mesa_gen_dir)]
-mesa_sources.sort()
-# Include the list of the generated ones now.
-mesa_sources += mesa_gen_sources
-env_thirdparty_mesa.add_source_files(thirdparty_obj, mesa_sources)
-
-# Clean C/C++/both flags to avoid std clashes.
-for key in ["CFLAGS", "CXXFLAGS", "CCFLAGS"]:
-    env_thirdparty_mesa[key] = [v for v in env_thirdparty_mesa[key] if "/std:" not in v and "-std=" not in v]
 
 # Added by ourselves.
 extra_defines = [
@@ -165,18 +128,6 @@ if env.msvc:
         "NOMINMAX",
         "HAVE_STRUCT_TIMESPEC",
     ]
-    env_thirdparty_mesa.Append(CFLAGS=["/std:c11"])
-    env_thirdparty_mesa.Append(CXXFLAGS=["/std:c++17"])
-else:
-    env_thirdparty_mesa.Append(
-        CPPDEFINES=[
-            ("__MSVCRT_VERSION__", 0x0700),
-        ]
-    )
-    env_thirdparty_mesa.Append(CFLAGS=["-std=c11"])
-    env_thirdparty_mesa.Append(CXXFLAGS=["-std=cpp++17"])
-
-env_thirdparty_mesa.Append(CPPDEFINES=extra_defines)
 
 # This is needed since rendering_device_d3d12.cpp needs to include some Mesa internals.
 env_d3d12_rd.Prepend(CPPPATH=mesa_private_inc_paths)
