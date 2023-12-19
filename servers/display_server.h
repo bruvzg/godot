@@ -49,6 +49,10 @@ public:
 		return singleton;
 	}
 
+	enum {
+		IME_DEVICE_ID = INT_MAX,
+	};
+
 	enum WindowMode {
 		WINDOW_MODE_WINDOWED,
 		WINDOW_MODE_MINIMIZED,
@@ -248,7 +252,7 @@ public:
 
 	virtual void warp_mouse(const Point2i &p_position);
 	virtual Point2i mouse_get_position() const;
-	virtual BitField<MouseButtonMask> mouse_get_button_state() const;
+	virtual BitField<MouseButtonMask> mouse_get_button_state(int p_id) const;
 
 	virtual void clipboard_set(const String &p_text);
 	virtual String clipboard_get() const;

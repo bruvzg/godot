@@ -429,7 +429,7 @@ Point2i DisplayServerWindows::mouse_get_position() const {
 	return Point2i(p.x, p.y) - _get_screens_origin();
 }
 
-BitField<MouseButtonMask> DisplayServerWindows::mouse_get_button_state() const {
+BitField<MouseButtonMask> DisplayServerWindows::mouse_get_button_state(int p_id) const {
 	return last_button_state;
 }
 

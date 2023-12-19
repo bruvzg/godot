@@ -480,7 +480,7 @@ Point2i DisplayServerX11::mouse_get_position() const {
 	return Vector2i();
 }
 
-BitField<MouseButtonMask> DisplayServerX11::mouse_get_button_state() const {
+BitField<MouseButtonMask> DisplayServerX11::mouse_get_button_state(int p_id) const {
 	return last_button_state;
 }
 
@@ -4883,13 +4883,13 @@ void DisplayServerX11::process_events() {
 				if (xi.pressure_supported) {
 					mm->set_pressure(xi.pressure);
 				} else {
-					mm->set_pressure(bool(mouse_get_button_state().has_flag(MouseButtonMask::LEFT)) ? 1.0f : 0.0f);
+					mm->set_pressure(bool(mouse_get_button_state(0).has_flag(MouseButtonMask::LEFT)) ? 1.0f : 0.0f);
 				}
 				mm->set_tilt(xi.tilt);
 				mm->set_pen_inverted(xi.pen_inverted);
 
 				_get_key_modifier_state(event.xmotion.state, mm);
-				mm->set_button_mask(mouse_get_button_state());
+				mm->set_button_mask(mouse_get_button_state(0));
 				mm->set_position(pos);
 				mm->set_global_position(pos);
 				mm->set_velocity(Input::get_singleton()->get_last_mouse_velocity());

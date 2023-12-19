@@ -34,7 +34,7 @@
 
 @implementation GodotApplication
 
-- (void)mediaKeyEvent:(int)key state:(BOOL)state repeat:(BOOL)repeat {
+- (void)mediaKeyEvent:(int)key state:(BOOL)state repeat:(BOOL)repeat event:(NSEvent *)event {
 	Key keycode = Key::NONE;
 	switch (key) {
 		case NX_KEYTYPE_SOUND_UP: {
@@ -94,6 +94,7 @@
 		ke.key_label = keycode;
 		ke.unicode = 0;
 		ke.raw = true;
+		ke.device_id = ds->device_id(event);
 
 		ds->push_to_key_event_buffer(ke);
 	}
@@ -106,7 +107,7 @@
 		int keyState = (((keyFlags & 0xFF00) >> 8)) == 0xA;
 		int keyRepeat = (keyFlags & 0x1);
 
-		[self mediaKeyEvent:keyCode state:keyState repeat:keyRepeat];
+		[self mediaKeyEvent:keyCode state:keyState repeat:keyRepeat event:event];
 	}
 
 	DisplayServerMacOS *ds = (DisplayServerMacOS *)DisplayServer::get_singleton();

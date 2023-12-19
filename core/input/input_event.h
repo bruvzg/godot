@@ -53,7 +53,7 @@ class Shortcut;
 class InputEvent : public Resource {
 	GDCLASS(InputEvent, Resource);
 
-	int device = 0;
+	int device = -1; // ALL_DEVICES
 
 protected:
 	bool canceled = false;

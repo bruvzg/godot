@@ -467,6 +467,7 @@ void DisplayServerMacOS::_process_key_events() {
 			k->set_physical_keycode(ke.physical_keycode);
 			k->set_key_label(ke.key_label);
 			k->set_unicode(ke.unicode);
+			k->set_device(ke.device_id);
 
 			_push_input(k);
 		} else {
@@ -482,6 +483,7 @@ void DisplayServerMacOS::_process_key_events() {
 				k->set_physical_keycode(Key::NONE);
 				k->set_key_label(Key::NONE);
 				k->set_unicode(ke.unicode);
+				k->set_device(ke.device_id);
 
 				_push_input(k);
 			}
@@ -495,6 +497,7 @@ void DisplayServerMacOS::_process_key_events() {
 				k->set_keycode(ke.keycode);
 				k->set_physical_keycode(ke.physical_keycode);
 				k->set_key_label(ke.key_label);
+				k->set_device(ke.device_id);
 
 				if (i + 1 < key_event_pos && key_event_buffer[i + 1].keycode == Key::NONE) {
 					k->set_unicode(key_event_buffer[i + 1].unicode);
@@ -700,6 +703,7 @@ void DisplayServerMacOS::send_event(NSEvent *p_event) {
 			k->set_physical_keycode(Key::PERIOD);
 			k->set_key_label(Key::PERIOD);
 			k->set_echo([p_event isARepeat]);
+			k->set_device(device_id(p_event));
 
 			Input::get_singleton()->parse_input_event(k);
 		}
@@ -2574,12 +2578,27 @@ Point2i DisplayServerMacOS::mouse_get_position() const {
 	return Vector2i();
 }
 
-void DisplayServerMacOS::mouse_set_button_state(BitField<MouseButtonMask> p_state) {
-	last_button_state = p_state;
+void DisplayServerMacOS::mouse_set_button_state(BitField<MouseButtonMask> p_state, int p_id) {
+	last_button_state[p_id] = p_state;
 }
 
-BitField<MouseButtonMask> DisplayServerMacOS::mouse_get_button_state() const {
-	return last_button_state;
+BitField<MouseButtonMask> DisplayServerMacOS::mouse_get_button_state(int p_id) const {
+	if (last_button_state.has(p_id)) {
+		return last_button_state[p_id];
+	} else {
+		return 0;
+	}
+}
+
+int DisplayServerMacOS::device_id(NSEvent *p_event) {
+	int64_t native_id = CGEventGetIntegerValueField([p_event CGEvent], CGEventField(87));
+	if (device_ids.has(native_id)) {
+		return device_ids[native_id];
+	} else {
+		int new_id = last_device_id++;
+		device_ids[native_id] = new_id;
+		return new_id;
+	}
 }
 
 void DisplayServerMacOS::clipboard_set(const String &p_text) {

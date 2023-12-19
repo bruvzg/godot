@@ -65,7 +65,7 @@
 	bool ime_input_event_in_progress;
 	bool mouse_down_control;
 	bool ignore_momentum_scroll;
-	bool last_pen_inverted;
+	HashMap<int64_t, bool> last_pen_inverted;
 	bool ime_suppress_next_keyup;
 	id layer_delegate;
 }

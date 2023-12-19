@@ -651,7 +651,7 @@ Point2i DisplayServerAndroid::mouse_get_position() const {
 	return Input::get_singleton()->get_mouse_position();
 }
 
-BitField<MouseButtonMask> DisplayServerAndroid::mouse_get_button_state() const {
+BitField<MouseButtonMask> DisplayServerAndroid::mouse_get_button_state(0) const {
 	return Input::get_singleton()->get_mouse_button_mask();
 }
 

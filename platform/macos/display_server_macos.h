@@ -73,6 +73,7 @@ public:
 		Key physical_keycode = Key::NONE;
 		Key key_label = Key::NONE;
 		uint32_t unicode = 0;
+		int device_id = -1;
 	};
 
 	struct WindowData {
@@ -171,7 +172,9 @@ private:
 
 	CGEventSourceRef event_source;
 	MouseMode mouse_mode = MOUSE_MODE_VISIBLE;
-	BitField<MouseButtonMask> last_button_state;
+	HashMap<int, BitField<MouseButtonMask>> last_button_state;
+	HashMap<int64_t, int> device_ids;
+	int last_device_id = 0;
 
 	bool drop_events = false;
 	bool in_dispatch_input_event = false;
@@ -350,8 +353,9 @@ public:
 	bool update_mouse_wrap(WindowData &p_wd, NSPoint &r_delta, NSPoint &r_mpos, NSTimeInterval p_timestamp);
 	virtual void warp_mouse(const Point2i &p_position) override;
 	virtual Point2i mouse_get_position() const override;
-	void mouse_set_button_state(BitField<MouseButtonMask> p_state);
-	virtual BitField<MouseButtonMask> mouse_get_button_state() const override;
+	void mouse_set_button_state(BitField<MouseButtonMask> p_state, int p_id);
+	virtual BitField<MouseButtonMask> mouse_get_button_state(int p_id) const override;
+	int device_id(NSEvent *p_event);
 
 	virtual void clipboard_set(const String &p_text) override;
 	virtual String clipboard_get() const override;

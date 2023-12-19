@@ -117,7 +117,6 @@
 	ime_input_event_in_progress = false;
 	mouse_down_control = false;
 	ignore_momentum_scroll = false;
-	last_pen_inverted = false;
 	[self updateTrackingAreas];
 
 	self.layerContentsRedrawPolicy = NSViewLayerContentsRedrawDuringViewResize;
@@ -290,6 +289,7 @@
 		ke.physical_keycode = Key::NONE;
 		ke.key_label = Key::NONE;
 		ke.unicode = fix_unicode(codepoint);
+		ke.device_id = DisplayServer::IME_DEVICE_ID;
 
 		ds->push_to_key_event_buffer(ke);
 	}
@@ -362,8 +362,9 @@
 		return;
 	}
 
+	int dev_id = ds->device_id(event);
 	DisplayServerMacOS::WindowData &wd = ds->get_window(window_id);
-	BitField<MouseButtonMask> last_button_state = ds->mouse_get_button_state();
+	BitField<MouseButtonMask> last_button_state = ds->mouse_get_button_state(dev_id);
 
 	MouseButtonMask mask = mouse_button_to_mask(index);
 
@@ -372,7 +373,7 @@
 	} else {
 		last_button_state.clear_flag(mask);
 	}
-	ds->mouse_set_button_state(last_button_state);
+	ds->mouse_set_button_state(last_button_state, dev_id);
 
 	Ref<InputEventMouseButton> mb;
 	mb.instantiate();
@@ -384,6 +385,7 @@
 	mb->set_position(wd.mouse_pos);
 	mb->set_global_position(wd.mouse_pos);
 	mb->set_button_mask(last_button_state);
+	mb->set_device(dev_id);
 	if (index == MouseButton::LEFT && pressed) {
 		mb->set_double_click([event clickCount] == 2);
 	}
@@ -428,23 +430,29 @@
 		return;
 	}
 
+	int dev_id = ds->device_id(event);
+
 	Ref<InputEventMouseMotion> mm;
 	mm.instantiate();
 
 	mm->set_window_id(window_id);
-	mm->set_button_mask(ds->mouse_get_button_state());
+	mm->set_button_mask(ds->mouse_get_button_state(dev_id));
 	ds->update_mouse_pos(wd, mpos);
 	mm->set_position(wd.mouse_pos);
 	mm->set_pressure([event pressure]);
+	mm->set_device(dev_id);
 	NSEventSubtype subtype = [event subtype];
 	if (subtype == NSEventSubtypeTabletPoint) {
 		const NSPoint p = [event tilt];
 		mm->set_tilt(Vector2(p.x, -p.y));
-		mm->set_pen_inverted(last_pen_inverted);
+		if (!last_pen_inverted.has(dev_id)) {
+			last_pen_inverted[dev_id] = false;
+		}
+		mm->set_pen_inverted(last_pen_inverted[dev_id]);
 	} else if (subtype == NSEventSubtypeTabletProximity) {
 		// Check if using the eraser end of pen only on proximity event.
-		last_pen_inverted = [event pointingDeviceType] == NSPointingDeviceTypeEraser;
-		mm->set_pen_inverted(last_pen_inverted);
+		last_pen_inverted[dev_id] = [event pointingDeviceType] == NSPointingDeviceTypeEraser;
+		mm->set_pen_inverted(last_pen_inverted[dev_id]);
 	}
 	mm->set_global_position(wd.mouse_pos);
 	mm->set_velocity(Input::get_singleton()->get_last_mouse_velocity());
@@ -534,6 +542,7 @@
 	ds->update_mouse_pos(wd, [event locationInWindow]);
 	ev->set_position(wd.mouse_pos);
 	ev->set_factor([event magnification] + 1.0);
+	ev->set_device(ds->device_id(event));
 
 	Input::get_singleton()->parse_input_event(ev);
 }
@@ -590,6 +599,7 @@
 				ke.key_label = KeyMappingMacOS::remap_key([event keyCode], [event modifierFlags], true);
 				ke.unicode = fix_unicode(codepoint);
 				ke.raw = true;
+				ke.device_id = ds->device_id(event);
 
 				ds->push_to_key_event_buffer(ke);
 			}
@@ -605,6 +615,7 @@
 			ke.key_label = KeyMappingMacOS::remap_key([event keyCode], [event modifierFlags], true);
 			ke.unicode = 0;
 			ke.raw = false;
+			ke.device_id = ds->device_id(event);
 
 			ds->push_to_key_event_buffer(ke);
 		}
@@ -628,6 +639,7 @@
 	ke.window_id = window_id;
 	ke.echo = false;
 	ke.raw = true;
+	ke.device_id = ds->device_id(event);
 
 	int key = [event keyCode];
 	int mod = [event modifierFlags];
@@ -697,6 +709,7 @@
 		ke.key_label = KeyMappingMacOS::remap_key([event keyCode], [event modifierFlags], true);
 		ke.unicode = 0;
 		ke.raw = true;
+		ke.device_id = ds->device_id(event);
 
 		ds->push_to_key_event_buffer(ke);
 	}
@@ -710,9 +723,10 @@
 		return;
 	}
 
+	int dev_id = ds->device_id(event);
 	DisplayServerMacOS::WindowData &wd = ds->get_window(window_id);
 	MouseButtonMask mask = mouse_button_to_mask(button);
-	BitField<MouseButtonMask> last_button_state = ds->mouse_get_button_state();
+	BitField<MouseButtonMask> last_button_state = ds->mouse_get_button_state(dev_id);
 
 	Ref<InputEventMouseButton> sc;
 	sc.instantiate();
@@ -726,7 +740,8 @@
 	sc->set_global_position(wd.mouse_pos);
 	last_button_state.set_flag(mask);
 	sc->set_button_mask(last_button_state);
-	ds->mouse_set_button_state(last_button_state);
+	ds->mouse_set_button_state(last_button_state, dev_id);
+	sc->set_device(dev_id);
 
 	Input::get_singleton()->parse_input_event(sc);
 
@@ -739,7 +754,8 @@
 	sc->set_global_position(wd.mouse_pos);
 	last_button_state.clear_flag(mask);
 	sc->set_button_mask(last_button_state);
-	ds->mouse_set_button_state(last_button_state);
+	ds->mouse_set_button_state(last_button_state, dev_id);
+	sc->set_device(dev_id);
 
 	Input::get_singleton()->parse_input_event(sc);
 }
@@ -759,6 +775,7 @@
 	ds->get_key_modifier_state([event modifierFlags], pg);
 	pg->set_position(wd.mouse_pos);
 	pg->set_delta(Vector2(-dx, -dy));
+	pg->set_device(ds->device_id(event));
 
 	Input::get_singleton()->parse_input_event(pg);
 }

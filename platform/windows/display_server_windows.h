@@ -531,7 +531,7 @@ public:
 
 	virtual void warp_mouse(const Point2i &p_position) override;
 	virtual Point2i mouse_get_position() const override;
-	virtual BitField<MouseButtonMask> mouse_get_button_state() const override;
+	virtual BitField<MouseButtonMask> mouse_get_button_state(int p_id) const override;
 
 	virtual void clipboard_set(const String &p_text) override;
 	virtual String clipboard_get() const override;

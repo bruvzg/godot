@@ -372,7 +372,7 @@ Point2i DisplayServer::mouse_get_position() const {
 	ERR_FAIL_V_MSG(Point2i(), "Mouse is not supported by this display server.");
 }
 
-BitField<MouseButtonMask> DisplayServer::mouse_get_button_state() const {
+BitField<MouseButtonMask> DisplayServer::mouse_get_button_state(int p_id) const {
 	ERR_FAIL_V_MSG(0, "Mouse is not supported by this display server.");
 }
 
@@ -681,7 +681,7 @@ void DisplayServer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("warp_mouse", "position"), &DisplayServer::warp_mouse);
 	ClassDB::bind_method(D_METHOD("mouse_get_position"), &DisplayServer::mouse_get_position);
-	ClassDB::bind_method(D_METHOD("mouse_get_button_state"), &DisplayServer::mouse_get_button_state);
+	ClassDB::bind_method(D_METHOD("mouse_get_button_state", "id"), &DisplayServer::mouse_get_button_state);
 
 	ClassDB::bind_method(D_METHOD("clipboard_set", "clipboard"), &DisplayServer::clipboard_set);
 	ClassDB::bind_method(D_METHOD("clipboard_get"), &DisplayServer::clipboard_get);
@@ -855,6 +855,8 @@ void DisplayServer::_bind_methods() {
 
 	BIND_CONSTANT(MAIN_WINDOW_ID);
 	BIND_CONSTANT(INVALID_WINDOW_ID);
+
+	BIND_CONSTANT(IME_DEVICE_ID);
 
 	BIND_ENUM_CONSTANT(SCREEN_LANDSCAPE);
 	BIND_ENUM_CONSTANT(SCREEN_PORTRAIT);
