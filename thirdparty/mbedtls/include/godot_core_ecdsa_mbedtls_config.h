@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  pck_packer.h                                                          */
+/*  godot_core_ecdsa_mbedtls_config.h                                     */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,71 +28,48 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef PCK_PACKER_H
-#define PCK_PACKER_H
+#ifndef GODOT_CORE_ECDSA_MBEDTLS_CONFIG_H
+#define GODOT_CORE_ECDSA_MBEDTLS_CONFIG_H
 
-#include "core/object/ref_counted.h"
+#include <limits.h>
 
-class FileAccess;
+// For AES
+#define MBEDTLS_CIPHER_MODE_CBC
+#define MBEDTLS_CIPHER_MODE_CFB
+#define MBEDTLS_CIPHER_MODE_CTR
+#define MBEDTLS_CIPHER_MODE_OFB
+#define MBEDTLS_CIPHER_MODE_XTS
 
-class PCKPacker : public RefCounted {
-	GDCLASS(PCKPacker, RefCounted);
+#define MBEDTLS_AES_C
+#define MBEDTLS_BASE64_C
+#define MBEDTLS_CTR_DRBG_C
+#define MBEDTLS_ENTROPY_C
+#define MBEDTLS_MD5_C
+#define MBEDTLS_SHA1_C
+#define MBEDTLS_SHA256_C
+#define MBEDTLS_PLATFORM_ZEROIZE_ALT
+#define MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
 
-public:
-	enum CurveType {
-		ECP_DP_NONE,
-		ECP_DP_SECP192R1,
-		ECP_DP_SECP224R1,
-		ECP_DP_SECP256R1,
-		ECP_DP_SECP384R1,
-		ECP_DP_SECP521R1,
-		ECP_DP_BP256R1,
-		ECP_DP_BP384R1,
-		ECP_DP_BP512R1,
-		ECP_DP_CURVE25519,
-		ECP_DP_SECP192K1,
-		ECP_DP_SECP224K1,
-		ECP_DP_SECP256K1,
-		ECP_DP_CURVE448,
-	};
+// For ECDSA
+#define MBEDTLS_ECP_DP_SECP192R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP224R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP256R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP384R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP521R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP192K1_ENABLED
+#define MBEDTLS_ECP_DP_SECP224K1_ENABLED
+#define MBEDTLS_ECP_DP_SECP256K1_ENABLED
+#define MBEDTLS_ECP_DP_BP256R1_ENABLED
+#define MBEDTLS_ECP_DP_BP384R1_ENABLED
+#define MBEDTLS_ECP_DP_BP512R1_ENABLED
+/* Montgomery curves (supporting ECP) */
+#define MBEDTLS_ECP_DP_CURVE25519_ENABLED
+#define MBEDTLS_ECP_DP_CURVE448_ENABLED
+#define MBEDTLS_ECP_NIST_OPTIM
+#define MBEDTLS_BIGNUM_C
+#define MBEDTLS_ECDSA_C
+#define MBEDTLS_ECP_C
+#define MBEDTLS_ASN1_PARSE_C
+#define MBEDTLS_ASN1_WRITE_C
 
-private:
-	Ref<FileAccess> file;
-	int alignment = 0;
-	uint64_t ofs = 0;
-
-	Vector<uint8_t> key;
-	bool enc_dir = false;
-
-	static void _bind_methods();
-
-	struct File {
-		String path;
-		String src_path;
-		uint64_t ofs = 0;
-		uint64_t size = 0;
-		bool encrypted = false;
-		bool require_verification = false;
-		Vector<uint8_t> md5;
-		Vector<uint8_t> sha256;
-	};
-	Vector<File> files;
-
-protected:
-#ifndef DISABLE_DEPRECATED
-	Error _add_file_bind_compat_87696(const String &p_file, const String &p_src, bool p_encrypt);
-	static void _bind_compatibility_methods();
-#endif // DISABLE_DEPRECATED
-
-public:
-	Error pck_start(const String &p_file, int p_alignment = 32, const String &p_key = "0000000000000000000000000000000000000000000000000000000000000000", bool p_encrypt_directory = false);
-	Error add_file(const String &p_file, const String &p_src, bool p_encrypt = false, bool require_verification = false);
-	Error flush(bool p_verbose = false);
-	Error flush_and_sign(const String &p_private_key, PCKPacker::CurveType p_curve, bool p_verbose = false);
-
-	PCKPacker() {}
-};
-
-VARIANT_ENUM_CAST(PCKPacker::CurveType);
-
-#endif // PCK_PACKER_H
+#endif // GODOT_CORE_ECDSA_MBEDTLS_CONFIG_H

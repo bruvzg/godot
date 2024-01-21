@@ -114,6 +114,55 @@ public:
 	static Error md5(const uint8_t *p_src, int p_src_len, unsigned char r_hash[16]);
 	static Error sha1(const uint8_t *p_src, int p_src_len, unsigned char r_hash[20]);
 	static Error sha256(const uint8_t *p_src, int p_src_len, unsigned char r_hash[32]);
+
+#ifdef ECDSA_ENABLED
+
+	class ECDSAContext {
+	public:
+		enum CurveType {
+			ECP_DP_NONE,
+			ECP_DP_SECP192R1,
+			ECP_DP_SECP224R1,
+			ECP_DP_SECP256R1,
+			ECP_DP_SECP384R1,
+			ECP_DP_SECP521R1,
+			ECP_DP_BP256R1,
+			ECP_DP_BP384R1,
+			ECP_DP_BP512R1,
+			ECP_DP_CURVE25519,
+			ECP_DP_SECP192K1,
+			ECP_DP_SECP224K1,
+			ECP_DP_SECP256K1,
+			ECP_DP_CURVE448,
+		};
+
+	private:
+		CurveType curve_type = ECP_DP_SECP256R1;
+		void *entropy = nullptr;
+		void *ctr_drbg = nullptr;
+		void *ctx = nullptr;
+		void *keypair = nullptr;
+		bool silent = false;
+
+	public:
+		ECDSAContext(CurveType p_curve = ECP_DP_BP256R1);
+		~ECDSAContext();
+
+		void set_silent(bool p_silent);
+
+		Error validate_private_key(const uint8_t *p_priv_key, size_t p_priv_len);
+		Error validate_public_key(const uint8_t *p_pub_key, size_t p_pub_len);
+
+		Error generate_key_pair(uint8_t *p_priv_key, size_t p_priv_len, size_t *r_priv_len, uint8_t *p_pub_key, size_t p_pub_len, size_t *r_pub_len);
+
+		Error set_public_key(const uint8_t *p_key, size_t p_len);
+		Error set_private_key(const uint8_t *p_key, size_t p_len);
+
+		Error sign(const unsigned char *p_hash_sha256, uint8_t *r_signature, size_t *r_signature_len);
+		Error verify(const unsigned char *p_hash_sha256, uint8_t *p_signature, size_t p_signature_len);
+	};
+
+#endif
 };
 
 #endif // CRYPTO_CORE_H

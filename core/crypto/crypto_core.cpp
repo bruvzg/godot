@@ -32,6 +32,7 @@
 
 #include "core/os/os.h"
 
+#define MBEDTLS_ALLOW_PRIVATE_ACCESS
 #include <mbedtls/aes.h>
 #include <mbedtls/base64.h>
 #include <mbedtls/ctr_drbg.h>
@@ -42,6 +43,9 @@
 #if MBEDTLS_VERSION_MAJOR >= 3
 #include <mbedtls/compat-2.x.h>
 #endif
+
+#include <mbedtls/ecdsa.h>
+#include <mbedtls/ecp.h>
 
 // RandomGenerator
 CryptoCore::RandomGenerator::RandomGenerator() {
@@ -249,3 +253,106 @@ Error CryptoCore::sha256(const uint8_t *p_src, int p_src_len, unsigned char r_ha
 	int ret = mbedtls_sha256_ret(p_src, p_src_len, r_hash, 0);
 	return ret ? FAILED : OK;
 }
+
+#ifdef ECDSA_ENABLED
+
+#define CHECK_COND_V(m_cond, m_retval)         \
+	if (unlikely(m_cond)) {                    \
+		if (silent) {                          \
+			return m_retval;                   \
+		} else {                               \
+			ERR_FAIL_COND_V(m_cond, m_retval); \
+		}                                      \
+	}
+
+CryptoCore::ECDSAContext::ECDSAContext(CryptoCore::ECDSAContext::CurveType p_curve) {
+	curve_type = p_curve;
+	entropy = memalloc(sizeof(mbedtls_entropy_context));
+	mbedtls_entropy_init((mbedtls_entropy_context *)entropy);
+
+	ctr_drbg = memalloc(sizeof(mbedtls_ctr_drbg_context));
+	mbedtls_ctr_drbg_init((mbedtls_ctr_drbg_context *)ctr_drbg);
+	mbedtls_ctr_drbg_seed((mbedtls_ctr_drbg_context *)ctr_drbg, mbedtls_entropy_func, (mbedtls_entropy_context *)entropy, nullptr, 0);
+
+	ctx = memalloc(sizeof(mbedtls_ecdsa_context));
+	mbedtls_ecdsa_init((mbedtls_ecdsa_context *)ctx);
+
+	keypair = memalloc(sizeof(mbedtls_ecp_keypair));
+	mbedtls_ecp_keypair_init((mbedtls_ecp_keypair *)keypair);
+}
+
+CryptoCore::ECDSAContext::~ECDSAContext() {
+	mbedtls_ecp_keypair_free((mbedtls_ecp_keypair *)keypair);
+	mbedtls_ecdsa_free((mbedtls_ecdsa_context *)ctx);
+	mbedtls_entropy_free((mbedtls_entropy_context *)entropy);
+	mbedtls_ctr_drbg_free((mbedtls_ctr_drbg_context *)ctr_drbg);
+}
+
+void CryptoCore::ECDSAContext::set_silent(bool p_silent) {
+	silent = p_silent;
+}
+
+Error CryptoCore::ECDSAContext::validate_private_key(const uint8_t *p_priv_key, size_t p_priv_len) {
+	mbedtls_ecp_keypair keypair_val;
+	mbedtls_ecp_keypair_init(&keypair_val);
+
+	int priv_ok = mbedtls_ecp_read_key((mbedtls_ecp_group_id)curve_type, &keypair_val, (const unsigned char *)p_priv_key, p_priv_len);
+	if (priv_ok == 0) {
+		priv_ok = mbedtls_ecp_check_privkey(&(keypair_val.grp), &(keypair_val.d));
+	}
+	mbedtls_ecp_keypair_free(&keypair_val);
+
+	return (priv_ok == 0) ? OK : FAILED;
+}
+
+Error CryptoCore::ECDSAContext::validate_public_key(const uint8_t *p_pub_key, size_t p_pub_len) {
+	mbedtls_ecp_keypair keypair_val;
+	mbedtls_ecp_keypair_init(&keypair_val);
+	mbedtls_ecp_group_load(&(keypair_val.grp), (mbedtls_ecp_group_id)curve_type);
+
+	int pub_ok = mbedtls_ecp_point_read_binary(&(keypair_val.grp), &(keypair_val.Q), (const unsigned char *)p_pub_key, p_pub_len);
+	if (pub_ok == 0) {
+		pub_ok = mbedtls_ecp_check_pubkey(&(keypair_val.grp), &(keypair_val.Q));
+	}
+	mbedtls_ecp_keypair_free(&keypair_val);
+
+	return (pub_ok == 0) ? OK : FAILED;
+}
+
+Error CryptoCore::ECDSAContext::generate_key_pair(uint8_t *p_priv_key, size_t p_priv_len, size_t *r_priv_len, uint8_t *p_pub_key, size_t p_pub_len, size_t *r_pub_len) {
+	CHECK_COND_V(mbedtls_ecp_gen_key((mbedtls_ecp_group_id)curve_type, (mbedtls_ecp_keypair *)keypair, mbedtls_ctr_drbg_random, (mbedtls_ctr_drbg_context *)ctr_drbg) != 0, FAILED);
+	CHECK_COND_V(mbedtls_ecdsa_from_keypair((mbedtls_ecdsa_context *)ctx, (mbedtls_ecp_keypair *)keypair) != 0, FAILED);
+	size_t len = MIN(size_t((((mbedtls_ecp_keypair *)keypair)->grp.pbits + 7) / 8), p_priv_len);
+	size_t key_length = 0;
+	CHECK_COND_V(mbedtls_ecp_write_key_ext((mbedtls_ecp_keypair *)keypair, &key_length, (unsigned char *)p_priv_key, len) != 0, FAILED);
+	*r_priv_len = key_length;
+	CHECK_COND_V(mbedtls_ecp_point_write_binary(&(((mbedtls_ecp_keypair *)keypair)->grp), &(((mbedtls_ecp_keypair *)keypair)->Q), MBEDTLS_ECP_PF_UNCOMPRESSED, r_pub_len, (unsigned char *)p_pub_key, p_pub_len) != 0, FAILED);
+	return OK;
+}
+
+Error CryptoCore::ECDSAContext::set_public_key(const uint8_t *p_key, size_t p_len) {
+	mbedtls_ecp_group_load(&(((mbedtls_ecp_keypair *)keypair)->grp), (mbedtls_ecp_group_id)curve_type);
+	CHECK_COND_V(mbedtls_ecp_point_read_binary(&(((mbedtls_ecp_keypair *)keypair)->grp), &(((mbedtls_ecp_keypair *)keypair)->Q), (const unsigned char *)p_key, p_len) != 0, FAILED);
+	CHECK_COND_V(mbedtls_ecdsa_from_keypair((mbedtls_ecdsa_context *)ctx, (mbedtls_ecp_keypair *)keypair) != 0, FAILED);
+	return OK;
+}
+
+Error CryptoCore::ECDSAContext::set_private_key(const uint8_t *p_key, size_t p_len) {
+	CHECK_COND_V(mbedtls_ecp_read_key((mbedtls_ecp_group_id)curve_type, (mbedtls_ecp_keypair *)keypair, (const unsigned char *)p_key, p_len) != 0, FAILED);
+	CHECK_COND_V(mbedtls_ecdsa_from_keypair((mbedtls_ecdsa_context *)ctx, (mbedtls_ecp_keypair *)keypair) != 0, FAILED);
+	return OK;
+}
+
+Error CryptoCore::ECDSAContext::sign(const unsigned char *p_hash_sha256, uint8_t *r_signature, size_t *r_signature_len) {
+	CHECK_COND_V(mbedtls_ecdsa_write_signature((mbedtls_ecdsa_context *)ctx, MBEDTLS_MD_SHA256, p_hash_sha256, 32, r_signature, *r_signature_len, r_signature_len, mbedtls_ctr_drbg_random, (mbedtls_ctr_drbg_context *)ctr_drbg) != 0, FAILED);
+	return OK;
+}
+
+Error CryptoCore::ECDSAContext::verify(const unsigned char *p_hash_sha256, uint8_t *p_signature, size_t p_signature_len) {
+	CHECK_COND_V(mbedtls_ecdsa_read_signature((mbedtls_ecdsa_context *)ctx, p_hash_sha256, 32, p_signature, p_signature_len) != 0, FAILED);
+	return OK;
+}
+
+#undef CHECK_COND_V
+
+#endif //ECDSA_ENABLED

@@ -767,15 +767,15 @@ Error EditorExportPlatformAndroid::save_apk_so(void *p_userdata, const SharedObj
 	return OK;
 }
 
-Error EditorExportPlatformAndroid::save_apk_file(void *p_userdata, const String &p_path, const Vector<uint8_t> &p_data, int p_file, int p_total, const Vector<String> &p_enc_in_filters, const Vector<String> &p_enc_ex_filters, const Vector<uint8_t> &p_key) {
+Error EditorExportPlatformAndroid::save_apk_file(void *p_userdata, const ExportFileData &p_info, const Vector<uint8_t> &p_data) {
 	APKExportData *ed = static_cast<APKExportData *>(p_userdata);
-	String dst_path = p_path.replace_first("res://", "assets/");
+	String dst_path = p_info.path.replace_first("res://", "assets/");
 
-	store_in_apk(ed, dst_path, p_data, _should_compress_asset(p_path, p_data) ? Z_DEFLATED : 0);
+	store_in_apk(ed, dst_path, p_data, _should_compress_asset(p_info.path, p_data) ? Z_DEFLATED : 0);
 	return OK;
 }
 
-Error EditorExportPlatformAndroid::ignore_apk_file(void *p_userdata, const String &p_path, const Vector<uint8_t> &p_data, int p_file, int p_total, const Vector<String> &p_enc_in_filters, const Vector<String> &p_enc_ex_filters, const Vector<uint8_t> &p_key) {
+Error EditorExportPlatformAndroid::ignore_apk_file(void *p_userdata, const ExportFileData &p_info, const Vector<uint8_t> &p_data) {
 	return OK;
 }
 

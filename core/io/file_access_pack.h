@@ -40,8 +40,13 @@
 
 // Godot's packed file magic header ("GDPC" in ASCII).
 #define PACK_HEADER_MAGIC 0x43504447
+
 // The current packed file format version number.
-#define PACK_FORMAT_VERSION 2
+#define PACK_FORMAT_VERSION 3
+
+#ifndef DISABLE_DEPRECATED
+#define PACK_FORMAT_VERSION_COMPAT 2
+#endif
 
 enum PackFlags {
 	PACK_DIR_ENCRYPTED = 1 << 0,
@@ -49,7 +54,8 @@ enum PackFlags {
 };
 
 enum PackFileFlags {
-	PACK_FILE_ENCRYPTED = 1 << 0
+	PACK_FILE_ENCRYPTED = 1 << 0,
+	PACK_FILE_REQUIRE_VERIFICATION = 1 << 1,
 };
 
 class PackSource;
@@ -62,11 +68,15 @@ class PackedData {
 public:
 	struct PackedFile {
 		String pack;
-		uint64_t offset; //if offset is ZERO, the file was ERASED
+		uint64_t offset; // If offset is ZERO, the file was ERASED.
 		uint64_t size;
-		uint8_t md5[16];
+		uint8_t md5[16]; // Used for as path name.
+		uint8_t sha256[32]; // Used for context verification.
+
 		PackSource *src = nullptr;
-		bool encrypted;
+		bool encrypted = false;
+		bool require_verification = false;
+		bool is_validated = false;
 	};
 
 private:
@@ -97,6 +107,8 @@ private:
 		}
 	};
 
+	static HashSet<String> require_verification;
+	static HashSet<String> require_encryption;
 	HashMap<PathMD5, PackedFile, PathMD5> files;
 
 	Vector<PackSource *> sources;
@@ -109,8 +121,11 @@ private:
 	void _free_packed_dirs(PackedDir *p_dir);
 
 public:
+	static bool file_require_verification(const String &p_name);
+	static bool file_require_encryption(const String &p_name);
+
 	void add_pack_source(PackSource *p_source);
-	void add_path(const String &p_pkg_path, const String &p_path, uint64_t p_ofs, uint64_t p_size, const uint8_t *p_md5, PackSource *p_src, bool p_replace_files, bool p_encrypted = false); // for PackSource
+	void add_path(const String &p_pkg_path, const String &p_path, uint64_t p_ofs, uint64_t p_size, const uint8_t *p_md5, const uint8_t *p_sha256, PackSource *p_src, bool p_replace_files, bool p_encrypted = false, bool p_require_verification = false); // for PackSource
 
 	void set_disabled(bool p_disabled) { disabled = p_disabled; }
 	_FORCE_INLINE_ bool is_disabled() const { return disabled; }
@@ -187,7 +202,7 @@ public:
 
 	virtual void close() override;
 
-	FileAccessPack(const String &p_path, const PackedData::PackedFile &p_file);
+	FileAccessPack(const String &p_path, PackedData::PackedFile *p_file);
 };
 
 Ref<FileAccess> PackedData::try_open_path(const String &p_path) {

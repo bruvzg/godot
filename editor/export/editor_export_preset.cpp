@@ -369,12 +369,12 @@ bool EditorExportPreset::get_enc_directory() const {
 	return enc_directory;
 }
 
-void EditorExportPreset::set_script_encryption_key(const String &p_key) {
+void EditorExportPreset::set_pck_encryption_key(const String &p_key) {
 	script_key = p_key;
 	EditorExport::singleton->save_presets();
 }
 
-String EditorExportPreset::get_script_encryption_key() const {
+String EditorExportPreset::get_pck_encryption_key() const {
 	return script_key;
 }
 
@@ -385,6 +385,60 @@ void EditorExportPreset::set_script_export_mode(int p_mode) {
 
 int EditorExportPreset::get_script_export_mode() const {
 	return script_mode;
+}
+
+void EditorExportPreset::set_sign_in_filter(const String &p_filter) {
+	sign_in_filters = p_filter;
+	EditorExport::singleton->save_presets();
+}
+
+String EditorExportPreset::get_sign_in_filter() const {
+	return sign_in_filters;
+}
+
+void EditorExportPreset::set_sign_ex_filter(const String &p_filter) {
+	sign_ex_filters = p_filter;
+	EditorExport::singleton->save_presets();
+}
+
+String EditorExportPreset::get_sign_ex_filter() const {
+	return sign_ex_filters;
+}
+
+void EditorExportPreset::set_sign_pck(bool p_enabled) {
+	sign_pck = p_enabled;
+	EditorExport::singleton->save_presets();
+}
+
+bool EditorExportPreset::get_sign_pck() const {
+	return sign_pck;
+}
+
+void EditorExportPreset::set_pck_signing_key_priv(const String &p_key) {
+	sign_key_priv = p_key;
+	EditorExport::singleton->save_presets();
+}
+
+String EditorExportPreset::get_pck_signing_key_priv() const {
+	return sign_key_priv;
+}
+
+void EditorExportPreset::set_pck_signing_key_pub(const String &p_key) {
+	sign_key_pub = p_key;
+	EditorExport::singleton->save_presets();
+}
+
+String EditorExportPreset::get_pck_signing_key_pub() const {
+	return sign_key_pub;
+}
+
+void EditorExportPreset::set_pck_signing_curve(int p_curve) {
+	sign_curve = p_curve;
+	EditorExport::singleton->save_presets();
+}
+
+int EditorExportPreset::get_pck_signing_curve() const {
+	return sign_curve;
 }
 
 Variant EditorExportPreset::get_or_env(const StringName &p_name, const String &p_env_var, bool *r_valid) const {

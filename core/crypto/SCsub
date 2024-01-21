@@ -2,6 +2,8 @@
 
 Import("env")
 
+import os
+
 env_crypto = env.Clone()
 
 is_builtin = env["builtin_mbedtls"]
@@ -21,9 +23,14 @@ if is_builtin or not has_module:
 # to make a "light" build with only the necessary mbedtls files.
 if not has_module:
     # Minimal mbedTLS config file
-    config_path = "thirdparty/mbedtls/include/godot_core_mbedtls_config.h"
+    if env.editor_build or "PCK_SIGNING_PUBLIC_KEY" in os.environ:
+        config_path = "thirdparty/mbedtls/include/godot_core_ecdsa_mbedtls_config.h"
+    else:
+        config_path = "thirdparty/mbedtls/include/godot_core_mbedtls_config.h"
+
     config_path = f"<{config_path}>" if env_crypto["ninja"] and env_crypto.msvc else f'\\"{config_path}\\"'
     env_crypto.Append(CPPDEFINES=[("MBEDTLS_CONFIG_FILE", config_path)])
+
     # Build minimal mbedTLS library (MD5/SHA/Base64/AES).
     env_thirdparty = env_crypto.Clone()
     env_thirdparty.disable_warnings()
@@ -40,10 +47,28 @@ if not has_module:
         "sha256.c",
         "godot_core_mbedtls_platform.c",
     ]
+    if env.editor_build or "PCK_SIGNING_PUBLIC_KEY" in os.environ:
+        # PCK siginig is enabled or with editor.
+        thirdparty_mbedtls_sources += [
+            "asn1parse.c",
+            "asn1write.c",
+            "bignum.c",
+            "ecdsa.c",
+            "ecp.c",
+            "ecp_curves.c",
+            "hmac_drbg.c",
+            "md.c",
+            "platform.c",
+            "platform_util.c",
+            "threading.c",
+        ]
+        env_thirdparty.Depends(thirdparty_obj, "#thirdparty/mbedtls/include/godot_core_ecdsa_mbedtls_config.h")
+    else:
+        env_thirdparty.Depends(thirdparty_obj, "#thirdparty/mbedtls/include/godot_core_mbedtls_config.h")
+
     thirdparty_mbedtls_sources = [thirdparty_mbedtls_dir + file for file in thirdparty_mbedtls_sources]
     env_thirdparty.add_source_files(thirdparty_obj, thirdparty_mbedtls_sources)
     # Needed to force rebuilding the library when the configuration file is updated.
-    env_thirdparty.Depends(thirdparty_obj, "#thirdparty/mbedtls/include/godot_core_mbedtls_config.h")
     env.core_sources += thirdparty_obj
 elif is_builtin:
     # Module mbedTLS config file

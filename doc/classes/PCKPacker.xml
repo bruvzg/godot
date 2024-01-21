@@ -29,15 +29,27 @@
 			<param index="0" name="pck_path" type="String" />
 			<param index="1" name="source_path" type="String" />
 			<param index="2" name="encrypt" type="bool" default="false" />
+			<param index="3" name="require_verification" type="bool" default="false" />
 			<description>
 				Adds the [param source_path] file to the current PCK package at the [param pck_path] internal path (should start with [code]res://[/code]).
+				If [param encrypt] is [code]true[/code] and valid encryption key was passed to [method pck_start], this file will be encrypted.
+				If [param require_verification] is [code]true[/code], this file will require hash validating before reading it.
 			</description>
 		</method>
 		<method name="flush">
 			<return type="int" enum="Error" />
 			<param index="0" name="verbose" type="bool" default="false" />
 			<description>
-				Writes the files specified using all [method add_file] calls since the last flush. If [param verbose] is [code]true[/code], a list of files added will be printed to the console for easier debugging.
+				Writes the files specified using all [method add_file] calls. If [param verbose] is [code]true[/code], a list of files added will be printed to the console for easier debugging.
+			</description>
+		</method>
+		<method name="flush_and_sign">
+			<return type="int" enum="Error" />
+			<param index="0" name="private_key" type="String" />
+			<param index="1" name="curve" type="int" enum="PCKPacker.CurveType" default="3" />
+			<param index="2" name="verbose" type="bool" default="false" />
+			<description>
+				Writes the files specified using all [method add_file] calls and sign PCK using [param private_key] and [param curve]. If [param verbose] is [code]true[/code], a list of files added will be printed to the console for easier debugging.
 			</description>
 		</method>
 		<method name="pck_start">
@@ -51,4 +63,48 @@
 			</description>
 		</method>
 	</methods>
+	<constants>
+		<constant name="ECP_DP_NONE" value="0" enum="CurveType">
+			Signing disabled.
+		</constant>
+		<constant name="ECP_DP_SECP192R1" value="1" enum="CurveType">
+			192-bit curve defined by FIPS 186-4 and SEC1 (SECP192R1)
+		</constant>
+		<constant name="ECP_DP_SECP224R1" value="2" enum="CurveType">
+			224-bit curve defined by FIPS 186-4 and SEC1 (SECP224R1)
+		</constant>
+		<constant name="ECP_DP_SECP256R1" value="3" enum="CurveType">
+			256-bit curve defined by FIPS 186-4 and SEC1 (SECP256R1)
+		</constant>
+		<constant name="ECP_DP_SECP384R1" value="4" enum="CurveType">
+			384-bit curve defined by FIPS 186-4 and SEC1 (SECP384R1)
+		</constant>
+		<constant name="ECP_DP_SECP521R1" value="5" enum="CurveType">
+			521-bit curve defined by FIPS 186-4 and SEC1 (SECP521R1)
+		</constant>
+		<constant name="ECP_DP_BP256R1" value="6" enum="CurveType">
+			256-bit Brainpool curve (BP256R1)
+		</constant>
+		<constant name="ECP_DP_BP384R1" value="7" enum="CurveType">
+			384-bit Brainpool curve (BP384R1)
+		</constant>
+		<constant name="ECP_DP_BP512R1" value="8" enum="CurveType">
+			512-bit Brainpool curve (BP512R1)
+		</constant>
+		<constant name="ECP_DP_CURVE25519" value="9" enum="CurveType">
+			Curve25519 (CURVE25519)
+		</constant>
+		<constant name="ECP_DP_SECP192K1" value="10" enum="CurveType">
+			192-bit Koblitz curve (SECP192K1)
+		</constant>
+		<constant name="ECP_DP_SECP224K1" value="11" enum="CurveType">
+			224-bit Koblitz curve (SECP224K1)
+		</constant>
+		<constant name="ECP_DP_SECP256K1" value="12" enum="CurveType">
+			256-bit Koblitz curve (SECP256K1)
+		</constant>
+		<constant name="ECP_DP_CURVE448" value="13" enum="CurveType">
+			Curve448-Goldilocks (CURVE448)
+		</constant>
+	</constants>
 </class>
