@@ -1812,13 +1812,13 @@
 			Display server supports expanding window content to the title. See [constant WINDOW_FLAG_EXTEND_TO_TITLE]. [b]macOS[/b]
 		</constant>
 		<constant name="FEATURE_SCREEN_CAPTURE" value="21" enum="Feature">
-			Display server supports reading screen pixels. See [method screen_get_pixel].
+			Display server supports reading screen pixels. See [method screen_get_pixel] and [method screen_get_image]. [b]Windows, macOS, Linux (X11)[/b]
 		</constant>
 		<constant name="FEATURE_STATUS_INDICATOR" value="22" enum="Feature">
-			Display server supports application status indicators.
+			Display server supports application status indicators. [b]Windows, macOS[/b]
 		</constant>
 		<constant name="FEATURE_NATIVE_HELP" value="23" enum="Feature">
-			Display server supports native help system search callbacks. See [method help_set_search_callbacks].
+			Display server supports native help system search callbacks. See [method help_set_search_callbacks]. [b]macOS[/b]
 		</constant>
 		<constant name="MOUSE_MODE_VISIBLE" value="0" enum="MouseMode">
 			Makes the mouse cursor visible if it is hidden.
@@ -1827,14 +1827,20 @@
 			Makes the mouse cursor hidden if it is visible.
 		</constant>
 		<constant name="MOUSE_MODE_CAPTURED" value="2" enum="MouseMode">
-			Captures the mouse. The mouse will be hidden and its position locked at the center of the window manager's window.
+			Captures the mouse. The mouse will be hidden and its position locked at the center of the window manager's window. [b]Android, Linux (X11/Wayland), macOS, Windows and Web[/b]
 			[b]Note:[/b] If you want to process the mouse's movement in this mode, you need to use [member InputEventMouseMotion.relative].
 		</constant>
 		<constant name="MOUSE_MODE_CONFINED" value="3" enum="MouseMode">
-			Confines the mouse cursor to the game window, and make it visible.
+			Confines the mouse cursor to the game window (client area only), and make it visible. [b]Linux (X11/Wayland), macOS and Windows[/b]
 		</constant>
 		<constant name="MOUSE_MODE_CONFINED_HIDDEN" value="4" enum="MouseMode">
-			Confines the mouse cursor to the game window, and make it hidden.
+			Confines the mouse cursor to the game window (client area only), and make it hidden. [b]Linux (X11/Wayland), macOS and Windows[/b]
+		</constant>
+		<constant name="MOUSE_MODE_CONFINED_WITH_DECORATIONS" value="5" enum="MouseMode">
+			Confines the mouse cursor to the game window (including window decorations), and make it visible. [b]macOS and Windows[/b]
+		</constant>
+		<constant name="MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS" value="6" enum="MouseMode">
+			Confines the mouse cursor to the game window (including window decorations), and make it hidden. [b]macOS and Windows[/b]
 		</constant>
 		<constant name="SCREEN_WITH_MOUSE_FOCUS" value="-4">
 			Represents the screen containing the mouse pointer.

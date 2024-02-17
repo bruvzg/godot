@@ -586,6 +586,7 @@ void DisplayServerWeb::cursor_set_custom_image(const Ref<Resource> &p_cursor, Cu
 // Mouse mode
 void DisplayServerWeb::mouse_set_mode(MouseMode p_mode) {
 	ERR_FAIL_COND_MSG(p_mode == MOUSE_MODE_CONFINED || p_mode == MOUSE_MODE_CONFINED_HIDDEN, "MOUSE_MODE_CONFINED is not supported for the Web platform.");
+	ERR_FAIL_COND_MSG(p_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS || p_mode == MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS, "MOUSE_MODE_CONFINED_WITH_DECORATIONS is not supported for the Web platform.");
 	if (p_mode == mouse_get_mode()) {
 		return;
 	}

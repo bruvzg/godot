@@ -399,13 +399,13 @@ void DisplayServerX11::mouse_set_mode(MouseMode p_mode) {
 		return;
 	}
 
-	if (mouse_mode == MOUSE_MODE_CAPTURED || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN) {
+	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_HIDDEN) {
 		XUngrabPointer(x11_display, CurrentTime);
 	}
 
 	// The only modes that show a cursor are VISIBLE and CONFINED
-	bool show_cursor = (p_mode == MOUSE_MODE_VISIBLE || p_mode == MOUSE_MODE_CONFINED);
-	bool previously_shown = (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED);
+	bool show_cursor = (p_mode == MOUSE_MODE_VISIBLE || p_mode == MOUSE_MODE_CONFINED || p_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS);
+	bool previously_shown = (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS);
 
 	if (show_cursor && !previously_shown) {
 		WindowID window_id = get_window_at_screen_position(mouse_get_position());
@@ -427,7 +427,7 @@ void DisplayServerX11::mouse_set_mode(MouseMode p_mode) {
 	}
 	mouse_mode = p_mode;
 
-	if (mouse_mode == MOUSE_MODE_CAPTURED || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN) {
+	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_HIDDEN) {
 		//flush pending motion events
 		_flush_mouse_motion();
 		WindowID window_id = _get_focused_window_or_popup();
@@ -3028,7 +3028,7 @@ void DisplayServerX11::cursor_set_shape(CursorShape p_shape) {
 		return;
 	}
 
-	if (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED) {
+	if (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 		if (cursors[p_shape] != None) {
 			for (const KeyValue<WindowID, WindowData> &E : windows) {
 				XDefineCursor(x11_display, E.value.x11_window, cursors[p_shape]);
@@ -3134,7 +3134,7 @@ void DisplayServerX11::cursor_set_custom_image(const Ref<Resource> &p_cursor, Cu
 		cursors_cache.insert(p_shape, params);
 
 		if (p_shape == current_cursor) {
-			if (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED) {
+			if (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 				for (const KeyValue<WindowID, WindowData> &E : windows) {
 					XDefineCursor(x11_display, E.value.x11_window, cursors[p_shape]);
 				}
@@ -4331,7 +4331,7 @@ void DisplayServerX11::process_events() {
 	do_mouse_warp = false;
 
 	// Is the current mouse mode one where it needs to be grabbed.
-	bool mouse_mode_grab = mouse_mode == MOUSE_MODE_CAPTURED || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN;
+	bool mouse_mode_grab = mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_HIDDEN;
 
 	xi.pressure = 0;
 	xi.tilt = Vector2();
@@ -4649,9 +4649,9 @@ void DisplayServerX11::process_events() {
 					// Show and update the cursor if confined and the window regained focus.
 
 					for (const KeyValue<WindowID, WindowData> &E : windows) {
-						if (mouse_mode == MOUSE_MODE_CONFINED) {
+						if (mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 							XUndefineCursor(x11_display, E.value.x11_window);
-						} else if (mouse_mode == MOUSE_MODE_CAPTURED || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN) { // Or re-hide it.
+						} else if (mouse_mode == MOUSE_MODE_CAPTURED || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS) { // Or re-hide it.
 							XDefineCursor(x11_display, E.value.x11_window, null_cursor);
 						}
 

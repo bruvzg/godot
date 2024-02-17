@@ -2468,8 +2468,8 @@ void DisplayServerMacOS::mouse_set_mode(MouseMode p_mode) {
 	}
 	WindowData &wd = windows[window_id];
 
-	bool show_cursor = (p_mode == MOUSE_MODE_VISIBLE || p_mode == MOUSE_MODE_CONFINED);
-	bool previously_shown = (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED);
+	bool show_cursor = (p_mode == MOUSE_MODE_VISIBLE || p_mode == MOUSE_MODE_CONFINED || p_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS);
+	bool previously_shown = (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS);
 
 	if (show_cursor && !previously_shown) {
 		window_id = get_window_at_screen_position(mouse_get_position());
@@ -2496,11 +2496,11 @@ void DisplayServerMacOS::mouse_set_mode(MouseMode p_mode) {
 		}
 		[wd.window_object setMovable:YES];
 		CGAssociateMouseAndMouseCursorPosition(true);
-	} else if (p_mode == MOUSE_MODE_CONFINED) {
+	} else if (p_mode == MOUSE_MODE_CONFINED || p_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 		CGDisplayShowCursor(kCGDirectMainDisplay);
 		[wd.window_object setMovable:NO];
 		CGAssociateMouseAndMouseCursorPosition(false);
-	} else if (p_mode == MOUSE_MODE_CONFINED_HIDDEN) {
+	} else if (p_mode == MOUSE_MODE_CONFINED_HIDDEN || p_mode == MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS) {
 		if (previously_shown) {
 			CGDisplayHideCursor(kCGDirectMainDisplay);
 		}
@@ -2538,7 +2538,7 @@ bool DisplayServerMacOS::update_mouse_wrap(WindowData &p_wd, NSPoint &r_delta, N
 		return true;
 	}
 
-	if (mouse_mode == DisplayServer::MOUSE_MODE_CONFINED || mouse_mode == DisplayServer::MOUSE_MODE_CONFINED_HIDDEN) {
+	if (mouse_mode == DisplayServer::MOUSE_MODE_CONFINED || mouse_mode == DisplayServer::MOUSE_MODE_CONFINED_HIDDEN || mouse_mode == DisplayServer::MOUSE_MODE_CONFINED_WITH_DECORATIONS || mouse_mode == DisplayServer::MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS) {
 		// Discard late events.
 		if (p_timestamp < last_warp) {
 			return true;
@@ -2559,7 +2559,12 @@ bool DisplayServerMacOS::update_mouse_wrap(WindowData &p_wd, NSPoint &r_delta, N
 		}
 
 		// Confine mouse position to the window, and update delta.
-		NSRect frame = [p_wd.window_object frame];
+		NSRect frame;
+		if (mouse_mode == DisplayServer::MOUSE_MODE_CONFINED || mouse_mode == DisplayServer::MOUSE_MODE_CONFINED_HIDDEN) {
+			frame = [p_wd.window_view frame];
+		} else {
+			frame = [p_wd.window_object frame];
+		}
 		NSPoint conf_pos = r_mpos;
 		conf_pos.x = CLAMP(conf_pos.x + r_delta.x, 0.f, frame.size.width);
 		conf_pos.y = CLAMP(conf_pos.y - r_delta.y, 0.f, frame.size.height);
@@ -2609,7 +2614,7 @@ void DisplayServerMacOS::warp_mouse(const Point2i &p_position) {
 		CGEventSourceSetLocalEventsSuppressionInterval(lEventRef, 0.0);
 		CGAssociateMouseAndMouseCursorPosition(false);
 		CGWarpMouseCursorPosition(lMouseWarpPos);
-		if (mouse_mode != MOUSE_MODE_CONFINED && mouse_mode != MOUSE_MODE_CONFINED_HIDDEN) {
+		if (mouse_mode != MOUSE_MODE_CONFINED && mouse_mode != MOUSE_MODE_CONFINED_HIDDEN && mouse_mode != MOUSE_MODE_CONFINED_WITH_DECORATIONS && mouse_mode != MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS) {
 			CGAssociateMouseAndMouseCursorPosition(true);
 		}
 	}
@@ -4010,7 +4015,7 @@ void DisplayServerMacOS::cursor_set_shape(CursorShape p_shape) {
 
 	cursor_shape = p_shape;
 
-	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED) {
+	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED && mouse_mode != MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 		return;
 	}
 
@@ -4119,7 +4124,7 @@ void DisplayServerMacOS::cursor_set_custom_image(const Ref<Resource> &p_cursor, 
 		cursors_cache.insert(p_shape, params);
 
 		if (p_shape == cursor_shape) {
-			if (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED) {
+			if (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 				[cursor set];
 			}
 		}

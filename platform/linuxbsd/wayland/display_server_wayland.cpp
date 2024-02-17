@@ -304,7 +304,7 @@ void DisplayServerWayland::mouse_set_mode(MouseMode p_mode) {
 
 	MutexLock mutex_lock(wayland_thread.mutex);
 
-	bool show_cursor = (p_mode == MOUSE_MODE_VISIBLE || p_mode == MOUSE_MODE_CONFINED);
+	bool show_cursor = (p_mode == MOUSE_MODE_VISIBLE || p_mode == MOUSE_MODE_CONFINED || p_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS);
 
 	if (show_cursor) {
 		if (custom_cursors.has(cursor_shape)) {
@@ -324,7 +324,9 @@ void DisplayServerWayland::mouse_set_mode(MouseMode p_mode) {
 		} break;
 
 		case DisplayServer::MOUSE_MODE_CONFINED:
-		case DisplayServer::MOUSE_MODE_CONFINED_HIDDEN: {
+		case DisplayServer::MOUSE_MODE_CONFINED_HIDDEN:
+		case DisplayServer::MOUSE_MODE_CONFINED_WITH_DECORATIONS:
+		case DisplayServer::MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS: {
 			constraint = WaylandThread::PointerConstraint::CONFINED;
 		} break;
 
@@ -949,7 +951,7 @@ void DisplayServerWayland::cursor_set_shape(CursorShape p_shape) {
 
 	cursor_shape = p_shape;
 
-	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED) {
+	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED && mouse_mode != MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 		// Hidden.
 		return;
 	}
@@ -970,7 +972,7 @@ DisplayServerWayland::CursorShape DisplayServerWayland::cursor_get_shape() const
 void DisplayServerWayland::cursor_set_custom_image(const Ref<Resource> &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
 	MutexLock mutex_lock(wayland_thread.mutex);
 
-	bool visible = (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED);
+	bool visible = (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS);
 
 	if (p_cursor.is_valid()) {
 		HashMap<CursorShape, CustomCursor>::Iterator cursor_c = custom_cursors.find(p_shape);

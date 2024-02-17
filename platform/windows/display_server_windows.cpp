@@ -122,7 +122,7 @@ String DisplayServerWindows::get_name() const {
 }
 
 void DisplayServerWindows::_set_mouse_mode_impl(MouseMode p_mode) {
-	if (windows.has(MAIN_WINDOW_ID) && (p_mode == MOUSE_MODE_CAPTURED || p_mode == MOUSE_MODE_CONFINED || p_mode == MOUSE_MODE_CONFINED_HIDDEN)) {
+	if (windows.has(MAIN_WINDOW_ID) && (p_mode == MOUSE_MODE_CAPTURED || p_mode == MOUSE_MODE_CONFINED || p_mode == MOUSE_MODE_CONFINED_HIDDEN || p_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS || p_mode == MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS)) {
 		// Mouse is grabbed (captured or confined).
 
 		WindowID window_id = _get_focused_window_or_popup();
@@ -133,9 +133,13 @@ void DisplayServerWindows::_set_mouse_mode_impl(MouseMode p_mode) {
 		WindowData &wd = windows[window_id];
 
 		RECT clipRect;
-		GetClientRect(wd.hWnd, &clipRect);
-		ClientToScreen(wd.hWnd, (POINT *)&clipRect.left);
-		ClientToScreen(wd.hWnd, (POINT *)&clipRect.right);
+		if (p_mode == MOUSE_MODE_CAPTURED || p_mode == MOUSE_MODE_CONFINED || p_mode == MOUSE_MODE_CONFINED_HIDDEN) {
+			GetClientRect(wd.hWnd, &clipRect);
+			ClientToScreen(wd.hWnd, (POINT *)&clipRect.left);
+			ClientToScreen(wd.hWnd, (POINT *)&clipRect.right);
+		} else {
+			GetWindowRect(wd.hWnd, &clipRect);
+		}
 		ClipCursor(&clipRect);
 		if (p_mode == MOUSE_MODE_CAPTURED) {
 			center = window_get_size() / 2;
@@ -154,7 +158,7 @@ void DisplayServerWindows::_set_mouse_mode_impl(MouseMode p_mode) {
 		_register_raw_input_devices(INVALID_WINDOW_ID);
 	}
 
-	if (p_mode == MOUSE_MODE_HIDDEN || p_mode == MOUSE_MODE_CAPTURED || p_mode == MOUSE_MODE_CONFINED_HIDDEN) {
+	if (p_mode == MOUSE_MODE_HIDDEN || p_mode == MOUSE_MODE_CAPTURED || p_mode == MOUSE_MODE_CONFINED_HIDDEN || p_mode == MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS) {
 		if (hCursor == nullptr) {
 			hCursor = SetCursor(nullptr);
 		} else {
@@ -2325,7 +2329,7 @@ void DisplayServerWindows::cursor_set_shape(CursorShape p_shape) {
 		return;
 	}
 
-	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED) {
+	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED && mouse_mode != MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 		cursor_shape = p_shape;
 		return;
 	}
@@ -2473,7 +2477,7 @@ void DisplayServerWindows::cursor_set_custom_image(const Ref<Resource> &p_cursor
 		cursors_cache.insert(p_shape, params);
 
 		if (p_shape == cursor_shape) {
-			if (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED) {
+			if (mouse_mode == MOUSE_MODE_VISIBLE || mouse_mode == MOUSE_MODE_CONFINED || mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 				SetCursor(cursors[p_shape]);
 			}
 		}
@@ -3416,6 +3420,12 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			}
 		} break;
 		case WM_NCHITTEST: {
+			if (mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS) {
+				LRESULT res = DefWindowProcW(hWnd, uMsg, wParam, lParam);
+				if (res == HTBORDER || res == HTBOTTOM || res == HTBOTTOMLEFT || res == HTBOTTOMRIGHT || res == HTCAPTION || res == HTGROWBOX || res == HTLEFT || res == HTRIGHT || res == HTTOP || res == HTTOPLEFT || res == HTTOPRIGHT) {
+					return HTCLIENT;
+				}
+			}
 			if (windows[window_id].mpass) {
 				return HTTRANSPARENT;
 			}
@@ -4320,6 +4330,10 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					ClientToScreen(window.hWnd, (POINT *)&crect.left);
 					ClientToScreen(window.hWnd, (POINT *)&crect.right);
 					ClipCursor(&crect);
+				} else if (mouse_mode == MOUSE_MODE_CONFINED_WITH_DECORATIONS || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS) {
+					RECT crect;
+					GetWindowRect(window.hWnd, &crect);
+					ClipCursor(&crect);
 				}
 			}
 
@@ -4493,7 +4507,7 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 		} break;
 		case WM_SETCURSOR: {
 			if (LOWORD(lParam) == HTCLIENT) {
-				if (windows[window_id].window_has_focus && (mouse_mode == MOUSE_MODE_HIDDEN || mouse_mode == MOUSE_MODE_CAPTURED || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN)) {
+				if (windows[window_id].window_has_focus && (mouse_mode == MOUSE_MODE_HIDDEN || mouse_mode == MOUSE_MODE_CAPTURED || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN || mouse_mode == MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS)) {
 					// Hide the cursor.
 					if (hCursor == nullptr) {
 						hCursor = SetCursor(nullptr);

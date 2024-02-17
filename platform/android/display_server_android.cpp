@@ -712,7 +712,7 @@ void DisplayServerAndroid::_cursor_set_shape_helper(CursorShape p_shape, bool fo
 
 	cursor_shape = p_shape;
 
-	if (mouse_mode == MouseMode::MOUSE_MODE_VISIBLE || mouse_mode == MouseMode::MOUSE_MODE_CONFINED) {
+	if (mouse_mode == MouseMode::MOUSE_MODE_VISIBLE || mouse_mode == MouseMode::MOUSE_MODE_CONFINED || mouse_mode == MouseMode::MOUSE_MODE_CONFINED_WITH_DECORATIONS) {
 		OS_Android::get_singleton()->get_godot_java()->get_godot_view()->set_pointer_icon(android_cursors[cursor_shape]);
 	}
 }

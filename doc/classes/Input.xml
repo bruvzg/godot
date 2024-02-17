@@ -450,10 +450,19 @@
 			[b]Note:[/b] If you want to process the mouse's movement in this mode, you need to use [member InputEventMouseMotion.relative].
 		</constant>
 		<constant name="MOUSE_MODE_CONFINED" value="3" enum="MouseMode">
-			Confines the mouse cursor to the game window, and make it visible.
+			Confines the mouse cursor to the game window (client area only), and make it visible.
 		</constant>
 		<constant name="MOUSE_MODE_CONFINED_HIDDEN" value="4" enum="MouseMode">
-			Confines the mouse cursor to the game window, and make it hidden.
+			Confines the mouse cursor to the game window (client area only), and make it hidden.
+		</constant>
+		<constant name="MOUSE_MODE_CONFINED_WITH_DECORATIONS" value="5" enum="MouseMode">
+			Confines the mouse cursor to the game window (including window decorations), and make it visible.
+		</constant>
+		<constant name="MOUSE_MODE_CONFINED_HIDDEN_WITH_DECORATIONS" value="6" enum="MouseMode">
+			Confines the mouse cursor to the game window (including window decorations), and make it hidden.
+		</constant>
+		<constant name="MOUSE_MODE_MAX" value="7" enum="MouseMode">
+			The number of mouse modes.
 		</constant>
 		<constant name="CURSOR_ARROW" value="0" enum="CursorShape">
 			Arrow cursor. Standard, default pointing cursor.
