@@ -118,8 +118,16 @@ static ViewController *mainViewController = nil;
 		category = AVAudioSessionCategorySoloAmbient;
 	}
 
+	AVAudioSessionCategoryOptions options = 0;
 	if (GLOBAL_GET("audio/general/ios/mix_with_others")) {
-		[[AVAudioSession sharedInstance] setCategory:category withOptions:AVAudioSessionCategoryOptionMixWithOthers error:nil];
+		options |= AVAudioSessionCategoryOptionMixWithOthers;
+	}
+	if (sessionCategorySetting == SESSION_CATEGORY_PLAY_AND_RECORD && GLOBAL_GET("audio/general/ios/default_to_speaker")) {
+		options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+	}
+
+	if (options != 0) {
+		[[AVAudioSession sharedInstance] setCategory:category withOptions:options error:nil];
 	} else {
 		[[AVAudioSession sharedInstance] setCategory:category error:nil];
 	}

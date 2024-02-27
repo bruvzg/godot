@@ -1440,6 +1440,7 @@ ProjectSettings::ProjectSettings() {
 
 	GLOBAL_DEF(PropertyInfo(Variant::INT, "audio/general/ios/session_category", PROPERTY_HINT_ENUM, "Ambient,Multi Route,Play and Record,Playback,Record,Solo Ambient"), 0);
 	GLOBAL_DEF("audio/general/ios/mix_with_others", false);
+	GLOBAL_DEF("audio/general/ios/default_to_speaker", false);
 
 	PackedStringArray extensions;
 	extensions.push_back("gd");
