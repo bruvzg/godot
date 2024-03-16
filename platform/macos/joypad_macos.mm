@@ -460,6 +460,9 @@ void JoypadMacOS::joypad_vibration_stop(Joypad *p_joypad, uint64_t p_timestamp) 
 
 			int joy_id = [self getJoyIdForController:controller];
 			Joypad *joypad = [self getJoypadForController:controller];
+
+			// NOTE: The individual Joy-Cons don't seem to use the extendedGamepad
+			// profile type, so they never reach this code.
 			bool switch_joycon = (joypad != nil) ? joypad.switch_joycon : false;
 			bool switch_pro = (joypad != nil) ? joypad.switch_pro : false;
 
@@ -483,10 +486,11 @@ void JoypadMacOS::joypad_vibration_stop(Joypad *p_joypad, uint64_t p_timestamp) 
 							gamepad.buttonB.isPressed);
 				}
 			} else if (element == gamepad.buttonX) {
-				if (switch_pro) {
-					Input::get_singleton()->joy_button(joy_id, JoyButton::B,
-							gamepad.buttonX.isPressed);
-				} else if (switch_joycon) {
+				if (switch_pro || switch_joycon) {
+					// Apple mismapped the Switch Pro Controller's top button
+					// (labeled "X" on the controller) to the left button
+					// (which Apple calls "X").
+					// So this should actually be the Y button (top button).
 					Input::get_singleton()->joy_button(joy_id, JoyButton::Y,
 							gamepad.buttonX.isPressed);
 				} else {
