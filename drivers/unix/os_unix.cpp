@@ -717,9 +717,9 @@ Error OS_Unix::create_process(const String &p_path, const List<String> &p_argume
 #endif
 }
 
-Error OS_Unix::kill(const ProcessID &p_pid) {
-	int ret = ::kill(p_pid, SIGKILL);
-	if (!ret) {
+Error OS_Unix::kill(const ProcessID &p_pid, bool p_force) {
+	int ret = ::kill(p_pid, p_force ? SIGKILL : SIGTERM);
+	if (!ret && p_force) {
 		//avoid zombie process
 		int st;
 		::waitpid(p_pid, &st, 0);

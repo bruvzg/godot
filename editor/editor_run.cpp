@@ -269,7 +269,8 @@ bool EditorRun::has_child_process(OS::ProcessID p_pid) const {
 
 void EditorRun::stop_child_process(OS::ProcessID p_pid) {
 	if (has_child_process(p_pid)) {
-		OS::get_singleton()->kill(p_pid);
+		OS::get_singleton()->kill(p_pid, false);
+		EditorNode::get_singleton()->add_to_kill_list(p_pid, OS::get_singleton()->get_ticks_msec());
 		pids.erase(p_pid);
 	}
 }
@@ -277,7 +278,8 @@ void EditorRun::stop_child_process(OS::ProcessID p_pid) {
 void EditorRun::stop() {
 	if (status != STATUS_STOP && pids.size() > 0) {
 		for (const OS::ProcessID &E : pids) {
-			OS::get_singleton()->kill(E);
+			OS::get_singleton()->kill(E, false);
+			EditorNode::get_singleton()->add_to_kill_list(E, OS::get_singleton()->get_ticks_msec());
 		}
 		pids.clear();
 	}

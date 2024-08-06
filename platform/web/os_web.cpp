@@ -120,7 +120,7 @@ Error OS_Web::create_process(const String &p_path, const List<String> &p_argumen
 	return OK;
 }
 
-Error OS_Web::kill(const ProcessID &p_pid) {
+Error OS_Web::kill(const ProcessID &p_pid, bool p_force) {
 	ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "OS::kill() is not available on the Web platform.");
 }
 

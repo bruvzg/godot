@@ -181,7 +181,7 @@ public:
 	virtual Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments) { return Dictionary(); }
 	virtual Error create_process(const String &p_path, const List<String> &p_arguments, ProcessID *r_child_id = nullptr, bool p_open_console = false) = 0;
 	virtual Error create_instance(const List<String> &p_arguments, ProcessID *r_child_id = nullptr) { return create_process(get_executable_path(), p_arguments, r_child_id); };
-	virtual Error kill(const ProcessID &p_pid) = 0;
+	virtual Error kill(const ProcessID &p_pid, bool p_force = true) = 0;
 	virtual int get_process_id() const;
 	virtual bool is_process_running(const ProcessID &p_pid) const = 0;
 	virtual int get_process_exit_code(const ProcessID &p_pid) const = 0;

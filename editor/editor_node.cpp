@@ -592,6 +592,21 @@ void EditorNode::_notification(int p_what) {
 				opening_prev = false;
 			}
 
+			OS *os = OS::get_singleton();
+			LocalVector<List<KillInfo>::Element *> to_remove;
+			for (List<KillInfo>::Element *E = kill_list.front(); E; E = E->next()) {
+				print_line(os->get_ticks_msec() - E->get().time, "  ", os->is_process_running(E->get().pid));
+				if (!os->is_process_running(E->get().pid)) {
+					to_remove.push_back(E);
+				} else if (os->get_ticks_msec() - E->get().time > uint64_t(EDITOR_GET("run/force_quit_timeout"))) {
+					os->kill(E->get().pid, true);
+					to_remove.push_back(E);
+				}
+			}
+			for (List<KillInfo>::Element *E : to_remove) {
+				E->erase();
+			}
+
 			bool global_unsaved = EditorUndoRedoManager::get_singleton()->is_history_unsaved(EditorUndoRedoManager::GLOBAL_HISTORY);
 			bool scene_or_global_unsaved = global_unsaved || EditorUndoRedoManager::get_singleton()->is_history_unsaved(editor_data.get_current_edited_scene_history_id());
 			if (unsaved_cache != scene_or_global_unsaved) {
@@ -7799,6 +7814,10 @@ EditorNode::EditorNode() {
 	add_child(system_theme_timer);
 	system_theme_timer->set_owner(get_owner());
 	system_theme_timer->set_autostart(true);
+}
+
+void EditorNode::add_to_kill_list(OS::ProcessID p_pid, uint64_t p_time) {
+	kill_list.push_back(KillInfo(p_pid, p_time));
 }
 
 EditorNode::~EditorNode() {

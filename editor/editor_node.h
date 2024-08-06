@@ -390,6 +390,18 @@ private:
 	AcceptDialog *warning = nullptr;
 	EditorPlugin *plugin_to_save = nullptr;
 
+	struct KillInfo {
+		OS::ProcessID pid = -1;
+		uint64_t time = 0;
+
+		KillInfo() {}
+		KillInfo(OS::ProcessID p_pid, uint64_t p_time) {
+			pid = p_pid;
+			time = p_time;
+		}
+	};
+	List<KillInfo> kill_list;
+
 	int overridden_default_layout = -1;
 	Ref<ConfigFile> default_layout;
 	PopupMenu *editor_layouts = nullptr;
@@ -933,6 +945,8 @@ public:
 	void redo();
 
 	int execute_and_show_output(const String &p_title, const String &p_path, const List<String> &p_arguments, bool p_close_on_ok = true, bool p_close_on_errors = false, String *r_output = nullptr);
+
+	void add_to_kill_list(OS::ProcessID p_pid, uint64_t p_time);
 
 	EditorNode();
 	~EditorNode();

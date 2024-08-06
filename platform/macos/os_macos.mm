@@ -675,16 +675,16 @@ bool OS_MacOS::is_process_running(const ProcessID &p_pid) const {
 	return ![app isTerminated];
 }
 
-Error OS_MacOS::kill(const ProcessID &p_pid) {
+Error OS_MacOS::kill(const ProcessID &p_pid, bool p_force) {
 	NSRunningApplication *app = [NSRunningApplication runningApplicationWithProcessIdentifier:(pid_t)p_pid];
 	if (!app) {
-		return OS_Unix::kill(p_pid);
+		return OS_Unix::kill(p_pid, p_force);
 	}
-	bool terminated = [app terminate];
-	if (!terminated) {
-		terminated = [app forceTerminate];
+	if (p_force) {
+		return [app forceTerminate] ? OK : ERR_INVALID_PARAMETER;
+	} else {
+		return [app terminate] ? OK : ERR_INVALID_PARAMETER;
 	}
-	return terminated ? OK : ERR_INVALID_PARAMETER;
 }
 
 String OS_MacOS::get_unique_id() const {

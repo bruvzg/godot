@@ -859,11 +859,11 @@ Error OS_Android::create_instance(const List<String> &p_arguments, ProcessID *r_
 	return OK;
 }
 
-Error OS_Android::kill(const ProcessID &p_pid) {
+Error OS_Android::kill(const ProcessID &p_pid, bool p_force) {
 	if (godot_java->force_quit(nullptr, p_pid)) {
 		return OK;
 	}
-	return OS_Unix::kill(p_pid);
+	return OS_Unix::kill(p_pid, p_force);
 }
 
 String OS_Android::get_system_ca_certificates() {

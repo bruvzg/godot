@@ -943,6 +943,9 @@
 		<member name="run/bottom_panel/action_on_stop" type="int" setter="" getter="">
 			The action to execute on the bottom panel when stopping the project.
 		</member>
+		<member name="run/force_quit_timeout" type="int" setter="" getter="">
+			Timeout before trying to force quit running projects after ending debug session.
+		</member>
 		<member name="run/output/always_clear_output_on_play" type="bool" setter="" getter="">
 			If [code]true[/code], the editor will clear the Output panel when running the project.
 		</member>

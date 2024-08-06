@@ -353,6 +353,7 @@ Error EditorImportBlendRunner::do_import_direct(const Dictionary &p_options) {
 
 void EditorImportBlendRunner::_resources_reimported(const PackedStringArray &p_files) {
 	if (is_running()) {
+		OS::get_singleton()->kill(blender_pid, false);
 		// After a batch of imports is done, wait a few seconds before trying to kill blender,
 		// in case of having multiple imports trigger in quick succession.
 		kill_timer->start();
@@ -362,7 +363,7 @@ void EditorImportBlendRunner::_resources_reimported(const PackedStringArray &p_f
 void EditorImportBlendRunner::_kill_blender() {
 	kill_timer->stop();
 	if (is_running()) {
-		OS::get_singleton()->kill(blender_pid);
+		OS::get_singleton()->kill(blender_pid, true);
 	}
 	blender_pid = 0;
 }

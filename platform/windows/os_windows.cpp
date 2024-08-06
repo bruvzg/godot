@@ -1036,23 +1036,49 @@ Error OS_Windows::create_process(const String &p_path, const List<String> &p_arg
 	return OK;
 }
 
-Error OS_Windows::kill(const ProcessID &p_pid) {
+Error OS_Windows::kill(const ProcessID &p_pid, bool p_force) {
 	int ret = 0;
 	MutexLock lock(process_map_mutex);
 	if (process_map->has(p_pid)) {
 		const PROCESS_INFORMATION pi = (*process_map)[p_pid].pi;
-		process_map->erase(p_pid);
 
-		ret = TerminateProcess(pi.hProcess, 0);
+		if (p_force) {
+			process_map->erase(p_pid);
 
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
+			ret = TerminateProcess(pi.hProcess, 0);
+
+			CloseHandle(pi.hProcess);
+			CloseHandle(pi.hThread);
+		} else {
+			ret = 1;
+			for (HWND hwnd = GetTopWindow(nullptr); hwnd; hwnd = GetNextWindow(hwnd, GW_HWNDNEXT)) {
+				DWORD pid;
+				DWORD tid = GetWindowThreadProcessId(hwnd, &pid);
+				if (pid == pi.dwProcessId) {
+					if (!PostThreadMessage(tid, WM_CLOSE, 0, 0)) {
+						ret = 0;
+					}
+				}
+			}
+		}
 	} else {
-		HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, false, (DWORD)p_pid);
-		if (hProcess != nullptr) {
-			ret = TerminateProcess(hProcess, 0);
-
-			CloseHandle(hProcess);
+		if (p_force) {
+			HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, false, (DWORD)p_pid);
+			if (hProcess != nullptr) {
+				ret = TerminateProcess(hProcess, 0);
+				CloseHandle(hProcess);
+			}
+		} else {
+			ret = 1;
+			for (HWND hwnd = GetTopWindow(nullptr); hwnd; hwnd = GetNextWindow(hwnd, GW_HWNDNEXT)) {
+				DWORD pid;
+				DWORD tid = GetWindowThreadProcessId(hwnd, &pid);
+				if (pid == (DWORD)p_pid) {
+					if (!PostThreadMessage(tid, WM_CLOSE, 0, 0)) {
+						ret = 0;
+					}
+				}
+			}
 		}
 	}
 
