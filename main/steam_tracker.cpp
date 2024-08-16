@@ -35,6 +35,8 @@
 // https://partner.steamgames.com/doc/sdk/api#initialization_and_shutdown
 
 SteamTracker::SteamTracker() {
+	OS::get_singleton()->set_environment("SteamAppID", _MKSTR(STEAMAPI_ID));
+
 	String path;
 	if (OS::get_singleton()->has_feature("linuxbsd")) {
 		path = OS::get_singleton()->get_executable_path().get_base_dir().path_join("libsteam_api.so");

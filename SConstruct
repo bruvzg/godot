@@ -258,6 +258,7 @@ opts.Add(BoolVariable("scu_build", "Use single compilation unit build", False))
 opts.Add("scu_limit", "Max includes per SCU file when using scu_build (determines RAM use)", "0")
 opts.Add(BoolVariable("engine_update_check", "Enable engine update checks in the Project Manager", True))
 opts.Add(BoolVariable("steamapi", "Enable minimal SteamAPI integration for usage time tracking (editor only)", False))
+opts.Add("steamapi_appid", "SteamAPI application ID (editor only)", "404790")
 
 # Thirdparty libraries
 opts.Add(BoolVariable("builtin_brotli", "Use the built-in Brotli library", True))
