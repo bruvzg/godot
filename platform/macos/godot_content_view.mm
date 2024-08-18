@@ -33,6 +33,8 @@
 #include "display_server_macos.h"
 #include "key_mapping_macos.h"
 
+#include "core/math/geometry_2d.h"
+
 #include "main/main.h"
 
 @implementation GodotContentLayerDelegate
@@ -118,6 +120,7 @@
 	mouse_down_control = false;
 	ignore_momentum_scroll = false;
 	last_pen_inverted = false;
+	current_drag = DisplayServerMacOS::WINDOW_DECORATION_MAX;
 	[self updateTrackingAreas];
 
 	self.layerContentsRedrawPolicy = NSViewLayerContentsRedrawDuringViewResize;
@@ -394,6 +397,27 @@
 }
 
 - (void)mouseDown:(NSEvent *)event {
+	if (event.clickCount >= 2) {
+		DisplayServerMacOS *ds = (DisplayServerMacOS *)DisplayServer::get_singleton();
+		if (ds && ds->has_window(window_id)) {
+			DisplayServerMacOS::WindowData &wd = ds->get_window(window_id);
+			ds->update_mouse_pos(wd, [event locationInWindow]);
+
+			for (const KeyValue<int, DisplayServerMacOS::DecorData> &E : wd.decor) {
+				if (Geometry2D::is_point_in_polygon(wd.mouse_pos, E.value.region)) {
+					if (E.value.dec_type == DisplayServer::WINDOW_DECORATION_MOVE) {
+						if (ds->window_maximize_on_title_dbl_click()) {
+							[wd.window_object zoom:nil];
+							return;
+						} else if (ds->window_minimize_on_title_dbl_click()) {
+							[wd.window_object miniaturize:nil];
+							return;
+						}
+					}
+				}
+			}
+		}
+	}
 	if (([event modifierFlags] & NSEventModifierFlagControl)) {
 		mouse_down_control = true;
 		[self processMouseEvent:event index:MouseButton::RIGHT pressed:true outofstream:false];
@@ -403,11 +427,84 @@
 	}
 }
 
+- (void)processWindowDrag:(NSEvent *)event drag:(DisplayServer::WindowDecorationType)drag {
+	DisplayServerMacOS *ds = (DisplayServerMacOS *)DisplayServer::get_singleton();
+	if (ds && ds->has_window(window_id)) {
+		DisplayServerMacOS::WindowData &wd = ds->get_window(window_id);
+		Size2i max_size = wd.max_size / ds->screen_get_max_scale();
+		Size2i min_size = wd.min_size / ds->screen_get_max_scale();
+		NSRect frame = [wd.window_object frame];
+		switch (drag) {
+			case DisplayServer::WINDOW_DECORATION_TOP_LEFT: {
+				int clamped_dx = CLAMP(frame.size.width - event.deltaX, min_size.x, max_size.x) - frame.size.width;
+				int clamped_dy = CLAMP(frame.size.height - event.deltaY, min_size.y, max_size.y) - frame.size.height;
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x - clamped_dx, frame.origin.y, frame.size.width + clamped_dx, frame.size.height + clamped_dy) display:YES];
+			} break;
+			case DisplayServer::WINDOW_DECORATION_TOP: {
+				int clamped_dy = CLAMP(frame.size.height - event.deltaY, min_size.y, max_size.y) - frame.size.height;
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x, frame.origin.y, frame.size.width, frame.size.height + clamped_dy) display:YES];
+			} break;
+			case DisplayServer::WINDOW_DECORATION_TOP_RIGHT: {
+				int clamped_dx = CLAMP(frame.size.width + event.deltaX, min_size.x, max_size.x) - frame.size.width;
+				int clamped_dy = CLAMP(frame.size.height - event.deltaY, min_size.y, max_size.y) - frame.size.height;
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x, frame.origin.y, frame.size.width + clamped_dx, frame.size.height + clamped_dy) display:YES];
+			} break;
+			case DisplayServer::WINDOW_DECORATION_LEFT: {
+				int clamped_dx = CLAMP(frame.size.width - event.deltaX, min_size.x, max_size.x) - frame.size.width;
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x - clamped_dx, frame.origin.y, frame.size.width + clamped_dx, frame.size.height) display:YES];
+			} break;
+			case DisplayServer::WINDOW_DECORATION_RIGHT: {
+				int clamped_dx = CLAMP(frame.size.width + event.deltaX, min_size.x, max_size.x) - frame.size.width;
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x, frame.origin.y, frame.size.width + clamped_dx, frame.size.height) display:YES];
+			} break;
+			case DisplayServer::WINDOW_DECORATION_BOTTOM_LEFT: {
+				int clamped_dx = CLAMP(frame.size.width - event.deltaX, min_size.x, max_size.x) - frame.size.width;
+				int clamped_dy = CLAMP(frame.size.height + event.deltaY, min_size.y, max_size.y) - frame.size.height;
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x - clamped_dx, frame.origin.y - clamped_dy, frame.size.width + clamped_dx, frame.size.height + clamped_dy) display:YES];
+			} break;
+			case DisplayServer::WINDOW_DECORATION_BOTTOM: {
+				int clamped_dy = CLAMP(frame.size.height + event.deltaY, min_size.y, max_size.y) - frame.size.height;
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x, frame.origin.y - clamped_dy, frame.size.width, frame.size.height + clamped_dy) display:YES];
+			} break;
+			case DisplayServer::WINDOW_DECORATION_BOTTOM_RIGHT: {
+				int clamped_dx = CLAMP(frame.size.width + event.deltaX, min_size.x, max_size.x) - frame.size.width;
+				int clamped_dy = CLAMP(frame.size.height + event.deltaY, min_size.y, max_size.y) - frame.size.height;
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x, frame.origin.y - clamped_dy, frame.size.width + clamped_dx, frame.size.height + clamped_dy) display:YES];
+			} break;
+			case DisplayServer::WINDOW_DECORATION_MOVE: {
+				[wd.window_object setFrame:NSMakeRect(frame.origin.x + event.deltaX, frame.origin.y - event.deltaY, frame.size.width, frame.size.height) display:YES];
+			} break;
+			default:
+				break;
+		}
+	}
+}
+
 - (void)mouseDragged:(NSEvent *)event {
+	if (ds && ds->has_window(window_id)) {
+		if (current_drag != DisplayServer::WINDOW_DECORATION_MAX) {
+			[self processWindowDrag:event drag:current_drag];
+		} else {
+			DisplayServerMacOS::WindowData &wd = ds->get_window(window_id);
+			ds->update_mouse_pos(wd, [event locationInWindow]);
+
+			for (const KeyValue<int, DisplayServerMacOS::DecorData> &E : wd.decor) {
+				if (Geometry2D::is_point_in_polygon(wd.mouse_pos, E.value.region)) {
+					if (E.value.dec_type <= DisplayServer::WINDOW_DECORATION_MOVE) {
+						current_drag = E.value.dec_type;
+						[self processWindowDrag:event drag:E.value.dec_type];
+						return;
+					}
+				}
+			}
+		}
+	}
+
 	[self mouseMoved:event];
 }
 
 - (void)mouseUp:(NSEvent *)event {
+	current_drag = DisplayServer::WINDOW_DECORATION_MAX;
 	if (mouse_down_control) {
 		[self processMouseEvent:event index:MouseButton::RIGHT pressed:false outofstream:false];
 	} else {
