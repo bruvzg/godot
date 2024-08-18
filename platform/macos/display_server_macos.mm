@@ -2290,7 +2290,7 @@ void DisplayServerMacOS::window_set_mode(WindowMode p_mode, WindowID p_window) {
 			// Do nothing.
 		} break;
 		case WINDOW_MODE_MINIMIZED: {
-			[wd.window_object performMiniaturize:nil];
+			[wd.window_object miniaturize:nil];
 		} break;
 		case WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
 		case WINDOW_MODE_FULLSCREEN: {
