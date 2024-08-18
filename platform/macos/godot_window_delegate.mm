@@ -223,6 +223,10 @@
 
 		ds->send_window_event(wd, DisplayServerMacOS::WINDOW_EVENT_DPI_CHANGE);
 
+		if (!([wd.window_object styleMask] & NSWindowStyleMaskTitled)) {
+		[wd.window_object setStyleMask:[wd.window_object styleMask] & ~NSWindowStyleMaskResizable];
+	}
+
 		CALayer *layer = [wd.window_view layer];
 		if (layer) {
 			layer.contentsScale = scale;
