@@ -590,6 +590,18 @@ void DisplayServer::window_set_mouse_passthrough(const Vector<Vector2> &p_region
 	ERR_FAIL_MSG("Mouse passthrough not supported by this display server.");
 }
 
+int DisplayServer::window_add_decoration(const Vector<Vector2> &p_region, DisplayServer::WindowDecorationType p_dec_type, WindowID p_window) {
+	ERR_FAIL_V_MSG(-1, "Client side decorations are not supported by this display server.");
+}
+
+void DisplayServer::window_change_decoration(int p_rect_id, const Vector<Vector2> &p_region, DisplayServer::WindowDecorationType p_dec_type, WindowID p_window) {
+	ERR_FAIL_MSG("Client side decorations are not supported by this display server.");
+}
+
+void DisplayServer::window_remove_decoration(int p_rect_id, WindowID p_window) {
+	ERR_FAIL_MSG("Client side decorations are not supported by this display server.");
+}
+
 void DisplayServer::gl_window_make_current(DisplayServer::WindowID p_window_id) {
 	// noop except in gles
 }
@@ -904,6 +916,10 @@ void DisplayServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("window_get_title_size", "title", "window_id"), &DisplayServer::window_get_title_size, DEFVAL(MAIN_WINDOW_ID));
 	ClassDB::bind_method(D_METHOD("window_set_mouse_passthrough", "region", "window_id"), &DisplayServer::window_set_mouse_passthrough, DEFVAL(MAIN_WINDOW_ID));
 
+	ClassDB::bind_method(D_METHOD("window_add_decoration", "region", "dec_type", "window"), &DisplayServer::window_add_decoration, DEFVAL(MAIN_WINDOW_ID));
+	ClassDB::bind_method(D_METHOD("window_change_decoration", "rect_id", "region", "dec_type", "window"), &DisplayServer::window_change_decoration, DEFVAL(MAIN_WINDOW_ID));
+	ClassDB::bind_method(D_METHOD("window_remove_decoration", "rect_id", "window"), &DisplayServer::window_remove_decoration, DEFVAL(MAIN_WINDOW_ID));
+
 	ClassDB::bind_method(D_METHOD("window_get_current_screen", "window_id"), &DisplayServer::window_get_current_screen, DEFVAL(MAIN_WINDOW_ID));
 	ClassDB::bind_method(D_METHOD("window_set_current_screen", "screen", "window_id"), &DisplayServer::window_set_current_screen, DEFVAL(MAIN_WINDOW_ID));
 
@@ -1035,6 +1051,7 @@ void DisplayServer::_bind_methods() {
 	BIND_ENUM_CONSTANT(FEATURE_TEXT_TO_SPEECH);
 	BIND_ENUM_CONSTANT(FEATURE_EXTEND_TO_TITLE);
 	BIND_ENUM_CONSTANT(FEATURE_SCREEN_CAPTURE);
+	BIND_ENUM_CONSTANT(FEATURE_CLIENT_SIDE_DECORATIONS);
 	BIND_ENUM_CONSTANT(FEATURE_STATUS_INDICATOR);
 	BIND_ENUM_CONSTANT(FEATURE_NATIVE_HELP);
 	BIND_ENUM_CONSTANT(FEATURE_NATIVE_DIALOG_INPUT);
@@ -1121,6 +1138,16 @@ void DisplayServer::_bind_methods() {
 	BIND_ENUM_CONSTANT(WINDOW_EVENT_GO_BACK_REQUEST);
 	BIND_ENUM_CONSTANT(WINDOW_EVENT_DPI_CHANGE);
 	BIND_ENUM_CONSTANT(WINDOW_EVENT_TITLEBAR_CHANGE);
+
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_TOP_LEFT);
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_TOP);
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_TOP_RIGHT);
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_LEFT);
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_RIGHT);
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_BOTTOM_LEFT);
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_BOTTOM);
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_BOTTOM_RIGHT);
+	BIND_ENUM_CONSTANT(WINDOW_DECORATION_MOVE);
 
 	BIND_ENUM_CONSTANT(VSYNC_DISABLED);
 	BIND_ENUM_CONSTANT(VSYNC_ENABLED);
