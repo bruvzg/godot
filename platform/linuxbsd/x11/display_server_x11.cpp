@@ -36,6 +36,7 @@
 #include "x11/key_mapping_x11.h"
 
 #include "core/config/project_settings.h"
+#include "core/math/geometry_2d.h"
 #include "core/math/math_funcs.h"
 #include "core/string/print_string.h"
 #include "core/string/ustring.h"
@@ -68,6 +69,16 @@
 // EWMH
 #define _NET_WM_STATE_REMOVE 0L // remove/unset property
 #define _NET_WM_STATE_ADD 1L // add/set property
+
+#define _NET_WM_MOVERESIZE_SIZE_TOPLEFT 0L
+#define _NET_WM_MOVERESIZE_SIZE_TOP 1L
+#define _NET_WM_MOVERESIZE_SIZE_TOPRIGHT 2L
+#define _NET_WM_MOVERESIZE_SIZE_RIGHT 3L
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT 4L
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOM 5L
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT 6L
+#define _NET_WM_MOVERESIZE_SIZE_LEFT 7L
+#define _NET_WM_MOVERESIZE_MOVE 8L
 
 // 2.2 is the first release with multitouch
 #define XINPUT_CLIENT_VERSION_MAJOR 2
@@ -139,6 +150,7 @@ bool DisplayServerX11::has_feature(Feature p_feature) const {
 #endif
 		case FEATURE_CLIPBOARD_PRIMARY:
 		case FEATURE_TEXT_TO_SPEECH:
+		case FEATURE_CLIENT_SIDE_DECORATIONS:
 			return true;
 		case FEATURE_SCREEN_CAPTURE:
 			return !xwayland;
@@ -4324,6 +4336,27 @@ bool DisplayServerX11::_window_focus_check() {
 	return has_focus;
 }
 
+void DisplayServerX11::_process_window_drag(WindowID p_window, XEvent p_event, int p_dec_type) {
+	XClientMessageEvent m;
+	memset(&m, 0, sizeof(m));
+
+	XUngrabPointer(x11_display, CurrentTime);
+	XFlush(x11_display);
+
+	m.type = ClientMessage;
+	m.window = windows[p_window].x11_window;
+	m.message_type = XInternAtom(x11_display, "_NET_WM_MOVERESIZE", True);
+	m.format = 32;
+	m.data.l[0] = p_event.xbutton.x_root;
+	m.data.l[1] = p_event.xbutton.y_root;
+	m.data.l[2] = p_dec_type;
+	m.data.l[3] = Button1;
+
+	XSendEvent(x11_display, DefaultRootWindow(x11_display), False, SubstructureRedirectMask | SubstructureNotifyMask, (XEvent *)&m);
+
+	XSync(x11_display, 0);
+}
+
 void DisplayServerX11::process_events() {
 	ERR_FAIL_COND(!Thread::is_main_thread());
 
@@ -4767,8 +4800,60 @@ void DisplayServerX11::process_events() {
 
 				_window_changed(&event);
 			} break;
+			case ButtonPress: {
+				if (event.xbutton.button == 1) {
+					bool drag_event = false;
+					for (const KeyValue<int, DisplayServerX11::DecorData> &E : windows[window_id].decor) {
+						if (Geometry2D::is_point_in_polygon(Vector2i(event.xbutton.x, event.xbutton.y), E.value.region)) {
+							switch (E.value.dec_type) {
+								case DisplayServer::WINDOW_DECORATION_TOP_LEFT: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_SIZE_TOPLEFT);
+									drag_event = true;
+								} break;
+								case DisplayServer::WINDOW_DECORATION_TOP: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_SIZE_TOP);
+									drag_event = true;
+								} break;
+								case DisplayServer::WINDOW_DECORATION_TOP_RIGHT: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_SIZE_TOPRIGHT);
+									drag_event = true;
+								} break;
+								case DisplayServer::WINDOW_DECORATION_LEFT: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_SIZE_LEFT);
+									drag_event = true;
+								} break;
+								case DisplayServer::WINDOW_DECORATION_RIGHT: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_SIZE_RIGHT);
+									drag_event = true;
+								} break;
+								case DisplayServer::WINDOW_DECORATION_BOTTOM_LEFT: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT);
+									drag_event = true;
+								} break;
+								case DisplayServer::WINDOW_DECORATION_BOTTOM: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_SIZE_BOTTOM);
+									drag_event = true;
+								} break;
+								case DisplayServer::WINDOW_DECORATION_BOTTOM_RIGHT: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT);
+									drag_event = true;
+								} break;
+								case DisplayServer::WINDOW_DECORATION_MOVE: {
+									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_MOVE);
+									drag_event = true;
+								} break;
+								default:
+									break;
+							}
+						}
+					}
 
-			case ButtonPress:
+					if (drag_event) {
+						break;
+					}
+				}
+				[[fallthrough]];
+			}
 			case ButtonRelease: {
 				if (ime_window_event || ignore_events) {
 					break;
