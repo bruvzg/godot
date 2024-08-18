@@ -756,6 +756,7 @@ bool DisplayServerMacOS::has_feature(Feature p_feature) const {
 		case FEATURE_SCREEN_CAPTURE:
 		case FEATURE_STATUS_INDICATOR:
 		case FEATURE_NATIVE_HELP:
+		case FEATURE_CLIENT_SIDE_DECORATIONS:
 			return true;
 		default: {
 		}
@@ -1859,6 +1860,44 @@ void DisplayServerMacOS::window_set_mouse_passthrough(const Vector<Vector2> &p_r
 	wd.mpath = p_region;
 }
 
+int DisplayServerMacOS::window_add_decoration(const Vector<Vector2> &p_region, DisplayServer::WindowDecorationType p_dec_type, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_INDEX_V(p_dec_type, DisplayServer::WINDOW_DECORATION_MAX, -1);
+	ERR_FAIL_COND_V(!windows.has(p_window), -1);
+	WindowData &wd = windows[p_window];
+
+	int did = wd.decor_id++;
+	wd.decor[did].region = p_region;
+	wd.decor[did].dec_type = p_dec_type;
+
+	return did;
+}
+
+void DisplayServerMacOS::window_change_decoration(int p_rect_id, const Vector<Vector2> &p_region, DisplayServer::WindowDecorationType p_dec_type, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_INDEX(p_dec_type, DisplayServer::WINDOW_DECORATION_MAX);
+	ERR_FAIL_COND(!windows.has(p_window));
+	WindowData &wd = windows[p_window];
+
+	if (wd.decor.has(p_rect_id)) {
+		wd.decor[p_rect_id].region = p_region;
+		wd.decor[p_rect_id].dec_type = p_dec_type;
+	}
+}
+
+void DisplayServerMacOS::window_remove_decoration(int p_rect_id, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_COND(!windows.has(p_window));
+	WindowData &wd = windows[p_window];
+
+	if (wd.decor.has(p_rect_id)) {
+		wd.decor.erase(p_rect_id);
+	}
+}
+
 int DisplayServerMacOS::window_get_current_screen(WindowID p_window) const {
 	_THREAD_SAFE_METHOD_
 	ERR_FAIL_COND_V(!windows.has(p_window), -1);
@@ -2238,6 +2277,9 @@ void DisplayServerMacOS::window_set_mode(WindowMode p_mode, WindowID p_window) {
 		} break;
 		case WINDOW_MODE_MAXIMIZED: {
 			if (NSEqualRects([wd.window_object frame], [[wd.window_object screen] visibleFrame])) {
+				if (!([wd.window_object styleMask] & NSWindowStyleMaskTitled)) { // Window should be resizable to zoom.
+					[wd.window_object setStyleMask:[wd.window_object styleMask] | NSWindowStyleMaskResizable];
+				}
 				[wd.window_object zoom:nil];
 			}
 		} break;
@@ -2438,7 +2480,7 @@ void DisplayServerMacOS::window_set_flag(WindowFlags p_flag, bool p_enabled, Win
 			}
 			wd.borderless = p_enabled;
 			if (p_enabled) {
-				[wd.window_object setStyleMask:NSWindowStyleMaskBorderless];
+				[wd.window_object setStyleMask:NSWindowStyleMaskBorderless | NSWindowStyleMaskMiniaturizable];
 			} else {
 				if (wd.layered_window) {
 					wd.layered_window = false;
@@ -2477,7 +2519,7 @@ void DisplayServerMacOS::window_set_flag(WindowFlags p_flag, bool p_enabled, Win
 				return;
 			}
 			if (p_enabled) {
-				[wd.window_object setStyleMask:NSWindowStyleMaskBorderless]; // Force borderless.
+				[wd.window_object setStyleMask:NSWindowStyleMaskBorderless | NSWindowStyleMaskMiniaturizable]; // Force borderless.
 			} else if (!wd.borderless) {
 				[wd.window_object setStyleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | (wd.extend_to_title ? NSWindowStyleMaskFullSizeContentView : 0) | (wd.resize_disabled ? 0 : NSWindowStyleMaskResizable)];
 			}
@@ -2524,7 +2566,7 @@ bool DisplayServerMacOS::window_get_flag(WindowFlags p_flag, WindowID p_window) 
 			return [wd.window_object styleMask] & NSWindowStyleMaskFullSizeContentView;
 		} break;
 		case WINDOW_FLAG_BORDERLESS: {
-			return [wd.window_object styleMask] == NSWindowStyleMaskBorderless;
+			return !([wd.window_object styleMask] & NSWindowStyleMaskTitled);
 		} break;
 		case WINDOW_FLAG_ALWAYS_ON_TOP: {
 			if (wd.fullscreen) {
