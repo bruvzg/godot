@@ -1944,6 +1944,44 @@ void DisplayServerX11::window_set_mouse_passthrough(const Vector<Vector2> &p_reg
 	_update_window_mouse_passthrough(p_window);
 }
 
+int DisplayServerX11::window_add_decoration(const Vector<Vector2> &p_region, DisplayServer::WindowDecorationType p_dec_type, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_INDEX_V(p_dec_type, DisplayServer::WINDOW_DECORATION_MAX, -1);
+	ERR_FAIL_COND_V(!windows.has(p_window), -1);
+	WindowData &wd = windows[p_window];
+
+	int did = wd.decor_id++;
+	wd.decor[did].region = p_region;
+	wd.decor[did].dec_type = p_dec_type;
+
+	return did;
+}
+
+void DisplayServerX11::window_change_decoration(int p_rect_id, const Vector<Vector2> &p_region, DisplayServer::WindowDecorationType p_dec_type, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_INDEX(p_dec_type, DisplayServer::WINDOW_DECORATION_MAX);
+	ERR_FAIL_COND(!windows.has(p_window));
+	WindowData &wd = windows[p_window];
+
+	if (wd.decor.has(p_rect_id)) {
+		wd.decor[p_rect_id].region = p_region;
+		wd.decor[p_rect_id].dec_type = p_dec_type;
+	}
+}
+
+void DisplayServerX11::window_remove_decoration(int p_rect_id, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_COND(!windows.has(p_window));
+	WindowData &wd = windows[p_window];
+
+	if (wd.decor.has(p_rect_id)) {
+		wd.decor.erase(p_rect_id);
+	}
+}
+
 void DisplayServerX11::_update_window_mouse_passthrough(WindowID p_window) {
 	ERR_FAIL_COND(!windows.has(p_window));
 	ERR_FAIL_COND(!xshaped_ext_ok);
