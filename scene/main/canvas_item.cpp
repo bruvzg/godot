@@ -1120,6 +1120,11 @@ Vector2 CanvasItem::get_local_mouse_position() const {
 	return get_global_transform().affine_inverse().xform(get_global_mouse_position());
 }
 
+Point2 CanvasItem::to_local(Point2 p_global) const {
+	ERR_READ_THREAD_GUARD_V(Point2());
+	return get_global_transform().affine_inverse().xform(p_global);
+}
+
 void CanvasItem::force_update_transform() {
 	ERR_THREAD_GUARD;
 	ERR_FAIL_COND(!is_inside_tree());
