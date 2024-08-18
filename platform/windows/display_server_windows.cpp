@@ -35,6 +35,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/marshalls.h"
+#include "core/math/geometry_2d.h"
 #include "core/version.h"
 #include "drivers/png/png_driver_common.h"
 #include "main/main.h"
@@ -122,6 +123,7 @@ bool DisplayServerWindows::has_feature(Feature p_feature) const {
 		case FEATURE_TEXT_TO_SPEECH:
 		case FEATURE_SCREEN_CAPTURE:
 		case FEATURE_STATUS_INDICATOR:
+		case FEATURE_CLIENT_SIDE_DECORATIONS:
 			return true;
 		default:
 			return false;
@@ -1597,6 +1599,44 @@ Size2i DisplayServerWindows::window_get_title_size(const String &p_title, Window
 	return size;
 }
 
+int DisplayServerWindows::window_add_decoration(const Vector<Vector2> &p_region, DisplayServer::WindowDecorationType p_dec_type, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_INDEX_V(p_dec_type, DisplayServer::WINDOW_DECORATION_MAX, -1);
+	ERR_FAIL_COND_V(!windows.has(p_window), -1);
+	WindowData &wd = windows[p_window];
+
+	int did = wd.decor_id++;
+	wd.decor[did].region = p_region;
+	wd.decor[did].dec_type = p_dec_type;
+
+	return did;
+}
+
+void DisplayServerWindows::window_change_decoration(int p_rect_id, const Vector<Vector2> &p_region, DisplayServer::WindowDecorationType p_dec_type, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_INDEX(p_dec_type, DisplayServer::WINDOW_DECORATION_MAX);
+	ERR_FAIL_COND(!windows.has(p_window));
+	WindowData &wd = windows[p_window];
+
+	if (wd.decor.has(p_rect_id)) {
+		wd.decor[p_rect_id].region = p_region;
+		wd.decor[p_rect_id].dec_type = p_dec_type;
+	}
+}
+
+void DisplayServerWindows::window_remove_decoration(int p_rect_id, WindowID p_window) {
+	_THREAD_SAFE_METHOD_
+
+	ERR_FAIL_COND(!windows.has(p_window));
+	WindowData &wd = windows[p_window];
+
+	if (wd.decor.has(p_rect_id)) {
+		wd.decor.erase(p_rect_id);
+	}
+}
+
 void DisplayServerWindows::window_set_mouse_passthrough(const Vector<Vector2> &p_region, WindowID p_window) {
 	_THREAD_SAFE_METHOD_
 
@@ -2008,6 +2048,16 @@ void DisplayServerWindows::window_set_mode(WindowMode p_mode, WindowID p_window)
 			SystemParametersInfoA(SPI_SETMOUSETRAILS, restore_mouse_trails, nullptr, 0);
 			restore_mouse_trails = 0;
 		}
+	} else if (wd.borderless) {
+		int cs = window_get_current_screen(p_window);
+		Rect2i srect = screen_get_usable_rect(cs);
+		Rect2i wrect = Rect2i(window_get_position_with_decorations(p_window), window_get_size_with_decorations(p_window));
+		if (wrect == srect) {
+			if (wd.pre_max_valid) {
+				MoveWindow(wd.hWnd, wd.pre_max_rect.left, wd.pre_max_rect.top, wd.pre_max_rect.right - wd.pre_max_rect.left, wd.pre_max_rect.bottom - wd.pre_max_rect.top, TRUE);
+				wd.pre_max_valid = false;
+			}
+		}
 	}
 
 	if (p_mode == WINDOW_MODE_WINDOWED) {
@@ -2017,7 +2067,15 @@ void DisplayServerWindows::window_set_mode(WindowMode p_mode, WindowID p_window)
 	}
 
 	if (p_mode == WINDOW_MODE_MAXIMIZED) {
-		ShowWindow(wd.hWnd, SW_MAXIMIZE);
+		if (wd.borderless) {
+			int cs = window_get_current_screen(p_window);
+			Rect2i srect = screen_get_usable_rect(cs);
+			GetWindowRect(wd.hWnd, &wd.pre_max_rect);
+			wd.pre_max_valid = true;
+			MoveWindow(wd.hWnd, srect.position.x, srect.position.y, srect.size.width, srect.size.height, TRUE);
+		} else {
+			ShowWindow(wd.hWnd, SW_MAXIMIZE);
+		}
 		wd.maximized = true;
 		wd.minimized = false;
 	}
@@ -2083,6 +2141,15 @@ DisplayServer::WindowMode DisplayServerWindows::window_get_mode(WindowID p_windo
 		return WINDOW_MODE_MINIMIZED;
 	} else if (wd.maximized) {
 		return WINDOW_MODE_MAXIMIZED;
+	} else if (wd.borderless) {
+		int cs = window_get_current_screen(p_window);
+		Rect2i srect = screen_get_usable_rect(cs);
+		Rect2i wrect = Rect2i(window_get_position_with_decorations(p_window), window_get_size_with_decorations(p_window));
+		if (wrect == srect) {
+			return WINDOW_MODE_MAXIMIZED;
+		} else {
+			return WINDOW_MODE_WINDOWED;
+		}
 	} else {
 		return WINDOW_MODE_WINDOWED;
 	}
@@ -3446,6 +3513,14 @@ DisplayServer::VSyncMode DisplayServerWindows::window_get_vsync_mode(WindowID p_
 	return DisplayServer::VSYNC_ENABLED;
 }
 
+bool DisplayServerWindows::window_maximize_on_title_dbl_click() const {
+	return true;
+}
+
+bool DisplayServerWindows::window_minimize_on_title_dbl_click() const {
+	return false;
+}
+
 void DisplayServerWindows::set_context(Context p_context) {
 }
 
@@ -3832,6 +3907,46 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			}
 		} break;
 		case WM_NCHITTEST: {
+			POINT coords;
+			GetCursorPos(&coords);
+			ScreenToClient(windows[window_id].hWnd, &coords);
+
+			for (const KeyValue<int, DisplayServerWindows::DecorData> &E : windows[window_id].decor) {
+				if (Geometry2D::is_point_in_polygon(Vector2i(coords.x, coords.y), E.value.region)) {
+					switch (E.value.dec_type) {
+						case DisplayServer::WINDOW_DECORATION_TOP_LEFT: {
+							return HTTOPLEFT;
+						} break;
+						case DisplayServer::WINDOW_DECORATION_TOP: {
+							return HTTOP;
+						} break;
+						case DisplayServer::WINDOW_DECORATION_TOP_RIGHT: {
+							return HTTOPRIGHT;
+						} break;
+						case DisplayServer::WINDOW_DECORATION_LEFT: {
+							return HTLEFT;
+						} break;
+						case DisplayServer::WINDOW_DECORATION_RIGHT: {
+							return HTRIGHT;
+						} break;
+						case DisplayServer::WINDOW_DECORATION_BOTTOM_LEFT: {
+							return HTBOTTOMLEFT;
+						} break;
+						case DisplayServer::WINDOW_DECORATION_BOTTOM: {
+							return HTBOTTOM;
+						} break;
+						case DisplayServer::WINDOW_DECORATION_BOTTOM_RIGHT: {
+							return HTBOTTOMRIGHT;
+						} break;
+						case DisplayServer::WINDOW_DECORATION_MOVE: {
+							return HTCAPTION;
+						} break;
+						default:
+							break;
+					}
+				}
+			}
+
 			if (windows[window_id].mpass) {
 				return HTTRANSPARENT;
 			}
@@ -4623,6 +4738,51 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 			Input::get_singleton()->parse_input_event(mm);
 
+		} break;
+		case WM_NCLBUTTONDBLCLK: {
+			POINT coords;
+			GetCursorPos(&coords);
+			ScreenToClient(windows[window_id].hWnd, &coords);
+
+			WindowData &wd = windows[window_id];
+			for (const KeyValue<int, DecorData> &E : wd.decor) {
+				if (Geometry2D::is_point_in_polygon(Vector2(coords.x, coords.y), E.value.region)) {
+					if (E.value.dec_type == DisplayServer::WINDOW_DECORATION_MOVE) {
+						if (window_maximize_on_title_dbl_click()) {
+							if (wd.borderless) {
+								int cs = window_get_current_screen(window_id);
+								Rect2i srect = screen_get_usable_rect(cs);
+								Rect2i wrect = Rect2i(window_get_position_with_decorations(window_id), window_get_size_with_decorations(window_id));
+								if (wrect == srect) {
+									if (wd.pre_max_valid) {
+										MoveWindow(wd.hWnd, wd.pre_max_rect.left, wd.pre_max_rect.top, wd.pre_max_rect.right - wd.pre_max_rect.left, wd.pre_max_rect.bottom - wd.pre_max_rect.top, TRUE);
+										wd.pre_max_valid = false;
+									}
+									wd.maximized = false;
+									wd.minimized = false;
+								} else {
+									GetWindowRect(wd.hWnd, &wd.pre_max_rect);
+									wd.pre_max_valid = true;
+									MoveWindow(wd.hWnd, srect.position.x, srect.position.y, srect.size.width, srect.size.height, TRUE);
+									wd.maximized = true;
+									wd.minimized = false;
+								}
+							} else {
+								if (wd.maximized) {
+									ShowWindow(wd.hWnd, SW_RESTORE);
+									wd.maximized = false;
+									wd.minimized = false;
+								} else {
+									ShowWindow(wd.hWnd, SW_MAXIMIZE);
+									wd.maximized = true;
+									wd.minimized = false;
+								}
+							}
+							return 0;
+						}
+					}
+				}
+			}
 		} break;
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONUP:
@@ -5612,8 +5772,6 @@ DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, 
 	return id;
 }
 
-BitField<DisplayServerWindows::DriverID> DisplayServerWindows::tested_drivers = 0;
-
 // WinTab API.
 bool DisplayServerWindows::wintab_available = false;
 WTOpenPtr DisplayServerWindows::wintab_WTOpen = nullptr;
@@ -5775,8 +5933,6 @@ void DisplayServerWindows::tablet_set_current_driver(const String &p_driver) {
 
 DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, Context p_context, Error &r_error) {
 	KeyMappingWindows::initialize();
-
-	tested_drivers.clear();
 
 	drop_events = false;
 	key_event_pos = 0;
@@ -5946,6 +6102,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 	wc.lpszClassName = L"Engine";
 
 	if (!RegisterClassExW(&wc)) {
+		MessageBoxW(nullptr, L"Failed To Register The Window Class.", L"ERROR", MB_OK | MB_ICONEXCLAMATION);
 		r_error = ERR_UNAVAILABLE;
 		return;
 	}
@@ -5956,13 +6113,11 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 #if defined(VULKAN_ENABLED)
 	if (rendering_driver == "vulkan") {
 		rendering_context = memnew(RenderingContextDriverVulkanWindows);
-		tested_drivers.set_flag(DRIVER_ID_RD_VULKAN);
 	}
 #endif
 #if defined(D3D12_ENABLED)
 	if (rendering_driver == "d3d12") {
 		rendering_context = memnew(RenderingContextDriverD3D12);
-		tested_drivers.set_flag(DRIVER_ID_RD_D3D12);
 	}
 #endif
 
@@ -5974,7 +6129,6 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 			if (failed && fallback_to_vulkan && rendering_driver != "vulkan") {
 				memdelete(rendering_context);
 				rendering_context = memnew(RenderingContextDriverVulkanWindows);
-				tested_drivers.set_flag(DRIVER_ID_RD_VULKAN);
 				if (rendering_context->initialize() == OK) {
 					WARN_PRINT("Your video card drivers seem not to support Direct3D 12, switching to Vulkan.");
 					rendering_driver = "vulkan";
@@ -5987,7 +6141,6 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 			if (failed && fallback_to_d3d12 && rendering_driver != "d3d12") {
 				memdelete(rendering_context);
 				rendering_context = memnew(RenderingContextDriverD3D12);
-				tested_drivers.set_flag(DRIVER_ID_RD_D3D12);
 				if (rendering_context->initialize() == OK) {
 					WARN_PRINT("Your video card drivers seem not to support Vulkan, switching to Direct3D 12.");
 					rendering_driver = "d3d12";
@@ -6058,7 +6211,6 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 		}
 
 		if (force_angle || (gl_info["version"].operator int() < 30003)) {
-			tested_drivers.set_flag(DRIVER_ID_COMPAT_OPENGL3);
 			if (show_warning) {
 				WARN_PRINT("Your video card drivers seem not to support the required OpenGL 3.3 version, switching to ANGLE.");
 			}
@@ -6068,7 +6220,6 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 
 	if (rendering_driver == "opengl3") {
 		gl_manager_native = memnew(GLManagerNative_Windows);
-		tested_drivers.set_flag(DRIVER_ID_COMPAT_OPENGL3);
 
 		if (gl_manager_native->initialize() != OK) {
 			memdelete(gl_manager_native);
@@ -6081,7 +6232,6 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 	}
 	if (rendering_driver == "opengl3_angle") {
 		gl_manager_angle = memnew(GLManagerANGLE_Windows);
-		tested_drivers.set_flag(DRIVER_ID_COMPAT_ANGLE_D3D11);
 
 		if (gl_manager_angle->initialize() != OK) {
 			memdelete(gl_manager_angle);
@@ -6215,41 +6365,32 @@ Vector<String> DisplayServerWindows::get_rendering_drivers_func() {
 DisplayServer *DisplayServerWindows::create_func(const String &p_rendering_driver, WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, Context p_context, Error &r_error) {
 	DisplayServer *ds = memnew(DisplayServerWindows(p_rendering_driver, p_mode, p_vsync_mode, p_flags, p_position, p_resolution, p_screen, p_context, r_error));
 	if (r_error != OK) {
-		if (tested_drivers == 0) {
-			OS::get_singleton()->alert("Failed to register the window class.", "Unable to initialize DisplayServer");
-		} else if (tested_drivers.has_flag(DRIVER_ID_RD_VULKAN) || tested_drivers.has_flag(DRIVER_ID_RD_D3D12)) {
-			Vector<String> drivers;
-			if (tested_drivers.has_flag(DRIVER_ID_RD_VULKAN)) {
-				drivers.push_back("Vulkan");
-			}
-			if (tested_drivers.has_flag(DRIVER_ID_RD_D3D12)) {
-				drivers.push_back("Direct3D 12");
-			}
+		if (p_rendering_driver == "vulkan") {
 			String executable_name = OS::get_singleton()->get_executable_path().get_file();
 			OS::get_singleton()->alert(
-					vformat("Your video card drivers seem not to support the required %s version.\n\n"
+					vformat("Your video card drivers seem not to support the required Vulkan version.\n\n"
 							"If possible, consider updating your video card drivers or using the OpenGL 3 driver.\n\n"
 							"You can enable the OpenGL 3 driver by starting the engine from the\n"
 							"command line with the command:\n\n    \"%s\" --rendering-driver opengl3\n\n"
 							"If you have recently updated your video card drivers, try rebooting.",
-							String(" or ").join(drivers),
 							executable_name),
-					"Unable to initialize video driver");
-		} else {
-			Vector<String> drivers;
-			if (tested_drivers.has_flag(DRIVER_ID_COMPAT_OPENGL3)) {
-				drivers.push_back("OpenGL 3.3");
-			}
-			if (tested_drivers.has_flag(DRIVER_ID_COMPAT_ANGLE_D3D11)) {
-				drivers.push_back("Direct3D 11");
-			}
+					"Unable to initialize Vulkan video driver");
+		} else if (p_rendering_driver == "d3d12") {
+			String executable_name = OS::get_singleton()->get_executable_path().get_file();
 			OS::get_singleton()->alert(
-					vformat(
-							"Your video card drivers seem not to support the required %s version.\n\n"
-							"If possible, consider updating your video card drivers.\n\n"
+					vformat("Your video card drivers seem not to support the required DirectX 12 version.\n\n"
+							"If possible, consider updating your video card drivers or using the OpenGL 3 driver.\n\n"
+							"You can enable the OpenGL 3 driver by starting the engine from the\n"
+							"command line with the command:\n\n    \"%s\" --rendering-driver opengl3\n\n"
 							"If you have recently updated your video card drivers, try rebooting.",
-							String(" or ").join(drivers)),
-					"Unable to initialize video driver");
+							executable_name),
+					"Unable to initialize DirectX 12 video driver");
+		} else {
+			OS::get_singleton()->alert(
+					"Your video card drivers seem not to support the required OpenGL 3.3 version.\n\n"
+					"If possible, consider updating your video card drivers.\n\n"
+					"If you have recently updated your video card drivers, try rebooting.",
+					"Unable to initialize OpenGL video driver");
 		}
 	}
 	return ds;
