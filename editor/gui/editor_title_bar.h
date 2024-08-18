@@ -37,12 +37,13 @@
 class EditorTitleBar : public HBoxContainer {
 	GDCLASS(EditorTitleBar, HBoxContainer);
 
-	Point2i click_pos;
-	bool moving = false;
+	Vector<int> ids;
 	bool can_move = false;
 
+	void _update_rects();
+
 protected:
-	virtual void gui_input(const Ref<InputEvent> &p_event) override;
+	void _notification(int p_notification);
 	static void _bind_methods(){};
 
 public:
