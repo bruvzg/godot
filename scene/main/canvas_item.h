@@ -357,6 +357,8 @@ public:
 	Vector2 get_global_mouse_position() const;
 	Vector2 get_local_mouse_position() const;
 
+	Point2 to_local(Point2 p_global) const;
+
 	void set_notify_local_transform(bool p_enable);
 	bool is_local_transform_notification_enabled() const;
 
