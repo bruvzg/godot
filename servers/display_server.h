@@ -146,6 +146,7 @@ public:
 		FEATURE_TEXT_TO_SPEECH,
 		FEATURE_EXTEND_TO_TITLE,
 		FEATURE_SCREEN_CAPTURE,
+		FEATURE_CLIENT_SIDE_DECORATIONS,
 		FEATURE_STATUS_INDICATOR,
 		FEATURE_NATIVE_HELP,
 		FEATURE_NATIVE_DIALOG_INPUT,
@@ -434,6 +435,23 @@ public:
 
 	virtual void window_set_mouse_passthrough(const Vector<Vector2> &p_region, WindowID p_window = MAIN_WINDOW_ID);
 
+	enum WindowDecorationType {
+		WINDOW_DECORATION_TOP_LEFT,
+		WINDOW_DECORATION_TOP,
+		WINDOW_DECORATION_TOP_RIGHT,
+		WINDOW_DECORATION_LEFT,
+		WINDOW_DECORATION_RIGHT,
+		WINDOW_DECORATION_BOTTOM_LEFT,
+		WINDOW_DECORATION_BOTTOM,
+		WINDOW_DECORATION_BOTTOM_RIGHT,
+		WINDOW_DECORATION_MOVE,
+		WINDOW_DECORATION_MAX,
+	};
+
+	virtual int window_add_decoration(const Vector<Vector2> &p_region, WindowDecorationType p_dec_type, WindowID p_window = MAIN_WINDOW_ID);
+	virtual void window_change_decoration(int p_rect_id, const Vector<Vector2> &p_region, WindowDecorationType p_dec_type, WindowID p_window = MAIN_WINDOW_ID);
+	virtual void window_remove_decoration(int p_rect_id, WindowID p_window = MAIN_WINDOW_ID);
+
 	virtual int window_get_current_screen(WindowID p_window = MAIN_WINDOW_ID) const = 0;
 	virtual void window_set_current_screen(int p_screen, WindowID p_window = MAIN_WINDOW_ID) = 0;
 
@@ -599,6 +617,7 @@ public:
 };
 
 VARIANT_ENUM_CAST(DisplayServer::WindowEvent)
+VARIANT_ENUM_CAST(DisplayServer::WindowDecorationType)
 VARIANT_ENUM_CAST(DisplayServer::Feature)
 VARIANT_ENUM_CAST(DisplayServer::MouseMode)
 VARIANT_ENUM_CAST(DisplayServer::ScreenOrientation)
