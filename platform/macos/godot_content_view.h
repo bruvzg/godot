@@ -68,8 +68,10 @@
 	bool last_pen_inverted;
 	bool ime_suppress_next_keyup;
 	id layer_delegate;
+	DisplayServer::WindowDecorationType current_drag;
 }
 
+- (void)processWindowDrag:(NSEvent *)event drag:(DisplayServer::WindowDecorationType)drag;
 - (void)processScrollEvent:(NSEvent *)event button:(MouseButton)button factor:(double)factor;
 - (void)processPanEvent:(NSEvent *)event dx:(double)dx dy:(double)dy;
 - (void)processMouseEvent:(NSEvent *)event index:(MouseButton)index pressed:(bool)pressed outofstream:(bool)outofstream;
