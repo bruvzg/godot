@@ -1910,7 +1910,7 @@
 		<constant name="FEATURE_NATIVE_DIALOG_FILE" value="25" enum="Feature">
 			Display server supports spawning dialogs for selecting files or directories using the operating system's native look-and-feel. See [method file_dialog_show] and [method file_dialog_with_options_show]. [b]Windows, macOS, Linux (X11/Wayland)[/b]
 		</constant>
-		<constant name="FEATURE_CLIENT_SIDE_DECORATIONS" value="22" enum="Feature">
+		<constant name="FEATURE_CLIENT_SIDE_DECORATIONS" value="26" enum="Feature">
 			Display server supports client side decorations. See [method window_add_decoration], [method window_change_decoration], and [method window_remove_decoration].
 		</constant>
 		<constant name="MOUSE_MODE_VISIBLE" value="0" enum="MouseMode">
@@ -2152,7 +2152,7 @@
 			Sent when the window title bar decoration is changed (e.g. [constant WINDOW_FLAG_EXTEND_TO_TITLE] is set or window entered/exited full screen mode).
 			[b]Note:[/b] This flag is implemented only on macOS.
 		</constant>
-			<constant name="WINDOW_DECORATION_TOP_LEFT" value="0" enum="WindowDecorationType">
+		<constant name="WINDOW_DECORATION_TOP_LEFT" value="0" enum="WindowDecorationType">
 			Window top-left resize element.
 		</constant>
 		<constant name="WINDOW_DECORATION_TOP" value="1" enum="WindowDecorationType">
