@@ -4838,6 +4838,7 @@ void DisplayServerX11::process_events() {
 
 				_window_changed(&event);
 			} break;
+
 			case ButtonPress: {
 				if (event.xbutton.button == 1) {
 					bool drag_event = false;
