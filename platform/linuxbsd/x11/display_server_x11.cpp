@@ -2528,7 +2528,7 @@ bool DisplayServerX11::window_is_maximize_allowed(WindowID p_window) const {
 	return _window_maximize_check(p_window, "_NET_WM_ALLOWED_ACTIONS");
 }
 
-void DisplayServerX11::__maximized(WindowID p_window, bool p_enabled) {
+void DisplayServerX11::_set_wm_maximized(WindowID p_window, bool p_enabled) {
 	ERR_FAIL_COND(!windows.has(p_window));
 	WindowData &wd = windows[p_window];
 
@@ -2560,7 +2560,7 @@ void DisplayServerX11::__maximized(WindowID p_window, bool p_enabled) {
 	wd.maximized = p_enabled;
 }
 
-void DisplayServerX11::__minimized(WindowID p_window, bool p_enabled) {
+void DisplayServerX11::_set_wm_minimized(WindowID p_window, bool p_enabled) {
 	WindowData &wd = windows[p_window];
 	// Using ICCCM -- Inter-Client Communication Conventions Manual
 	XEvent xev;
@@ -2590,7 +2590,7 @@ void DisplayServerX11::__minimized(WindowID p_window, bool p_enabled) {
 	wd.minimized = p_enabled;
 }
 
-void DisplayServerX11::__fullscreen(WindowID p_window, bool p_enabled, bool p_exclusive) {
+void DisplayServerX11::_set_wm_fullscreen(WindowID p_window, bool p_enabled, bool p_exclusive) {
 	ERR_FAIL_COND(!windows.has(p_window));
 	WindowData &wd = windows[p_window];
 
@@ -2676,7 +2676,7 @@ void DisplayServerX11::window_set_mode(WindowMode p_mode, WindowID p_window) {
 			//do nothing
 		} break;
 		case WINDOW_MODE_MINIMIZED: {
-			__minimized(p_window, false);
+			_set_wm_minimized(p_window, false);
 		} break;
 		case WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
 		case WINDOW_MODE_FULLSCREEN: {
@@ -2684,7 +2684,7 @@ void DisplayServerX11::window_set_mode(WindowMode p_mode, WindowID p_window) {
 			wd.fullscreen = false;
 			wd.exclusive_fullscreen = false;
 
-			__fullscreen(p_window, false, false);
+			_set_wm_fullscreen(p_window, false, false);
 
 			//un-maximize required for always on top
 			bool on_top = window_get_flag(WINDOW_FLAG_ALWAYS_ON_TOP, p_window);
@@ -2692,12 +2692,12 @@ void DisplayServerX11::window_set_mode(WindowMode p_mode, WindowID p_window) {
 			window_set_position(wd.last_position_before_fs, p_window);
 
 			if (on_top) {
-				__maximized(p_window, false);
+				_set_wm_maximized(p_window, false);
 			}
 
 		} break;
 		case WINDOW_MODE_MAXIMIZED: {
-			__maximized(p_window, false);
+			_set_wm_maximized(p_window, false);
 		} break;
 	}
 
@@ -2706,27 +2706,27 @@ void DisplayServerX11::window_set_mode(WindowMode p_mode, WindowID p_window) {
 			//do nothing
 		} break;
 		case WINDOW_MODE_MINIMIZED: {
-			__minimized(p_window, true);
+			_set_wm_minimized(p_window, true);
 		} break;
 		case WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
 		case WINDOW_MODE_FULLSCREEN: {
 			wd.last_position_before_fs = wd.position;
 
 			if (window_get_flag(WINDOW_FLAG_ALWAYS_ON_TOP, p_window)) {
-				__maximized(p_window, true);
+				_set_wm_maximized(p_window, true);
 			}
 
 			wd.fullscreen = true;
 			if (p_mode == WINDOW_MODE_EXCLUSIVE_FULLSCREEN) {
 				wd.exclusive_fullscreen = true;
-				__fullscreen(p_window, true, true);
+				_set_wm_fullscreen(p_window, true, true);
 			} else {
 				wd.exclusive_fullscreen = false;
-				__fullscreen(p_window, true, false);
+				_set_wm_fullscreen(p_window, true, false);
 			}
 		} break;
 		case WINDOW_MODE_MAXIMIZED: {
-			__maximized(p_window, true);
+			_set_wm_maximized(p_window, true);
 		} break;
 	}
 }
@@ -2795,7 +2795,7 @@ void DisplayServerX11::window_set_flag(WindowFlags p_flag, bool p_enabled, Windo
 		case WINDOW_FLAG_ALWAYS_ON_TOP: {
 			ERR_FAIL_COND_MSG(wd.transient_parent != INVALID_WINDOW_ID, "Can't make a window transient if the 'on top' flag is active.");
 			if (p_enabled && wd.fullscreen) {
-				__maximized(p_window, true);
+				_set_wm_maximized(p_window, true);
 			}
 
 			Atom wm_state = XInternAtom(x11_display, "_NET_WM_STATE", False);
@@ -2813,7 +2813,7 @@ void DisplayServerX11::window_set_flag(WindowFlags p_flag, bool p_enabled, Windo
 			XSendEvent(x11_display, DefaultRootWindow(x11_display), False, SubstructureRedirectMask | SubstructureNotifyMask, (XEvent *)&xev);
 
 			if (!p_enabled && !wd.fullscreen) {
-				__maximized(p_window, false);
+				_set_wm_maximized(p_window, false);
 			}
 			wd.on_top = p_enabled;
 
@@ -4793,7 +4793,7 @@ void DisplayServerX11::process_events() {
 								} break;
 								case DisplayServer::WINDOW_DECORATION_MOVE: {
 									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_MOVE);
-									// drag_event = true;
+									//drag_event = true;
 								} break;
 								default:
 									break;
@@ -4865,7 +4865,7 @@ void DisplayServerX11::process_events() {
 						last_click_ms += diff;
 						last_click_pos = Point2i(event.xbutton.x, event.xbutton.y);
 					}
-
+					// maximise window. remove it doesn't work
 					if (event.xbutton.button == 1 && mb->is_double_click()) {
 						for (const KeyValue<int, DisplayServerX11::DecorData> &E : windows[window_id].decor) {
 							if (Geometry2D::is_point_in_polygon(Vector2i(event.xbutton.x, event.xbutton.y), E.value.region)) {
@@ -4879,7 +4879,7 @@ void DisplayServerX11::process_events() {
 							}
 						}
 					}
-
+					//maximise window. remove if doesn't work
 				} else {
 					DEBUG_LOG_X11("[%u] ButtonRelease window=%lu (%u), button_index=%u \n", frame, event.xbutton.window, window_id, mb->get_button_index());
 
