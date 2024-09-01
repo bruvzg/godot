@@ -4865,7 +4865,7 @@ void DisplayServerX11::process_events() {
 						last_click_ms += diff;
 						last_click_pos = Point2i(event.xbutton.x, event.xbutton.y);
 					}
-					// maximise window. remove it doesn't work
+
 					if (event.xbutton.button == 1 && mb->is_double_click()) {
 						for (const KeyValue<int, DisplayServerX11::DecorData> &E : windows[window_id].decor) {
 							if (Geometry2D::is_point_in_polygon(Vector2i(event.xbutton.x, event.xbutton.y), E.value.region)) {
@@ -4879,7 +4879,7 @@ void DisplayServerX11::process_events() {
 							}
 						}
 					}
-					//maximise window. remove if doesn't work
+
 				} else {
 					DEBUG_LOG_X11("[%u] ButtonRelease window=%lu (%u), button_index=%u \n", frame, event.xbutton.window, window_id, mb->get_button_index());
 
