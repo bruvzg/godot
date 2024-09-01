@@ -4793,7 +4793,7 @@ void DisplayServerX11::process_events() {
 								} break;
 								case DisplayServer::WINDOW_DECORATION_MOVE: {
 									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_MOVE);
-									drag_event = true;
+									// drag_event = true;
 								} break;
 								default:
 									break;
@@ -4865,6 +4865,25 @@ void DisplayServerX11::process_events() {
 						last_click_ms += diff;
 						last_click_pos = Point2i(event.xbutton.x, event.xbutton.y);
 					}
+
+					if (event.xbutton.button == 1 && mb->is_double_click()) {
+						for (const KeyValue<int, DisplayServerX11::DecorData> &E : windows[window_id].decor) {
+							if (Geometry2D::is_point_in_polygon(Vector2i(event.xbutton.x, event.xbutton.y), E.value.region)) {
+								switch (E.value.dec_type) {
+									case DisplayServer::WINDOW_DECORATION_MOVE: {
+										if (_window_maximize_check(window_id, "_NET_WM_STATE") == true) {
+											_set_wm_maximized(window_id, false);
+										} else {
+											_set_wm_maximized(window_id, true);
+										}
+									} break;
+									default:
+										break;
+								}
+							}
+						}
+					}
+
 				} else {
 					DEBUG_LOG_X11("[%u] ButtonRelease window=%lu (%u), button_index=%u \n", frame, event.xbutton.window, window_id, mb->get_button_index());
 
