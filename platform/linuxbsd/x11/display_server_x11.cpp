@@ -4792,7 +4792,78 @@ void DisplayServerX11::process_events() {
 									drag_event = true;
 								} break;
 								case DisplayServer::WINDOW_DECORATION_MOVE: {
-									_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_MOVE);
+									if (ime_window_event || ignore_events) {
+										break;
+									}
+									/* exit in case of a mouse button press */
+									last_timestamp = event.xbutton.time;
+									if (mouse_mode == MOUSE_MODE_CAPTURED) {
+										event.xbutton.x = last_mouse_pos.x;
+										event.xbutton.y = last_mouse_pos.y;
+									}
+
+									Ref<InputEventMouseButton> mb;
+									mb.instantiate();
+
+									mb->set_window_id(window_id);
+									_get_key_modifier_state(event.xbutton.state, mb);
+									mb->set_button_index((MouseButton)event.xbutton.button);
+									if (mb->get_button_index() == MouseButton::RIGHT) {
+										mb->set_button_index(MouseButton::MIDDLE);
+									} else if (mb->get_button_index() == MouseButton::MIDDLE) {
+										mb->set_button_index(MouseButton::RIGHT);
+									}
+									mb->set_position(Vector2(event.xbutton.x, event.xbutton.y));
+									mb->set_global_position(mb->get_position());
+
+									mb->set_pressed((event.type == ButtonPress));
+
+									if (mb->is_pressed() && mb->get_button_index() >= MouseButton::WHEEL_UP && mb->get_button_index() <= MouseButton::WHEEL_RIGHT) {
+										MouseButtonMask mask = mouse_button_to_mask(mb->get_button_index());
+										BitField<MouseButtonMask> scroll_mask = mouse_get_button_state();
+										scroll_mask.set_flag(mask);
+										mb->set_button_mask(scroll_mask);
+									} else {
+										mb->set_button_mask(mouse_get_button_state());
+									}
+
+									const WindowData &wd = windows[window_id];
+
+									if (event.type == ButtonPress) {
+										DEBUG_LOG_X11("[%u] ButtonPress window=%lu (%u), button_index=%u \n", frame, event.xbutton.window, window_id, mb->get_button_index());
+
+										// Ensure window focus on click.
+										// RevertToPointerRoot is used to make sure we don't lose all focus in case
+										// a subwindow and its parent are both destroyed.
+										if (!wd.no_focus && !wd.is_popup) {
+											_set_input_focus(wd.x11_window, RevertToPointerRoot);
+										}
+
+										uint64_t diff = OS::get_singleton()->get_ticks_usec() / 1000 - last_click_ms;
+
+										if (mb->get_button_index() == last_click_button_index) {
+											if (diff < 400 && Vector2(last_click_pos).distance_to(Vector2(event.xbutton.x, event.xbutton.y)) < 5) {
+												last_click_ms = 0;
+												last_click_pos = Point2i(-100, -100);
+												last_click_button_index = MouseButton::NONE;
+												mb->set_double_click(true);
+											}
+
+										} else if (mb->get_button_index() < MouseButton::WHEEL_UP || mb->get_button_index() > MouseButton::WHEEL_RIGHT) {
+											last_click_button_index = mb->get_button_index();
+										}
+
+										if (!mb->is_double_click()) {
+											last_click_ms += diff;
+											last_click_pos = Point2i(event.xbutton.x, event.xbutton.y);
+										}
+									}
+
+									if (event.xbutton.button == 1 && mb->is_double_click()) {
+										_set_wm_maximized(window_id, !_window_maximize_check(window_id, "_NET_WM_STATE"));
+									} else {
+										_process_window_drag(window_id, event, _NET_WM_MOVERESIZE_MOVE);
+									}
 									drag_event = true;
 								} break;
 								default:
