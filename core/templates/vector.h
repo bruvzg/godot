@@ -49,6 +49,12 @@
 #include <initializer_list>
 #include <utility>
 
+template <typename T, typename A>
+class List;
+
+template <typename T>
+class TypedArray;
+
 template <typename T>
 class VectorWriteProxy {
 public:
@@ -278,6 +284,23 @@ public:
 	_FORCE_INLINE_ ConstIterator end() const {
 		return ConstIterator(ptr() + size());
 	}
+
+	List<T, DefaultAllocator> to_list() const;
+
+	template <typename R>
+	Vector<R> to_vector() const {
+		Vector<R> ret;
+		ret.resize(size());
+
+		R *write = ret.ptrw();
+		for (const T &E : *this) {
+			*write = E;
+			write++;
+		}
+		return ret;
+	}
+
+	TypedArray<T> to_typed_array() const;
 
 	_FORCE_INLINE_ Vector() {}
 	_FORCE_INLINE_ Vector(std::initializer_list<T> p_init) {

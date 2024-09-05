@@ -43,6 +43,12 @@
  * from the iterator.
  */
 
+template <typename T>
+class Vector;
+
+template <typename T>
+class TypedArray;
+
 template <typename T, typename A = DefaultAllocator>
 class List {
 	struct _Data;
@@ -749,6 +755,11 @@ public:
 	const void *id() const {
 		return (void *)_data;
 	}
+
+	Vector<T> to_vector() const;
+
+	template <typename R>
+	TypedArray<R> to_typed_array() const;
 
 	/**
 	 * copy constructor for the list
