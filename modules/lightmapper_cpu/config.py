@@ -9,6 +9,9 @@ def can_build(env, platform):
     if platform == "android":
         return env["android_arch"] in ["arm64v8", "x86_64"]
 
+    if platform == "windows" and env["arch"] == "arm64":
+        return False
+
     if platform in ["javascript", "server"]:
         return False
 

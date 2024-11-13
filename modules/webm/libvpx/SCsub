@@ -224,6 +224,9 @@ if env["platform"] == "uwp":
         webm_cpu_arm = True
     else:
         webm_cpu_x86 = True
+elif env["platform"] == "windows":
+    webm_cpu_arm = (env["arch"] == "arm64")
+    is_x11_or_server_arm = False
 elif env["platform"] != "windows":  # Disable for Windows, yasm SIMD optimizations trigger crash (GH-50862).
     import platform
 

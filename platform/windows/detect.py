@@ -324,7 +324,8 @@ def configure_mingw(env):
     ## Build type
 
     if env["target"] == "release":
-        env.Append(CCFLAGS=["-msse2"])
+        if env["arch"] != "arm64":
+            env.Append(CCFLAGS=["-msse2"])
 
         if env["optimize"] == "speed":  # optimize for speed (default)
             if env["bits"] == "64":
@@ -400,7 +401,8 @@ def configure_mingw(env):
         env["AR"] = mingw_prefix + "gcc-ar"
         env["RANLIB"] = mingw_prefix + "gcc-ranlib"
 
-    env["x86_libtheora_opt_gcc"] = True
+    if env["arch"] != "arm64":
+        env["x86_libtheora_opt_gcc"] = True
 
     ## LTO
 
@@ -425,7 +427,9 @@ def configure_mingw(env):
 
     ## Compile flags
 
-    env.Append(CCFLAGS=["-mwindows"])
+    if not env["use_llvm"]:
+        env.Append(CCFLAGS=["-mwindows"])
+
     env.Append(LINKFLAGS=["-Wl,--nxcompat"])  # DEP protection. Not enabling ASLR for now, Mono crashes.
     env.Append(CPPDEFINES=["WINDOWS_ENABLED", "OPENGL_ENABLED", "WASAPI_ENABLED", "WINMIDI_ENABLED"])
     env.Append(CPPDEFINES=[("WINVER", env["target_win_version"]), ("_WIN32_WINNT", env["target_win_version"])])
