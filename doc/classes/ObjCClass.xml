@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ObjCClass" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Represents a Objective-C class.
+	</brief_description>
+	<description>
+		Represents a Objective-C class. It is returned from [method ObjCClassWrapper.wrap] or other [ObjCClass] method.
+		[b]Note:[/b] This class only works on macOS. On any other platform, this class does nothing.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_instance" qualifiers="const">
+			<return type="ObjCObject" />
+			<description>
+				Creates new instance of this class object.
+			</description>
+		</method>
+		<method name="get_objc_class_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the Objective-C class name.
+			</description>
+		</method>
+		<method name="get_objc_method_list" qualifiers="const">
+			<return type="Dictionary[]" />
+			<description>
+				Returns the object's Objective-C methods and their signatures as an [Array] of dictionaries, in the same format as [method Object.get_method_list].
+				[b]Note:[/b] Due to GDScript limitations [code]:[/code] characters in the method name are replaced with [code]_[/code].
+			</description>
+		</method>
+		<method name="get_objc_parent_class" qualifiers="const">
+			<return type="ObjCClass" />
+			<description>
+				Returns a [ObjCClass] representing the Objective-C parent class of this class.
+			</description>
+		</method>
+	</methods>
+</class>

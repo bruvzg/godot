@@ -1606,6 +1606,8 @@
 		<member name="OS" type="OS" setter="" getter="">
 			The [OS] singleton.
 		</member>
+		<member name="ObjCClassWrapper" type="ObjCClassWrapper" setter="" getter="">
+		</member>
 		<member name="Performance" type="Performance" setter="" getter="">
 			The [Performance] singleton.
 		</member>

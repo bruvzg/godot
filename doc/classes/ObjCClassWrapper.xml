@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ObjCClassWrapper" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Provides access to the Objective-C.
+	</brief_description>
+	<description>
+		The ObjCClassWrapper singleton provides a way for the Godot application to send and receive data through the macOS Objective-C system API.
+		[b]Note:[/b] This singleton is only available in macOS builds.
+		[codeblock]
+		var NSColor = ObjCClassWrapper.wrap("NSColor")
+		var NSColorSpace = ObjCClassWrapper.wrap("NSColorSpace")
+		var RGBColorSpace = NSColorSpace.genericRGBColorSpace()
+
+		var WinColor = NSColor.windowBackgroundColor()
+		var WinColorRGB = WinColor.colorUsingColorSpace_(RGBColorSpace)
+
+		print("color: ", WinColorRGB.redComponent(), " ", WinColorRGB.blueComponent(), " ", WinColorRGB.greenComponent());
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="wrap">
+			<return type="ObjCClass" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Wraps a class defined in Objective-C, and returns it as a [ObjCClass] [Object] type that Godot can interact with.
+				[b]Note:[/b] This method only works on macOS. On every other platform, this method does nothing and returns an empty [ObjCClass].
+			</description>
+		</method>
+	</methods>
+</class>

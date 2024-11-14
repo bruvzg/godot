@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ObjCObject" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Represents an Objective-C object.
+	</brief_description>
+	<description>
+		Represents an Objective-C object. It can be returned from Objective-C methods called on [ObjCClass] or other [ObjCObject]s. See [ObjCClassWrapper] for an example.
+		[b]Note:[/b] This class only works on macOS. On any other platform, this class does nothing.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_objc_class" qualifiers="const">
+			<return type="ObjCClass" />
+			<description>
+				Returns the [ObjCClass] that this object is an instance of.
+			</description>
+		</method>
+	</methods>
+</class>
