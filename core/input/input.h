@@ -88,9 +88,14 @@ public:
 private:
 	BitField<MouseButtonMask> mouse_button_mask;
 
-	RBSet<Key> key_label_pressed;
+	struct HashMapKeyHasher {
+		static _FORCE_INLINE_ uint32_t hash(const Key &p_key) { return (uint32_t)p_key; }
+	};
+
 	RBSet<Key> physical_keys_pressed;
-	RBSet<Key> keys_pressed;
+	HashMap<Key, Key, HashMapKeyHasher> keys_pressed;
+	HashMap<Key, Key, HashMapKeyHasher> key_label_pressed;
+
 	RBSet<JoyButton> joy_buttons_pressed;
 	RBMap<JoyAxis, float> _joy_axis;
 	//RBMap<StringName,int> custom_action_press;

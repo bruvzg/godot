@@ -278,7 +278,7 @@ bool Input::is_anything_pressed() const {
 		return false;
 	}
 
-	if (!keys_pressed.is_empty() || !joy_buttons_pressed.is_empty() || !mouse_button_mask.is_empty()) {
+	if (!physical_keys_pressed.is_empty() || !joy_buttons_pressed.is_empty() || !mouse_button_mask.is_empty()) {
 		return true;
 	}
 
@@ -298,7 +298,7 @@ bool Input::is_anything_pressed_except_mouse() const {
 		return false;
 	}
 
-	if (!keys_pressed.is_empty() || !joy_buttons_pressed.is_empty()) {
+	if (!physical_keys_pressed.is_empty() || !joy_buttons_pressed.is_empty()) {
 		return true;
 	}
 
@@ -318,7 +318,13 @@ bool Input::is_key_pressed(Key p_keycode) const {
 		return false;
 	}
 
-	return keys_pressed.has(p_keycode);
+	for (const KeyValue<Key, Key> &E : keys_pressed) {
+		if (E.value == p_keycode) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool Input::is_physical_key_pressed(Key p_keycode) const {
@@ -338,7 +344,13 @@ bool Input::is_key_label_pressed(Key p_keycode) const {
 		return false;
 	}
 
-	return key_label_pressed.has(p_keycode);
+	for (const KeyValue<Key, Key> &E : key_label_pressed) {
+		if (E.value == p_keycode) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool Input::is_mouse_button_pressed(MouseButton p_button) const {
@@ -672,25 +684,15 @@ void Input::_parse_input_event_impl(const Ref<InputEvent> &p_event, bool p_is_em
 	//   require additional handling by this class.
 
 	Ref<InputEventKey> k = p_event;
-	if (k.is_valid() && !k->is_echo() && k->get_keycode() != Key::NONE) {
-		if (k->is_pressed()) {
-			keys_pressed.insert(k->get_keycode());
-		} else {
-			keys_pressed.erase(k->get_keycode());
-		}
-	}
 	if (k.is_valid() && !k->is_echo() && k->get_physical_keycode() != Key::NONE) {
 		if (k->is_pressed()) {
 			physical_keys_pressed.insert(k->get_physical_keycode());
+			keys_pressed[k->get_physical_keycode()] = k->get_keycode();
+			key_label_pressed[k->get_physical_keycode()] = k->get_key_label();
 		} else {
 			physical_keys_pressed.erase(k->get_physical_keycode());
-		}
-	}
-	if (k.is_valid() && !k->is_echo() && k->get_key_label() != Key::NONE) {
-		if (k->is_pressed()) {
-			key_label_pressed.insert(k->get_key_label());
-		} else {
-			key_label_pressed.erase(k->get_key_label());
+			keys_pressed.erase(k->get_physical_keycode());
+			key_label_pressed.erase(k->get_physical_keycode());
 		}
 	}
 
