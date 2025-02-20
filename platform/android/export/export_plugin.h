@@ -73,6 +73,7 @@ class EditorExportPlatformAndroid : public EditorExportPlatform {
 	};
 
 	struct APKExportData {
+		EditorExportPlatform::PackData pd;
 		zipFile apk;
 		EditorProgress *ep = nullptr;
 	};
