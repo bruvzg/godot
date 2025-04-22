@@ -535,6 +535,8 @@ public:
 	void enable_canvas_transform_override(bool p_enable);
 	bool is_canvas_transform_override_enabled() const;
 
+	virtual Transform2D get_dpi_transform() const { return Transform2D(); }
+
 	void set_canvas_transform_override(const Transform2D &p_transform);
 	Transform2D get_canvas_transform_override() const;
 

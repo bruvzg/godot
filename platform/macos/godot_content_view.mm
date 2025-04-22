@@ -255,8 +255,7 @@
 
 	DisplayServerMacOS::WindowData &wd = ds->get_window(window_id);
 	const NSRect content_rect = [wd.window_view frame];
-	const float scale = ds->screen_get_max_scale();
-	NSRect point_in_window_rect = NSMakeRect(wd.im_position.x / scale, content_rect.size.height - (wd.im_position.y / scale) - 1, 0, 0);
+	NSRect point_in_window_rect = NSMakeRect(wd.im_position.x, content_rect.size.height - wd.im_position.y - 1, 0, 0);
 	NSPoint point_on_screen = [wd.window_object convertRectToScreen:point_in_window_rect].origin;
 
 	return NSMakeRect(point_on_screen.x, point_on_screen.y, 0, 0);
@@ -439,8 +438,8 @@
 	if (ds && ds->has_window(window_id)) {
 		DisplayServerMacOS::WindowData &wd = ds->get_window(window_id);
 		if (wd.edge != DisplayServer::WINDOW_EDGE_MAX) {
-			Size2i max_size = wd.max_size / ds->screen_get_max_scale();
-			Size2i min_size = wd.min_size / ds->screen_get_max_scale();
+			Size2i max_size = wd.max_size;
+			Size2i min_size = wd.min_size;
 			NSRect frame = [wd.window_object frame];
 			switch (wd.edge) {
 				case DisplayServer::WINDOW_EDGE_TOP_LEFT: {
@@ -537,7 +536,7 @@
 	mm->set_global_position(wd.mouse_pos);
 	mm->set_velocity(Input::get_singleton()->get_last_mouse_velocity());
 	mm->set_screen_velocity(mm->get_velocity());
-	const Vector2i relativeMotion = Vector2i(delta.x, delta.y) * ds->screen_get_max_scale();
+	const Vector2i relativeMotion = Vector2i(delta.x, delta.y);
 	mm->set_relative(relativeMotion);
 	mm->set_relative_screen_position(relativeMotion);
 	ds->get_key_modifier_state([event modifierFlags], mm);

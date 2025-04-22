@@ -1401,6 +1401,7 @@ void DisplayServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("screen_get_pixel", "position"), &DisplayServer::screen_get_pixel);
 	ClassDB::bind_method(D_METHOD("screen_get_image", "screen"), &DisplayServer::screen_get_image, DEFVAL(SCREEN_OF_MAIN_WINDOW));
 	ClassDB::bind_method(D_METHOD("screen_get_image_rect", "rect"), &DisplayServer::screen_get_image_rect);
+	ClassDB::bind_method(D_METHOD("screen_get_coordiantes_unit"), &DisplayServer::screen_get_coordiantes_unit);
 
 	ClassDB::bind_method(D_METHOD("screen_set_orientation", "orientation", "screen"), &DisplayServer::screen_set_orientation, DEFVAL(SCREEN_OF_MAIN_WINDOW));
 	ClassDB::bind_method(D_METHOD("screen_get_orientation", "screen"), &DisplayServer::screen_get_orientation, DEFVAL(SCREEN_OF_MAIN_WINDOW));
@@ -1429,6 +1430,9 @@ void DisplayServer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("window_get_size", "window_id"), &DisplayServer::window_get_size, DEFVAL(MAIN_WINDOW_ID));
 	ClassDB::bind_method(D_METHOD("window_set_size", "size", "window_id"), &DisplayServer::window_set_size, DEFVAL(MAIN_WINDOW_ID));
+
+	ClassDB::bind_method(D_METHOD("window_get_scale", "window_id"), &DisplayServer::window_get_scale, DEFVAL(MAIN_WINDOW_ID));
+
 	ClassDB::bind_method(D_METHOD("window_set_rect_changed_callback", "callback", "window_id"), &DisplayServer::window_set_rect_changed_callback, DEFVAL(MAIN_WINDOW_ID));
 	ClassDB::bind_method(D_METHOD("window_set_window_event_callback", "callback", "window_id"), &DisplayServer::window_set_window_event_callback, DEFVAL(MAIN_WINDOW_ID));
 	ClassDB::bind_method(D_METHOD("window_set_input_event_callback", "callback", "window_id"), &DisplayServer::window_set_input_event_callback, DEFVAL(MAIN_WINDOW_ID));
@@ -1657,6 +1661,7 @@ void DisplayServer::_bind_methods() {
 	BIND_ENUM_CONSTANT(FEATURE_NATIVE_COLOR_PICKER);
 	BIND_ENUM_CONSTANT(FEATURE_SELF_FITTING_WINDOWS);
 	BIND_ENUM_CONSTANT(FEATURE_ACCESSIBILITY_SCREEN_READER);
+	BIND_ENUM_CONSTANT(FEATURE_DPI_SCALING);
 
 	BIND_ENUM_CONSTANT(ROLE_UNKNOWN);
 	BIND_ENUM_CONSTANT(ROLE_DEFAULT_BUTTON);
@@ -1774,6 +1779,9 @@ void DisplayServer::_bind_methods() {
 	BIND_ENUM_CONSTANT(SCREEN_SENSOR_LANDSCAPE);
 	BIND_ENUM_CONSTANT(SCREEN_SENSOR_PORTRAIT);
 	BIND_ENUM_CONSTANT(SCREEN_SENSOR);
+
+	BIND_ENUM_CONSTANT(SCREEN_COORDS_UNIT_DEVICE_PIXEL);
+	BIND_ENUM_CONSTANT(SCREEN_COORDS_UNIT_DPI_ADJUSTED_PIXEL);
 
 	BIND_ENUM_CONSTANT(KEYBOARD_TYPE_DEFAULT);
 	BIND_ENUM_CONSTANT(KEYBOARD_TYPE_MULTILINE);

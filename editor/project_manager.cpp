@@ -1242,8 +1242,22 @@ void ProjectManager::_titlebar_resized() {
 
 // Object methods.
 
+//DDDDDDDDDDD
+#include "debug_wtrack.h"
+//DDDDDDDDDDD
+
 ProjectManager::ProjectManager() {
 	singleton = this;
+
+	//DDDDDDDDDDD
+	Window *w_track = memnew(Window);
+	Control *w_ctr = memnew(WTrack);
+	w_track->add_child(w_ctr);
+	add_child(w_track);
+	w_track->set_position(Vector2i(100, 100));
+	w_track->set_size(Vector2i(200, 200));
+	w_track->show();
+	//DDDDDDDDDDD
 
 	// Turn off some servers we aren't going to be using in the Project Manager.
 	NavigationServer3D::get_singleton()->set_active(false);

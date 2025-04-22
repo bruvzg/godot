@@ -277,7 +277,7 @@ Size2 NativeMenuMacOS::get_size(const RID &p_rid) const {
 	const MenuData *md = menus.get_or_null(p_rid);
 	ERR_FAIL_NULL_V(md, Size2());
 
-	return Size2(md->menu.size.width, md->menu.size.height) * DisplayServer::get_singleton()->screen_get_max_scale();
+	return Size2(md->menu.size.width, md->menu.size.height);
 }
 
 void NativeMenuMacOS::popup(const RID &p_rid, const Vector2i &p_position) {
@@ -291,7 +291,6 @@ void NativeMenuMacOS::popup(const RID &p_rid, const Vector2i &p_position) {
 		// Godot passes a positive value.
 		position.y *= -1;
 		position += ds->_get_screens_origin();
-		position /= ds->screen_get_max_scale();
 
 		[md->menu popUpMenuPositioningItem:nil atLocation:NSMakePoint(position.x, position.y - 5) inView:nil]; // Menu vertical position doesn't include rounded corners, add `5` display pixels to better align it with Godot buttons.
 
@@ -339,14 +338,14 @@ void NativeMenuMacOS::set_minimum_width(const RID &p_rid, float p_width) {
 	MenuData *md = menus.get_or_null(p_rid);
 	ERR_FAIL_NULL(md);
 
-	md->menu.minimumWidth = p_width / DisplayServer::get_singleton()->screen_get_max_scale();
+	md->menu.minimumWidth = p_width;
 }
 
 float NativeMenuMacOS::get_minimum_width(const RID &p_rid) const {
 	const MenuData *md = menus.get_or_null(p_rid);
 	ERR_FAIL_NULL_V(md, 0.0);
 
-	return md->menu.minimumWidth * DisplayServer::get_singleton()->screen_get_max_scale();
+	return md->menu.minimumWidth;
 }
 
 bool NativeMenuMacOS::is_opened(const RID &p_rid) const {

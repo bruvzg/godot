@@ -1690,6 +1690,11 @@
 				This can be used to prevent Godot from skipping rendering when no normal windows are visible.
 			</description>
 		</method>
+		<method name="screen_get_coordiantes_unit" qualifiers="const">
+			<return type="int" enum="DisplayServer.ScreenCoordinatesUnit" />
+			<description>
+			</description>
+		</method>
 		<method name="screen_get_dpi" qualifiers="const">
 			<return type="int" />
 			<param index="0" name="screen" type="int" default="-1" />
@@ -2174,6 +2179,12 @@
 				Returns left margins ([code]x[/code]), right margins ([code]y[/code]) and height ([code]z[/code]) of the title that are safe to use (contains no buttons or other elements) when [constant WINDOW_FLAG_EXTEND_TO_TITLE] flag is set.
 			</description>
 		</method>
+		<method name="window_get_scale" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="window_id" type="int" default="0" />
+			<description>
+			</description>
+		</method>
 		<method name="window_get_size" qualifiers="const">
 			<return type="Vector2i" />
 			<param index="0" name="window_id" type="int" default="0" />
@@ -2596,6 +2607,8 @@
 		<constant name="FEATURE_ACCESSIBILITY_SCREEN_READER" value="34" enum="Feature">
 			Display server supports interaction with screen reader or Braille display. [b]Linux (X11/Wayland), macOS, Windows[/b]
 		</constant>
+		<constant name="FEATURE_DPI_SCALING" value="35" enum="Feature">
+		</constant>
 		<constant name="ROLE_UNKNOWN" value="0" enum="AccessibilityRole">
 			Unknown or custom role.
 		</constant>
@@ -2927,6 +2940,10 @@
 		</constant>
 		<constant name="SCREEN_SENSOR" value="6" enum="ScreenOrientation">
 			Automatic landscape or portrait orientation (default or reverse depending on sensor).
+		</constant>
+		<constant name="SCREEN_COORDS_UNIT_DEVICE_PIXEL" value="0" enum="ScreenCoordinatesUnit">
+		</constant>
+		<constant name="SCREEN_COORDS_UNIT_DPI_ADJUSTED_PIXEL" value="1" enum="ScreenCoordinatesUnit">
 		</constant>
 		<constant name="KEYBOARD_TYPE_DEFAULT" value="0" enum="VirtualKeyboardType">
 			Default text virtual keyboard.

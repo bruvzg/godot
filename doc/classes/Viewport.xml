@@ -64,6 +64,11 @@
 				Returns an individual bit on the rendering layer mask.
 			</description>
 		</method>
+		<method name="get_dpi_transform" qualifiers="const">
+			<return type="Transform2D" />
+			<description>
+			</description>
+		</method>
 		<method name="get_embedded_subwindows" qualifiers="const">
 			<return type="Window[]" />
 			<description>

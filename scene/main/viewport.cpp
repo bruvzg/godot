@@ -1455,7 +1455,9 @@ Vector2 Viewport::get_mouse_position() const {
 			// Screen transform can be non-invertible when the Window is minimized.
 			return Vector2();
 		}
-		return xform.affine_inverse().xform(DisplayServer::get_singleton()->mouse_get_position());
+		Vector2 pos = DisplayServer::get_singleton()->mouse_get_position();
+		pos = get_dpi_transform().xform(pos);
+		return xform.affine_inverse().xform(pos);
 	} else {
 		// Fallback to Input for getting mouse position in case of emulated mouse.
 		return get_screen_transform_internal().affine_inverse().xform(Input::get_singleton()->get_mouse_position());
@@ -3161,6 +3163,7 @@ void Viewport::_update_mouse_over() {
 		}
 
 		Vector2 pos = DisplayServer::get_singleton()->mouse_get_position() - receiving_window->get_position();
+		pos = receiving_window->get_dpi_transform().xform(pos);
 		pos = receiving_window->get_final_transform().affine_inverse().xform(pos);
 
 		receiving_window->_update_mouse_over(pos);
@@ -4935,6 +4938,7 @@ void Viewport::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_stretch_transform"), &Viewport::get_stretch_transform);
 	ClassDB::bind_method(D_METHOD("get_final_transform"), &Viewport::get_final_transform);
 	ClassDB::bind_method(D_METHOD("get_screen_transform"), &Viewport::get_screen_transform);
+	ClassDB::bind_method(D_METHOD("get_dpi_transform"), &Viewport::get_dpi_transform);
 
 	ClassDB::bind_method(D_METHOD("get_visible_rect"), &Viewport::get_visible_rect);
 	ClassDB::bind_method(D_METHOD("set_transparent_background", "enable"), &Viewport::set_transparent_background);

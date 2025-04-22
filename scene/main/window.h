@@ -143,6 +143,7 @@ private:
 	bool clamp_to_embedder = false;
 	bool unparent_when_invisible = false;
 	bool keep_title_visible = false;
+	bool dpi_auto_scaling = true;
 
 	LayoutDirection layout_dir = LAYOUT_DIRECTION_INHERITED;
 
@@ -279,6 +280,9 @@ protected:
 	GDVIRTUAL0RC(Vector2, _get_contents_minimum_size)
 
 public:
+	Vector2 bummy_mmp1;
+	Vector2 bummy_mmp2;
+
 	enum {
 		NOTIFICATION_VISIBILITY_CHANGED = 30,
 		NOTIFICATION_POST_POPUP = 31,
@@ -304,22 +308,29 @@ public:
 	void set_current_screen(int p_screen);
 	int get_current_screen() const;
 
-	void set_position(const Point2i &p_position);
-	Point2i get_position() const;
+	void set_position(const Point2i &p_position); // Screen coords.
+	Point2i get_position() const; // Screen coords.
 	void move_to_center();
 
-	void set_size(const Size2i &p_size);
-	Size2i get_size() const;
+	void set_dpi_auto_scaling(bool p_enabled);
+	bool get_dpi_auto_scaling() const;
+
+	void set_size(const Size2i &p_size); // Screen coords.
+	Size2i get_size() const; // Screen coords.
+	Size2i get_pixel_size() const; // Pixels.
+
+	Point2i get_position_with_decorations() const; // Screen coords.
+	Size2i get_size_with_decorations() const; // Screen coords.
+
+	void set_content_size(const Size2i &p_size); // Window coords.
+	Size2i get_content_size() const; // Window coords.
 	void reset_size();
 
-	Point2i get_position_with_decorations() const;
-	Size2i get_size_with_decorations() const;
+	void set_max_size(const Size2i &p_max_size); // Window coords.
+	Size2i get_max_size() const; // Window coords.
 
-	void set_max_size(const Size2i &p_max_size);
-	Size2i get_max_size() const;
-
-	void set_min_size(const Size2i &p_min_size);
-	Size2i get_min_size() const;
+	void set_min_size(const Size2i &p_min_size); // Window coords.
+	Size2i get_min_size() const; // Window coords.
 
 	void set_mode(Mode p_mode);
 	Mode get_mode() const;
@@ -384,8 +395,8 @@ public:
 	void set_content_scale_factor(real_t p_factor);
 	real_t get_content_scale_factor() const;
 
-	void set_mouse_passthrough_polygon(const Vector<Vector2> &p_region);
-	Vector<Vector2> get_mouse_passthrough_polygon() const;
+	void set_mouse_passthrough_polygon(const Vector<Vector2> &p_region); // Window coords.
+	Vector<Vector2> get_mouse_passthrough_polygon() const; // Window coords.
 
 	void set_wrap_controls(bool p_enable);
 	bool is_wrapping_controls() const;
@@ -396,19 +407,19 @@ public:
 	Window *get_parent_visible_window() const;
 	Viewport *get_parent_viewport() const;
 
-	virtual void popup(const Rect2i &p_screen_rect = Rect2i());
-	void popup_on_parent(const Rect2i &p_parent_rect);
-	void popup_centered(const Size2i &p_minsize = Size2i());
+	virtual void popup(const Rect2i &p_screen_rect = Rect2i()); // Screen rect.
+	virtual void popup_on_parent(const Rect2i &p_parent_rect); // Window (parent) coords.
+	void popup_centered(const Size2i &p_minsize = Size2i()); // Window (parent) coords.
 	void popup_centered_ratio(float p_ratio = 0.8);
-	void popup_centered_clamped(const Size2i &p_size = Size2i(), float p_fallback_ratio = 0.75);
+	void popup_centered_clamped(const Size2i &p_size = Size2i(), float p_fallback_ratio = 0.75); // Window (parent) coords.
 
-	void popup_exclusive(Node *p_from_node, const Rect2i &p_screen_rect = Rect2i());
-	void popup_exclusive_on_parent(Node *p_from_node, const Rect2i &p_parent_rect);
-	void popup_exclusive_centered(Node *p_from_node, const Size2i &p_minsize = Size2i());
+	void popup_exclusive(Node *p_from_node, const Rect2i &p_screen_rect = Rect2i()); // Screen rect.
+	void popup_exclusive_on_parent(Node *p_from_node, const Rect2i &p_parent_rect); // Window (parent) coords.
+	void popup_exclusive_centered(Node *p_from_node, const Size2i &p_minsize = Size2i()); // Window (parent) coords.
 	void popup_exclusive_centered_ratio(Node *p_from_node, float p_ratio = 0.8);
-	void popup_exclusive_centered_clamped(Node *p_from_node, const Size2i &p_size = Size2i(), float p_fallback_ratio = 0.75);
+	void popup_exclusive_centered_clamped(Node *p_from_node, const Size2i &p_size = Size2i(), float p_fallback_ratio = 0.75); // Window (parent) coords.
 
-	Rect2i fit_rect_in_parent(Rect2i p_rect, const Rect2i &p_parent_rect) const;
+	Rect2i fit_rect_in_parent(Rect2i p_rect, const Rect2i &p_parent_rect) const; // TODO ????
 	Size2 get_contents_minimum_size() const;
 	Size2 get_clamped_minimum_size() const;
 
@@ -418,7 +429,7 @@ public:
 	void start_drag();
 	void start_resize(DisplayServer::WindowResizeEdge p_edge);
 
-	Rect2i get_usable_parent_rect() const;
+	Rect2i get_usable_parent_rect() const; // TODO ????
 
 	void accessibility_announcement(const String &p_announcement);
 
@@ -497,13 +508,14 @@ public:
 	Ref<Font> get_theme_default_font() const;
 	int get_theme_default_font_size() const;
 
+	virtual Transform2D get_dpi_transform() const override;
 	virtual Transform2D get_final_transform() const override;
 	virtual Transform2D get_screen_transform_internal(bool p_absolute_position = false) const override;
 	virtual Transform2D get_popup_base_transform() const override;
 	virtual Viewport *get_section_root_viewport() const override;
 	virtual bool is_attached_in_viewport() const override;
 
-	Rect2i get_parent_rect() const;
+	Rect2i get_parent_rect() const; // TODO ????
 	virtual DisplayServer::WindowID get_window_id() const override;
 	static Window *get_focused_window() { return focused_window; }
 

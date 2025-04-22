@@ -449,6 +449,23 @@ Size2i Window::get_size() const {
 	return size;
 }
 
+Size2i Window::get_pixel_size() const {
+	ERR_READ_THREAD_GUARD_V(Size2i());
+	return get_dpi_transform().xform(size);
+}
+
+void Window::set_dpi_auto_scaling(bool p_enabled) {
+	if (dpi_auto_scaling == p_enabled) {
+		return;
+	}
+	dpi_auto_scaling = p_enabled;
+	_update_viewport_size();
+}
+
+bool Window::get_dpi_auto_scaling() const {
+	return dpi_auto_scaling;
+}
+
 void Window::reset_size() {
 	ERR_MAIN_THREAD_GUARD;
 	set_size(Size2i());
@@ -1214,9 +1231,22 @@ void Window::_update_window_size() {
 void Window::_update_viewport_size() {
 	//update the viewport part
 
+	double dpi_scale = 1.0f;
+	double content_scale = 1.0f;
+	if (DisplayServer::get_singleton()->screen_get_coordiantes_unit() == DisplayServer::SCREEN_COORDS_UNIT_DPI_ADJUSTED_PIXEL) {
+		dpi_scale = (window_id != DisplayServer::INVALID_WINDOW_ID) ? DisplayServer::get_singleton()->window_get_scale(window_id) : 1.0f;
+		if (!dpi_auto_scaling) {
+			content_scale = dpi_scale;
+		}
+	} else {
+		if (dpi_auto_scaling) {
+			content_scale = (window_id != DisplayServer::INVALID_WINDOW_ID) ? DisplayServer::get_singleton()->window_get_scale(window_id) : 1.0f;
+		}
+	}
+
 	Size2i final_size;
 	Size2 final_size_override;
-	Rect2i attach_to_screen_rect(Point2i(), size);
+	Rect2i attach_to_screen_rect(Point2i(), size * dpi_scale);
 	window_transform = Transform2D();
 
 	if (content_scale_stretch == Window::CONTENT_SCALE_STRETCH_INTEGER) {
@@ -1231,11 +1261,11 @@ void Window::_update_viewport_size() {
 	}
 
 	if (content_scale_mode == CONTENT_SCALE_MODE_DISABLED || content_scale_size.x == 0 || content_scale_size.y == 0) {
-		final_size = size;
-		final_size_override = Size2(size) / content_scale_factor;
+		final_size = Size2(size) * dpi_scale;
+		final_size_override = Size2(size) / (content_scale_factor * content_scale);
 	} else {
 		//actual screen video mode
-		Size2 video_mode = size;
+		Size2 video_mode = Size2(size) / content_scale;
 		Size2 desired_res = content_scale_size;
 
 		Size2 viewport_size;
@@ -1310,15 +1340,15 @@ void Window::_update_viewport_size() {
 			case CONTENT_SCALE_MODE_DISABLED: {
 			} break;
 			case CONTENT_SCALE_MODE_CANVAS_ITEMS: {
-				final_size = screen_size;
+				final_size = screen_size * dpi_scale;
 				final_size_override = viewport_size / content_scale_factor;
-				attach_to_screen_rect = Rect2(margin, screen_size);
+				attach_to_screen_rect = Rect2(margin, screen_size * dpi_scale);
 
 				window_transform.translate_local(margin);
 			} break;
 			case CONTENT_SCALE_MODE_VIEWPORT: {
-				final_size = (viewport_size / content_scale_factor).floor();
-				attach_to_screen_rect = Rect2(margin, screen_size);
+				final_size = (viewport_size / content_scale_factor).floor() * dpi_scale;
+				attach_to_screen_rect = Rect2(margin, screen_size * dpi_scale);
 
 				window_transform.translate_local(margin);
 				if (final_size.x != 0 && final_size.y != 0) {
@@ -1829,12 +1859,15 @@ void Window::_window_input(const Ref<InputEvent> &p_ev) {
 	// filters out internal events.
 	_input_from_window(p_ev);
 
-	if (p_ev->get_device() != InputEvent::DEVICE_ID_INTERNAL && is_inside_tree()) {
-		emit_signal(SceneStringName(window_input), p_ev);
+	// DPI scale transfornm.
+	Ref<InputEvent> ev = p_ev->xformed_by(get_dpi_transform());
+
+	if (ev->get_device() != InputEvent::DEVICE_ID_INTERNAL && is_inside_tree()) {
+		emit_signal(SceneStringName(window_input), ev);
 	}
 
 	if (is_inside_tree()) {
-		push_input(p_ev);
+		push_input(ev);
 	}
 }
 
@@ -2969,6 +3002,15 @@ bool Window::is_auto_translating() const {
 }
 #endif
 
+Transform2D Window::get_dpi_transform() const {
+	Transform2D tr;
+	if (DisplayServer::get_singleton()->screen_get_coordiantes_unit() == DisplayServer::SCREEN_COORDS_UNIT_DPI_ADJUSTED_PIXEL) {
+		double dpi_scale = (window_id != DisplayServer::INVALID_WINDOW_ID) ? DisplayServer::get_singleton()->window_get_scale(window_id) : 1.0f;
+		tr.set_scale(Vector2i(dpi_scale, dpi_scale));
+	}
+	return tr;
+}
+
 Transform2D Window::get_final_transform() const {
 	ERR_READ_THREAD_GUARD_V(Transform2D());
 	return window_transform * stretch_transform * global_canvas_transform;
@@ -3064,6 +3106,7 @@ void Window::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_size", "size"), &Window::set_size);
 	ClassDB::bind_method(D_METHOD("get_size"), &Window::get_size);
+	ClassDB::bind_method(D_METHOD("get_pixel_size"), &Window::get_pixel_size);
 	ClassDB::bind_method(D_METHOD("reset_size"), &Window::reset_size);
 
 	ClassDB::bind_method(D_METHOD("get_position_with_decorations"), &Window::get_position_with_decorations);
@@ -3077,6 +3120,9 @@ void Window::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &Window::set_mode);
 	ClassDB::bind_method(D_METHOD("get_mode"), &Window::get_mode);
+
+	ClassDB::bind_method(D_METHOD("set_dpi_auto_scaling", "enabled"), &Window::set_dpi_auto_scaling);
+	ClassDB::bind_method(D_METHOD("get_dpi_auto_scaling"), &Window::get_dpi_auto_scaling);
 
 	ClassDB::bind_method(D_METHOD("set_flag", "flag", "enabled"), &Window::set_flag);
 	ClassDB::bind_method(D_METHOD("get_flag", "flag"), &Window::get_flag);
@@ -3231,9 +3277,10 @@ void Window::_bind_methods() {
 
 	// Keep the enum values in sync with the `WindowInitialPosition` enum.
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "initial_position", PROPERTY_HINT_ENUM, "Absolute,Center of Primary Screen,Center of Main Window Screen,Center of Other Screen,Center of Screen With Mouse Pointer,Center of Screen With Keyboard Focus"), "set_initial_position", "get_initial_position");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "position", PROPERTY_HINT_NONE, "suffix:px"), "set_position", "get_position");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "size", PROPERTY_HINT_NONE, "suffix:px"), "set_size", "get_size");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "position", PROPERTY_HINT_NONE, "suffix:screen units"), "set_position", "get_position"); // TODO, initial center, hide this for non embedded?
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "size", PROPERTY_HINT_NONE, "suffix:px"), "set_size", "get_size"); // TODO
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "current_screen", PROPERTY_HINT_RANGE, "0,64,1,or_greater"), "set_current_screen", "get_current_screen");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "dpi_auto_scaling", PROPERTY_HINT_NONE, ""), "set_dpi_auto_scaling", "get_dpi_auto_scaling");
 
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR2_ARRAY, "mouse_passthrough_polygon"), "set_mouse_passthrough_polygon", "get_mouse_passthrough_polygon");
 

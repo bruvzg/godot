@@ -202,7 +202,7 @@ private:
 	WindowID window_mouseover_id = INVALID_WINDOW_ID;
 	WindowID last_focused_window = INVALID_WINDOW_ID;
 	WindowID window_id_counter = MAIN_WINDOW_ID;
-	float display_max_scale = 1.f;
+	mutable float display_max_scale = 1.f;
 	mutable Point2i origin;
 	mutable bool displays_arrangement_dirty = true;
 	bool is_resizing = false;
@@ -370,6 +370,7 @@ public:
 	virtual Ref<Image> screen_get_image_rect(const Rect2i &p_rect) const override;
 	virtual void screen_set_keep_on(bool p_enable) override;
 	virtual bool screen_is_kept_on() const override;
+	virtual ScreenCoordinatesUnit screen_get_coordiantes_unit() const override { return SCREEN_COORDS_UNIT_DPI_ADJUSTED_PIXEL; }
 
 	virtual Vector<int> get_window_list() const override;
 
@@ -410,6 +411,7 @@ public:
 	virtual void window_set_size(const Size2i p_size, WindowID p_window = MAIN_WINDOW_ID) override;
 	virtual Size2i window_get_size(WindowID p_window = MAIN_WINDOW_ID) const override;
 	virtual Size2i window_get_size_with_decorations(WindowID p_window = MAIN_WINDOW_ID) const override;
+	virtual float window_get_scale(WindowID p_window = MAIN_WINDOW_ID) const override;
 
 	virtual void window_set_mode(WindowMode p_mode, WindowID p_window = MAIN_WINDOW_ID) override;
 	virtual WindowMode window_get_mode(WindowID p_window = MAIN_WINDOW_ID) const override;

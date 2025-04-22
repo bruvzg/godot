@@ -3217,7 +3217,7 @@ void PopupMenu::popup(const Rect2i &p_bounds) {
 			scale *= c->get_global_transform_with_canvas().get_scale();
 		}
 		real_t popup_scale = MIN(scale.x, scale.y);
-		set_content_scale_factor(popup_scale);
+		//set_content_scale_factor(popup_scale); // TODO remove DPI scale
 		Size2 minsize = get_contents_minimum_size() * popup_scale;
 		minsize.height = Math::ceil(minsize.height); // Ensures enough height at fractional content scales to prevent the v_scroll_bar from showing.
 		set_min_size(minsize); // `height` is truncated here by the cast to Size2i for Window.min_size.

@@ -120,6 +120,11 @@
 				Returns layout direction and text writing direction.
 			</description>
 		</method>
+		<method name="get_pixel_size" qualifiers="const">
+			<return type="Vector2i" />
+			<description>
+			</description>
+		</method>
 		<method name="get_position_with_decorations" qualifiers="const">
 			<return type="Vector2i" />
 			<description>
@@ -604,6 +609,8 @@
 		</member>
 		<member name="current_screen" type="int" setter="set_current_screen" getter="get_current_screen">
 			The screen the window is currently on.
+		</member>
+		<member name="dpi_auto_scaling" type="bool" setter="set_dpi_auto_scaling" getter="get_dpi_auto_scaling" default="true">
 		</member>
 		<member name="exclude_from_capture" type="bool" setter="set_flag" getter="get_flag" default="false">
 			If [code]true[/code], the [Window] is excluded from screenshots taken by [method DisplayServer.screen_get_image], [method DisplayServer.screen_get_image_rect], and [method DisplayServer.screen_get_pixel].
