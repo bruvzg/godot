@@ -317,7 +317,7 @@ int PopupMenu::_get_items_total_height() const {
 
 int PopupMenu::_get_mouse_over(const Point2 &p_over) const {
 	// Transform to scroll_container local coordinates.
-	const Point2 scaled_pos = p_over / get_content_scale_factor();
+	const Point2 scaled_pos = p_over / (get_content_scale_factor() * get_dpi_scale_factor());
 	const Point2 over_scroll_container =
 			scroll_container->get_global_transform_with_canvas().xform_inv(scaled_pos);
 
@@ -349,7 +349,7 @@ void PopupMenu::_activate_submenu(int p_over, bool p_by_keyboard) {
 		return; // Already visible.
 	}
 
-	const float win_scale = get_content_scale_factor();
+	const float win_scale = get_content_scale_factor() * get_dpi_scale_factor();
 
 	const Point2 panel_ofs_start = Point2(panel->get_offset(SIDE_LEFT), panel->get_offset(SIDE_TOP)) * win_scale;
 	const Point2 panel_ofs_end = Point2(-panel->get_offset(SIDE_RIGHT), -panel->get_offset(SIDE_BOTTOM)) * win_scale;
@@ -365,7 +365,7 @@ void PopupMenu::_activate_submenu(int p_over, bool p_by_keyboard) {
 	const Size2 submenu_size = submenu_popup->get_size();
 
 	// Calculate the submenu's position.
-	Point2 submenu_pos(0, -submenu_popup->get_theme_stylebox(SceneStringName(panel))->get_margin(SIDE_TOP) * submenu_popup->get_content_scale_factor());
+	Point2 submenu_pos(0, -submenu_popup->get_theme_stylebox(SceneStringName(panel))->get_margin(SIDE_TOP) * (submenu_popup->get_content_scale_factor() * get_dpi_scale_factor()));
 	Rect2i screen_rect = is_embedded() ? Rect2i(get_embedder()->get_visible_rect()) : get_parent_rect();
 	if (is_layout_rtl()) {
 		submenu_pos += this_pos + Point2(-submenu_size.width + panel_ofs_end.x, scaled_ofs_cache + scroll_offset - theme_cache.v_separation / 2);
@@ -609,7 +609,7 @@ void PopupMenu::_input_from_window_internal(const Ref<InputEvent> &p_event) {
 		item_clickable_area.size.width -= scroll_width;
 	}
 
-	float win_scale = get_content_scale_factor();
+	float win_scale = get_content_scale_factor() * get_dpi_scale_factor();
 	item_clickable_area.position.x += theme_cache.panel_style->get_margin(SIDE_LEFT);
 	item_clickable_area.position.y += theme_cache.panel_style->get_margin(SIDE_TOP);
 	item_clickable_area.position *= win_scale;
@@ -1066,11 +1066,11 @@ Rect2i PopupMenu::_popup_adjust_rect() const {
 	_update_shadow_offsets();
 
 	if (is_layout_rtl()) {
-		current.position -= Vector2(-panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor();
+		current.position -= Vector2(-panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor() * get_dpi_scale_factor(); //TODO
 	} else {
-		current.position -= Vector2(panel->get_offset(SIDE_LEFT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor();
+		current.position -= Vector2(panel->get_offset(SIDE_LEFT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor() * get_dpi_scale_factor();
 	}
-	current.size += Vector2(panel->get_offset(SIDE_LEFT) - panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP) - panel->get_offset(SIDE_BOTTOM)) * get_content_scale_factor();
+	current.size += Vector2(panel->get_offset(SIDE_LEFT) - panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP) - panel->get_offset(SIDE_BOTTOM)) * get_content_scale_factor() * get_dpi_scale_factor();
 
 	return current;
 }
@@ -3222,6 +3222,7 @@ void PopupMenu::_pre_popup() {
 		scale *= c->get_global_transform_with_canvas().get_scale();
 	}
 	real_t popup_scale = MIN(scale.x, scale.y);
+	popup_scale /= get_parent_visible_window()->get_dpi_scale_factor();
 	set_content_scale_factor(popup_scale);
 	Size2 minsize = get_contents_minimum_size() * popup_scale;
 	minsize.height = Math::ceil(minsize.height); // Ensures enough height at fractional content scales to prevent the v_scroll_bar from showing.

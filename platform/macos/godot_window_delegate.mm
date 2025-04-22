@@ -177,7 +177,8 @@
 	wd.fs_transition = false;
 
 	// Set window size limits.
-	const float scale = ds->screen_get_max_scale();
+	const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+	const float scale = ds->screen_get_scale(scr_index);
 	if (wd.min_size != Size2i()) {
 		Size2i size = wd.min_size / scale;
 		[wd.window_object setContentMinSize:NSMakeSize(size.x, size.y)];
@@ -230,7 +231,8 @@
 
 	if (new_scale_factor != old_scale_factor) {
 		// Set new display scale and window size.
-		const float scale = ds->screen_get_max_scale();
+		const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+		const float scale = ds->screen_get_scale(scr_index);
 		const NSRect content_rect = [wd.window_view frame];
 
 		wd.size.width = content_rect.size.width * scale;
@@ -267,7 +269,8 @@
 
 	DisplayServerMacOS::WindowData &wd = ds->get_window(window_id);
 	const NSRect content_rect = [wd.window_view frame];
-	const float scale = ds->screen_get_max_scale();
+	const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+	const float scale = ds->screen_get_scale(scr_index);
 	wd.size.width = content_rect.size.width * scale;
 	wd.size.height = content_rect.size.height * scale;
 

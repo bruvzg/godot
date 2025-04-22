@@ -149,6 +149,7 @@ bool DisplayServerX11::has_feature(Feature p_feature) const {
 #endif
 		case FEATURE_CLIPBOARD_PRIMARY:
 		case FEATURE_WINDOW_EMBEDDING:
+		case FEATURE_DPI_SCALING:
 		case FEATURE_WINDOW_DRAG: {
 			return true;
 		} break;
@@ -1635,6 +1636,47 @@ int DisplayServerX11::screen_get_dpi(int p_screen) const {
 
 	//could not get dpi
 	return 96;
+}
+
+float DisplayServerX11::screen_get_scale(int p_screen) const {
+	_THREAD_SAFE_METHOD_
+
+	p_screen = _get_screen_index(p_screen);
+	ERR_FAIL_INDEX_V(p_screen, get_screen_count(), 1.0);
+
+	// Get physical monitor Dimensions through XRandR and calculate DPI.
+	Size2i sc = screen_get_size(p_screen);
+	if (xrandr_ext_ok) {
+		int count = 0;
+		if (xrr_get_monitors) {
+			xrr_monitor_info *monitors = xrr_get_monitors(x11_display, windows[MAIN_WINDOW_ID].x11_window, true, &count);
+			if (p_screen < count) {
+				double xdpi = sc.width / (double)monitors[p_screen].mwidth * 25.4;
+				double ydpi = sc.height / (double)monitors[p_screen].mheight * 25.4;
+				xrr_free_monitors(monitors);
+				return double(xdpi + ydpi) / 192.0;
+			}
+			xrr_free_monitors(monitors);
+		} else if (p_screen == 0) {
+			XRRScreenSize *sizes = XRRSizes(x11_display, 0, &count);
+			if (sizes) {
+				double xdpi = sc.width / (double)sizes[0].mwidth * 25.4;
+				double ydpi = sc.height / (double)sizes[0].mheight * 25.4;
+				return double(xdpi + ydpi) / 192.0;
+			}
+		}
+	}
+
+	int width_mm = DisplayWidthMM(x11_display, p_screen);
+	int height_mm = DisplayHeightMM(x11_display, p_screen);
+	double xdpi = (width_mm ? sc.width / (double)width_mm * 25.4 : 0);
+	double ydpi = (height_mm ? sc.height / (double)height_mm * 25.4 : 0);
+	if (xdpi || ydpi) {
+		return double(xdpi + ydpi) / (xdpi && ydpi ? 192.0 : 96.0);
+	}
+
+	// Could not get DPI.
+	return 1.0;
 }
 
 int get_image_errorhandler(Display *dpy, XErrorEvent *ev) {
@@ -4421,6 +4463,11 @@ void DisplayServerX11::_window_changed(XEvent *event) {
 	if (wd.rect_changed_callback.is_valid()) {
 		wd.rect_changed_callback.call(new_rect);
 	}
+
+	if (wd.screen != windows_get_current_screen(window_id)) {
+		wd.screen = windows_get_current_screen(window_id);
+		_send_window_event(wd, DisplayServer::WINDOW_EVENT_DPI_CHANGE);
+	}
 }
 
 DisplayServer::WindowID DisplayServerX11::_get_focused_window_or_popup() const {
@@ -7162,15 +7209,17 @@ DisplayServerX11::DisplayServerX11(const String &p_rendering_driver, WindowMode 
 	Point2i window_position;
 	if (p_position != nullptr) {
 		window_position = *p_position;
+		p_screen = get_screen_from_rect(Rect2(window_position, Size2()));
 	} else {
 		if (p_screen == SCREEN_OF_MAIN_WINDOW) {
 			p_screen = SCREEN_PRIMARY;
 		}
+		p_screen = _get_screen_index(p_screen);
 		Rect2i scr_rect = screen_get_usable_rect(p_screen);
-		window_position = scr_rect.position + (scr_rect.size - p_resolution) / 2;
+		window_position = scr_rect.position + (scr_rect.size - p_resolution * screen_get_scale(p_screen)) / 2;
 	}
 
-	WindowID main_window = _create_window(p_mode, p_vsync_mode, p_flags, Rect2i(window_position, p_resolution), p_parent_window);
+	WindowID main_window = _create_window(p_mode, p_vsync_mode, p_flags, Rect2i(window_position, p_resolution * screen_get_scale(p_screen)), p_parent_window);
 	if (main_window == INVALID_WINDOW_ID) {
 		r_error = ERR_CANT_CREATE;
 		return;

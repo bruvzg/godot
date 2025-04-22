@@ -189,7 +189,7 @@ DisplayServerEmbedded::DisplayServerEmbedded(const String &p_rendering_driver, W
 	}
 #endif
 
-	CGFloat scale = screen_get_max_scale();
+	CGFloat scale = state.scale;
 	layer.contentsScale = scale;
 	layer.magnificationFilter = kCAFilterNearest;
 	layer.minificationFilter = kCAFilterNearest;
@@ -198,7 +198,6 @@ DisplayServerEmbedded::DisplayServerEmbedded(const String &p_rendering_driver, W
 	layer.actions = @{ @"contents" : [NSNull null] }; // Disable implicit animations for contents.
 	// AppKit frames, bounds and positions are always in points.
 	CGRect bounds = CGRectMake(0, 0, p_resolution.width, p_resolution.height);
-	bounds = CGRectApplyAffineTransform(bounds, CGAffineTransformInvert(CGAffineTransformMakeScale(scale, scale)));
 	layer.bounds = bounds;
 
 	CGSConnectionID connection_id = CGSMainConnectionID();
@@ -630,9 +629,8 @@ void DisplayServerEmbedded::window_set_size(const Size2i p_size, WindowID p_wind
 	[CATransaction begin];
 	[CATransaction setDisableActions:YES];
 
-	CGFloat scale = screen_get_max_scale();
+	CGFloat scale = state.scale;
 	CGRect bounds = CGRectMake(0, 0, p_size.width, p_size.height);
-	bounds = CGRectApplyAffineTransform(bounds, CGAffineTransformInvert(CGAffineTransformMakeScale(scale, scale)));
 	layer.bounds = bounds;
 	layer.contentsScale = scale;
 
@@ -671,6 +669,10 @@ Size2i DisplayServerEmbedded::window_get_size(WindowID p_window) const {
 	}
 #endif
 	return Size2i();
+}
+
+float DisplayServerEmbedded::window_get_scale(WindowID p_window) const {
+	return state.scale;
 }
 
 Size2i DisplayServerEmbedded::window_get_size_with_decorations(WindowID p_window) const {
@@ -823,11 +825,12 @@ void DisplayServerEmbedded::swap_buffers() {
 }
 
 void DisplayServerEmbeddedState::serialize(PackedByteArray &r_data) {
-	r_data.resize(12);
+	r_data.resize(16);
 
 	uint8_t *data = r_data.ptrw();
 	data += encode_float(screen_max_scale, data);
 	data += encode_float(screen_dpi, data);
+	data += encode_float(scale, data);
 	data += encode_uint32(display_id, data);
 
 	// Assert we had enough space.
@@ -840,6 +843,8 @@ Error DisplayServerEmbeddedState::deserialize(const PackedByteArray &p_data) {
 	screen_max_scale = decode_float(data);
 	data += sizeof(float);
 	screen_dpi = decode_float(data);
+	data += sizeof(float);
+	scale = decode_float(data);
 	data += sizeof(float);
 	display_id = decode_uint32(data);
 

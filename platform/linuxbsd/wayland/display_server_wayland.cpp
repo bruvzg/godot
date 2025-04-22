@@ -184,6 +184,7 @@ bool DisplayServerWayland::has_feature(Feature p_feature) const {
 		case FEATURE_WINDOW_DRAG:
 		case FEATURE_CLIPBOARD_PRIMARY:
 		case FEATURE_SUBWINDOWS:
+		case FEATURE_DPI_SCALING:
 		case FEATURE_SELF_FITTING_WINDOWS: {
 			return true;
 		} break;

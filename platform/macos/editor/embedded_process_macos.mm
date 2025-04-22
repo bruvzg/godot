@@ -136,6 +136,7 @@ void EmbeddedProcessMacOS::display_state_changed() {
 	state.screen_max_scale = ds->screen_get_max_scale();
 	state.screen_dpi = ds->screen_get_dpi();
 	state.display_id = ds->window_get_display_id(window->get_window_id());
+	state.scale = ds->window_get_scale(window->get_window_id());
 	PackedByteArray data;
 	state.serialize(data);
 	script_debugger->send_message("embed:ds_state", { data });

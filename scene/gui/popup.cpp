@@ -257,7 +257,7 @@ void PopupPanel::_input_from_window(const Ref<InputEvent> &p_event) {
 		// Hide it if the shadows have been clicked.
 		if (b.is_valid() && b->is_pressed() && b->get_button_index() == MouseButton::LEFT) {
 			Rect2 panel_area = panel->get_global_rect();
-			float win_scale = get_content_scale_factor();
+			float win_scale = get_content_scale_factor() * get_dpi_scale_factor();
 			panel_area.position *= win_scale;
 			panel_area.size *= win_scale;
 			if (!panel_area.has_point(b->get_position())) {
@@ -307,11 +307,11 @@ Rect2i PopupPanel::_popup_adjust_rect() const {
 	_update_child_rects();
 
 	if (is_layout_rtl()) {
-		current.position -= Vector2(-panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor();
+		current.position -= Vector2(-panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor() * get_dpi_scale_factor();
 	} else {
-		current.position -= Vector2(panel->get_offset(SIDE_LEFT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor();
+		current.position -= Vector2(panel->get_offset(SIDE_LEFT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor() * get_dpi_scale_factor();
 	}
-	current.size += Vector2(panel->get_offset(SIDE_LEFT) - panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP) - panel->get_offset(SIDE_BOTTOM)) * get_content_scale_factor();
+	current.size += Vector2(panel->get_offset(SIDE_LEFT) - panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP) - panel->get_offset(SIDE_BOTTOM)) * get_content_scale_factor() * get_dpi_scale_factor();
 
 	return current;
 }
@@ -351,7 +351,7 @@ void PopupPanel::_update_child_rects() const {
 	Vector2 cpos(theme_cache.panel_style->get_offset());
 	cpos += Vector2(is_layout_rtl() ? -panel->get_offset(SIDE_RIGHT) : panel->get_offset(SIDE_LEFT), panel->get_offset(SIDE_TOP));
 
-	Vector2 csize = Vector2(get_size()) / get_content_scale_factor() - theme_cache.panel_style->get_minimum_size();
+	Vector2 csize = Vector2(get_size()) / (get_content_scale_factor() * get_dpi_scale_factor()) - theme_cache.panel_style->get_minimum_size();
 	// Trim shadows.
 	csize.width -= panel->get_offset(SIDE_LEFT) - panel->get_offset(SIDE_RIGHT);
 	csize.height -= panel->get_offset(SIDE_TOP) - panel->get_offset(SIDE_BOTTOM);

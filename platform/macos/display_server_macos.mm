@@ -81,7 +81,7 @@
 #import <IOKit/hid/IOHIDLib.h>
 
 DisplayServerMacOS::WindowID DisplayServerMacOS::_create_window(WindowMode p_mode, VSyncMode p_vsync_mode, const Rect2i &p_rect) {
-	const float scale = screen_get_max_scale();
+	float scale = 1.0;
 
 	WindowID id = window_id_counter;
 	{
@@ -95,21 +95,19 @@ DisplayServerMacOS::WindowID DisplayServerMacOS::_create_window(WindowMode p_mod
 		if (rq_screen < 0) {
 			rq_screen = get_primary_screen(); // Requested window rect is outside any screen bounds.
 		}
+		scale = screen_get_scale(rq_screen);
 
 		Rect2i srect = screen_get_usable_rect(rq_screen);
 		Point2i wpos = p_rect.position;
 		if (srect != Rect2i()) {
 			wpos = wpos.clamp(srect.position, srect.position + srect.size - p_rect.size / 3);
 		}
-		// macOS native y-coordinate relative to _get_screens_origin() is negative,
-		// Godot passes a positive value.
-		wpos.y *= -1;
-		wpos += _get_screens_origin();
-		wpos /= scale;
+		Size2i wsize = _screen_to_native(Rect2i(wpos, p_rect.size)).size;
+		wpos = _screen_to_native(Rect2i(wpos, Size2i())).position;
 
 		// initWithContentRect uses bottom-left corner of the window’s frame as origin.
 		wd.window_object = [[GodotWindow alloc]
-				initWithContentRect:NSMakeRect(100, 100, MAX(1, p_rect.size.width / scale), MAX(1, p_rect.size.height / scale))
+				initWithContentRect:NSMakeRect(100, 100, MAX(1, wsize.x), MAX(1, wsize.y))
 						  styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable
 							backing:NSBackingStoreBuffered
 							  defer:NO];
@@ -229,6 +227,7 @@ DisplayServerMacOS::WindowID DisplayServerMacOS::_create_window(WindowMode p_mod
 		offset.x = (nsrect.origin.x - windowRect.origin.x);
 		offset.y = (nsrect.origin.y + nsrect.size.height);
 		offset.y -= (windowRect.origin.y + windowRect.size.height);
+
 		[wd.window_object setFrameTopLeftPoint:NSMakePoint(wpos.x - offset.x, wpos.y - offset.y)];
 	}
 	window_id_counter++;
@@ -354,16 +353,54 @@ void DisplayServerMacOS::set_window_per_pixel_transparency_enabled(bool p_enable
 
 void DisplayServerMacOS::_update_displays_arrangement() const {
 	origin = Point2i();
-
-	for (int i = 0; i < get_screen_count(); i++) {
-		Point2i position = _get_native_screen_position(i);
-		if (position.x < origin.x) {
-			origin.x = position.x;
-		}
-		if (position.y > origin.y) {
-			origin.y = position.y;
-		}
+	display_max_scale = 1.0f;
+	for (NSScreen *screen in [NSScreen screens]) {
+		display_max_scale = std::max(display_max_scale, (float)[screen backingScaleFactor]);
 	}
+
+	int idx = 0;
+	screen_data.clear();
+	for (NSScreen *screen in [NSScreen screens]) {
+		NSDictionary *description = [screen deviceDescription];
+
+		const NSSize displayPixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
+		const CGSize displayPhysicalSize = CGDisplayScreenSize([[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+		const CGDisplayModeRef displayMode = CGDisplayCopyDisplayMode([[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+		const double displayRefreshRate = CGDisplayModeGetRefreshRate(displayMode);
+		float scale = [screen backingScaleFactor];
+		float den2 = (displayPhysicalSize.width / 25.4f) * (displayPhysicalSize.width / 25.4f) + (displayPhysicalSize.height / 25.4f) * (displayPhysicalSize.height / 25.4f);
+
+		NSRect nsrect = [screen frame];
+		NSRect nsrect_usable = [screen visibleFrame];
+		Vector2i usable_delta = Vector2i(nsrect_usable.origin.x - nsrect.origin.x, (nsrect.origin.y + nsrect.size.height) - (nsrect_usable.origin.y + nsrect_usable.size.height));
+
+		ScreenData sd;
+		sd.index = idx;
+		sd.native_rect = Rect2i(nsrect.origin.x, nsrect.origin.y, nsrect.size.width, nsrect.size.height);
+		sd.rect.position = Point2i(nsrect.origin.x, nsrect.origin.y + nsrect.size.height) * display_max_scale;
+		sd.rect.position.y *= -1;
+		sd.usable_rect.position = sd.rect.position + usable_delta * scale;
+
+		sd.usable_rect.size = Size2i(nsrect_usable.size.width, nsrect_usable.size.height) * scale;
+		sd.rect.size = Size2i(nsrect.size.width, nsrect.size.height) * scale;
+		sd.scale = scale;
+		if (den2 > 0.0f) {
+			sd.dpi = std::ceil(std::sqrt(displayPixelSize.width * displayPixelSize.width + displayPixelSize.height * displayPixelSize.height) / std::sqrt(den2) * scale);
+		}
+		sd.rate = (float)displayRefreshRate;
+		screen_data.push_back(sd);
+
+		origin.x = std::min(origin.x, sd.rect.position.x);
+		origin.y = std::min(origin.y, sd.rect.position.y);
+		idx++;
+	}
+
+	for (int i = 0; i < screen_data.size(); i++) {
+		ScreenData &sd = screen_data.write[i];
+		sd.usable_rect.position -= origin;
+		sd.rect.position -= origin;
+	}
+
 	displays_arrangement_dirty = false;
 }
 
@@ -371,28 +408,56 @@ void DisplayServerMacOS::set_menu_delegate(NSMenu *p_menu) {
 	[p_menu setDelegate:menu_delegate];
 }
 
-Point2i DisplayServerMacOS::_get_screens_origin() const {
-	// Returns the native top-left screen coordinate of the smallest rectangle
-	// that encompasses all screens. Needed in get_screen_position(),
-	// window_get_position, and window_set_position()
-	// to convert between macOS native screen coordinates and the ones expected by Godot.
-
-	if (displays_arrangement_dirty) {
-		_update_displays_arrangement();
+Rect2i DisplayServerMacOS::_screen_to_native(const Rect2i &p_rect) const {
+	Rect2i out = p_rect;
+	int screen = -1;
+	double dist = Math::INF;
+	for (int i = 0; i < screen_data.size(); i++) {
+		const ScreenData &sd = screen_data[i];
+		if (sd.rect.has_point(out.position)) {
+			screen = i;
+			break;
+		}
+		double screen_dist = std::min(std::min(abs(sd.rect.position.x - out.position.x), abs(sd.rect.position.x + sd.rect.size.x - out.position.x)), std::min(abs(sd.rect.position.y - out.position.y), abs(sd.rect.position.y + sd.rect.size.y - out.position.y)));
+		if (screen_dist < dist) {
+			dist = screen_dist;
+			screen = i;
+		}
 	}
 
-	return origin;
+	const ScreenData &sd = screen_data[screen];
+	out.position -= sd.rect.position;
+	out.position /= sd.scale;
+	out.size /= sd.scale;
+	out.position.x = sd.native_rect.position.x + out.position.x;
+	out.position.y = (sd.native_rect.position.y + sd.native_rect.size.y) - (out.position.y + out.size.y);
+	return out;
 }
 
-Point2i DisplayServerMacOS::_get_native_screen_position(int p_screen) const {
-	NSArray *screenArray = [NSScreen screens];
-	if ((NSUInteger)p_screen < [screenArray count]) {
-		NSRect nsrect = [[screenArray objectAtIndex:p_screen] frame];
-		// Return the top-left corner of the screen, for macOS the y starts at the bottom.
-		return Point2i(nsrect.origin.x, nsrect.origin.y + nsrect.size.height) * screen_get_max_scale();
+Rect2i DisplayServerMacOS::_native_to_screen(const Rect2i &p_rect) const {
+	Rect2i out = p_rect;
+	int screen = -1;
+	double dist = Math::INF;
+	for (int i = 0; i < screen_data.size(); i++) {
+		const ScreenData &sd = screen_data[i];
+		if (sd.native_rect.has_point(out.position)) {
+			screen = i;
+			break;
+		}
+		double screen_dist = std::min(std::min(abs(sd.native_rect.position.x - out.position.x), abs(sd.native_rect.position.x + sd.native_rect.size.x - out.position.x)), std::min(abs(sd.native_rect.position.y - out.position.y), abs(sd.native_rect.position.y + sd.native_rect.size.y - out.position.y)));
+		if (screen_dist < dist) {
+			dist = screen_dist;
+			screen = i;
+		}
 	}
 
-	return Point2i();
+	const ScreenData &sd = screen_data[screen];
+	out.position -= sd.native_rect.position;
+	out.position *= sd.scale;
+	out.size *= sd.scale;
+	out.position.x = sd.rect.position.x + out.position.x;
+	out.position.y = (sd.rect.position.y + sd.rect.size.y) - (out.position.y + out.size.y);
+	return out;
 }
 
 void DisplayServerMacOS::_displays_arrangement_changed(CGDirectDisplayID display_id, CGDisplayChangeSummaryFlags flags, void *user_info) {
@@ -766,7 +831,8 @@ void DisplayServerMacOS::get_key_modifier_state(unsigned int p_macos_state, Ref<
 
 void DisplayServerMacOS::update_mouse_pos(DisplayServerMacOS::WindowData &p_wd, NSPoint p_location_in_window) {
 	const NSRect content_rect = [p_wd.window_view frame];
-	const float scale = screen_get_max_scale();
+	const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[p_wd.window_object screen]];
+	const float scale = screen_get_scale(scr_index);
 	p_wd.mouse_pos.x = p_location_in_window.x * scale;
 	p_wd.mouse_pos.y = (content_rect.size.height - p_location_in_window.y) * scale;
 	Input::get_singleton()->set_mouse_position(p_wd.mouse_pos);
@@ -886,6 +952,7 @@ bool DisplayServerMacOS::has_feature(Feature p_feature) const {
 		case FEATURE_SCREEN_EXCLUDE_FROM_CAPTURE:
 		case FEATURE_EMOJI_AND_SYMBOL_PICKER:
 		case FEATURE_WINDOW_EMBEDDING:
+		case FEATURE_DPI_SCALING:
 			return true;
 #ifdef ACCESSKIT_ENABLED
 		case FEATURE_ACCESSIBILITY_SCREEN_READER: {
@@ -1522,7 +1589,8 @@ void DisplayServerMacOS::warp_mouse(const Point2i &p_position) {
 
 		// Local point in window coords.
 		const NSRect contentRect = [wd.window_view frame];
-		const float scale = screen_get_max_scale();
+		const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+		const float scale = screen_get_scale(scr_index);
 		NSRect pointInWindowRect = NSMakeRect(p_position.x / scale, contentRect.size.height - (p_position.y / scale), scale, scale);
 		NSPoint pointOnScreen = [[wd.window_view window] convertRectToScreen:pointInWindowRect].origin;
 
@@ -1544,16 +1612,11 @@ Point2i DisplayServerMacOS::mouse_get_position() const {
 	_THREAD_SAFE_METHOD_
 
 	const NSPoint mouse_pos = [NSEvent mouseLocation];
-	const float scale = screen_get_max_scale();
-
 	for (NSScreen *screen in [NSScreen screens]) {
 		NSRect frame = [screen frame];
 		if (NSMouseInRect(mouse_pos, frame, NO)) {
-			Vector2i pos = Vector2i((int)mouse_pos.x, (int)mouse_pos.y);
-			pos *= scale;
-			pos -= _get_screens_origin();
-			pos.y *= -1;
-			return pos;
+			Rect2i rect = Rect2i((int)mouse_pos.x, (int)mouse_pos.y, 1, 1);
+			return _native_to_screen(rect).position;
 		}
 	}
 	return Vector2i();
@@ -1600,103 +1663,62 @@ int DisplayServerMacOS::get_keyboard_focus_screen() const {
 Point2i DisplayServerMacOS::screen_get_position(int p_screen) const {
 	_THREAD_SAFE_METHOD_
 
+	if (displays_arrangement_dirty) {
+		_update_displays_arrangement();
+	}
 	p_screen = _get_screen_index(p_screen);
-	int screen_count = get_screen_count();
-	ERR_FAIL_INDEX_V(p_screen, screen_count, Point2i());
-
-	Point2i position = _get_native_screen_position(p_screen) - _get_screens_origin();
-	// macOS native y-coordinate relative to _get_screens_origin() is negative,
-	// Godot expects a positive value.
-	position.y *= -1;
-	return position;
+	ERR_FAIL_INDEX_V(p_screen, screen_data.size(), Vector2i());
+	return screen_data[p_screen].rect.position;
 }
 
 Size2i DisplayServerMacOS::screen_get_size(int p_screen) const {
 	_THREAD_SAFE_METHOD_
 
-	p_screen = _get_screen_index(p_screen);
-	int screen_count = get_screen_count();
-	ERR_FAIL_INDEX_V(p_screen, screen_count, Size2i());
-
-	NSArray *screenArray = [NSScreen screens];
-	if ((NSUInteger)p_screen < [screenArray count]) {
-		// Note: Use frame to get the whole screen size.
-		NSRect nsrect = [[screenArray objectAtIndex:p_screen] frame];
-		return Size2i(nsrect.size.width, nsrect.size.height) * screen_get_max_scale();
+	if (displays_arrangement_dirty) {
+		_update_displays_arrangement();
 	}
-
-	return Size2i();
+	p_screen = _get_screen_index(p_screen);
+	ERR_FAIL_INDEX_V(p_screen, screen_data.size(), Size2i());
+	return screen_data[p_screen].rect.size;
 }
 
 int DisplayServerMacOS::screen_get_dpi(int p_screen) const {
 	_THREAD_SAFE_METHOD_
 
-	p_screen = _get_screen_index(p_screen);
-	int screen_count = get_screen_count();
-	ERR_FAIL_INDEX_V(p_screen, screen_count, 72);
-
-	NSArray *screenArray = [NSScreen screens];
-	if ((NSUInteger)p_screen < [screenArray count]) {
-		NSDictionary *description = [[screenArray objectAtIndex:p_screen] deviceDescription];
-
-		const NSSize displayPixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
-		const CGSize displayPhysicalSize = CGDisplayScreenSize([[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
-		float scale = [[screenArray objectAtIndex:p_screen] backingScaleFactor];
-
-		float den2 = (displayPhysicalSize.width / 25.4f) * (displayPhysicalSize.width / 25.4f) + (displayPhysicalSize.height / 25.4f) * (displayPhysicalSize.height / 25.4f);
-		if (den2 > 0.0f) {
-			return std::ceil(std::sqrt(displayPixelSize.width * displayPixelSize.width + displayPixelSize.height * displayPixelSize.height) / std::sqrt(den2) * scale);
-		}
+	if (displays_arrangement_dirty) {
+		_update_displays_arrangement();
 	}
-
-	return 72;
+	p_screen = _get_screen_index(p_screen);
+	ERR_FAIL_INDEX_V(p_screen, screen_data.size(), 72);
+	return screen_data[p_screen].dpi;
 }
 
 float DisplayServerMacOS::screen_get_scale(int p_screen) const {
 	_THREAD_SAFE_METHOD_
 
-	p_screen = _get_screen_index(p_screen);
-	int screen_count = get_screen_count();
-	ERR_FAIL_INDEX_V(p_screen, screen_count, 1.0f);
-
-	if (OS::get_singleton()->is_hidpi_allowed()) {
-		NSArray<NSScreen *> *screens = NSScreen.screens;
-		NSUInteger index = (NSUInteger)p_screen;
-		if (index < screens.count) {
-			return std::fmax(1.0f, screens[index].backingScaleFactor);
-		}
+	if (displays_arrangement_dirty) {
+		_update_displays_arrangement();
 	}
-
-	return 1.f;
+	p_screen = _get_screen_index(p_screen);
+	ERR_FAIL_INDEX_V(p_screen, screen_data.size(), 1.0);
+	return screen_data[p_screen].scale;
 }
 
 float DisplayServerMacOS::screen_get_max_scale() const {
 	_THREAD_SAFE_METHOD_
 
-	// Note: Do not update max display scale on screen configuration change, existing editor windows can't be rescaled on the fly.
 	return display_max_scale;
 }
 
 Rect2i DisplayServerMacOS::screen_get_usable_rect(int p_screen) const {
 	_THREAD_SAFE_METHOD_
 
-	p_screen = _get_screen_index(p_screen);
-	int screen_count = get_screen_count();
-	ERR_FAIL_INDEX_V(p_screen, screen_count, Rect2i());
-
-	NSArray *screenArray = [NSScreen screens];
-	if ((NSUInteger)p_screen < [screenArray count]) {
-		const float scale = screen_get_max_scale();
-		NSRect nsrect = [[screenArray objectAtIndex:p_screen] visibleFrame];
-
-		Point2i position = Point2i(nsrect.origin.x, nsrect.origin.y + nsrect.size.height) * scale - _get_screens_origin();
-		position.y *= -1;
-		Size2i size = Size2i(nsrect.size.width, nsrect.size.height) * scale;
-
-		return Rect2i(position, size);
+	if (displays_arrangement_dirty) {
+		_update_displays_arrangement();
 	}
-
-	return Rect2i();
+	p_screen = _get_screen_index(p_screen);
+	ERR_FAIL_INDEX_V(p_screen, screen_data.size(), Rect2i());
+	return screen_data[p_screen].usable_rect;
 }
 
 Color DisplayServerMacOS::screen_get_pixel(const Point2i &p_position) const {
@@ -1716,9 +1738,7 @@ Color DisplayServerMacOS::screen_get_pixel(const Point2i &p_position) const {
 		}
 	}
 
-	Point2i position = p_position - Vector2i(1, 1);
-	position -= screen_get_position(0); // Note: coordinates where the screen origin is in the upper-left corner of the main display and y-axis values increase downward.
-	position /= screen_get_max_scale();
+	Point2i position = _screen_to_native(Rect2i(p_position, Size2i())).position;
 
 	Color color;
 	CGImageRef image = CGWindowListCreateImageFromArray(CGRectMake(position.x, position.y, 1, 1), capture_windows, kCGWindowListOptionAll);
@@ -1760,12 +1780,10 @@ Ref<Image> DisplayServerMacOS::screen_get_image(int p_screen) const {
 		}
 	}
 
-	Point2i position = screen_get_position(p_screen);
-	position -= screen_get_position(0); // Note: coordinates where the screen origin is in the upper-left corner of the main display and y-axis values increase downward.
-	position /= screen_get_max_scale();
-
-	Size2i size = screen_get_size(p_screen);
-	size /= screen_get_max_scale();
+	//TODO use native rect directly
+	Rect2i rect = _screen_to_native(Rect2i(screen_get_position(p_screen), screen_get_size(p_screen)));
+	Point2i position = rect.position;
+	Size2i size = rect.size;
 
 	Ref<Image> img;
 	CGImageRef image = CGWindowListCreateImageFromArray(CGRectMake(position.x, position.y, size.width, size.height), capture_windows, kCGWindowListOptionAll);
@@ -1808,12 +1826,9 @@ Ref<Image> DisplayServerMacOS::screen_get_image_rect(const Rect2i &p_rect) const
 		}
 	}
 
-	Point2i position = p_rect.position;
-	position -= screen_get_position(0); // Note: coordinates where the screen origin is in the upper-left corner of the main display and y-axis values increase downward.
-	position /= screen_get_max_scale();
-
-	Size2i size = p_rect.size;
-	size /= screen_get_max_scale();
+	Rect2i rect = _screen_to_native(p_rect);
+	Point2i position = rect.position;
+	Size2i size = rect.size;
 
 	Ref<Image> img;
 	CGImageRef image = CGWindowListCreateImageFromArray(CGRectMake(position.x, position.y, size.width, size.height), capture_windows, kCGWindowListOptionAll);
@@ -1842,19 +1857,12 @@ Ref<Image> DisplayServerMacOS::screen_get_image_rect(const Rect2i &p_rect) const
 float DisplayServerMacOS::screen_get_refresh_rate(int p_screen) const {
 	_THREAD_SAFE_METHOD_
 
-	p_screen = _get_screen_index(p_screen);
-	int screen_count = get_screen_count();
-	ERR_FAIL_INDEX_V(p_screen, screen_count, SCREEN_REFRESH_RATE_FALLBACK);
-
-	NSArray *screenArray = [NSScreen screens];
-	if ((NSUInteger)p_screen < [screenArray count]) {
-		NSDictionary *description = [[screenArray objectAtIndex:p_screen] deviceDescription];
-		const CGDisplayModeRef displayMode = CGDisplayCopyDisplayMode([[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
-		const double displayRefreshRate = CGDisplayModeGetRefreshRate(displayMode);
-		return (float)displayRefreshRate;
+	if (displays_arrangement_dirty) {
+		_update_displays_arrangement();
 	}
-	ERR_PRINT("An error occurred while trying to get the screen refresh rate.");
-	return SCREEN_REFRESH_RATE_FALLBACK;
+	p_screen = _get_screen_index(p_screen);
+	ERR_FAIL_INDEX_V(p_screen, screen_data.size(), SCREEN_REFRESH_RATE_FALLBACK);
+	return screen_data[p_screen].rate;
 }
 
 bool DisplayServerMacOS::screen_is_kept_on() const {
@@ -2004,7 +2012,8 @@ Size2i DisplayServerMacOS::window_get_title_size(const String &p_title, WindowID
 		}
 	}
 
-	float scale = screen_get_max_scale();
+	const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+	const float scale = screen_get_scale(scr_index);
 
 	if (wd.window_button_view) {
 		size.x = ([wd.window_button_view getOffset].x + [wd.window_button_view frame].size.width);
@@ -2157,18 +2166,7 @@ Point2i DisplayServerMacOS::window_get_position(WindowID p_window) const {
 	// Use content rect position (without titlebar / window border).
 	const NSRect contentRect = [wd.window_view frame];
 	const NSRect nsrect = [wd.window_object convertRectToScreen:contentRect];
-	Point2i pos;
-
-	// Return the position of the top-left corner, for macOS the y starts at the bottom.
-	const float scale = screen_get_max_scale();
-	pos.x = nsrect.origin.x;
-	pos.y = (nsrect.origin.y + nsrect.size.height);
-	pos *= scale;
-	pos -= _get_screens_origin();
-	// macOS native y-coordinate relative to _get_screens_origin() is negative,
-	// Godot expects a positive value.
-	pos.y *= -1;
-	return pos;
+	return _native_to_screen(Rect2i(nsrect.origin.x, nsrect.origin.y, nsrect.size.width, nsrect.size.height)).position;
 }
 
 Point2i DisplayServerMacOS::window_get_position_with_decorations(WindowID p_window) const {
@@ -2176,20 +2174,8 @@ Point2i DisplayServerMacOS::window_get_position_with_decorations(WindowID p_wind
 
 	ERR_FAIL_COND_V(!windows.has(p_window), Point2i());
 	const WindowData &wd = windows[p_window];
-
 	const NSRect nsrect = [wd.window_object frame];
-	Point2i pos;
-
-	// Return the position of the top-left corner, for macOS the y starts at the bottom.
-	const float scale = screen_get_max_scale();
-	pos.x = nsrect.origin.x;
-	pos.y = (nsrect.origin.y + nsrect.size.height);
-	pos *= scale;
-	pos -= _get_screens_origin();
-	// macOS native y-coordinate relative to _get_screens_origin() is negative,
-	// Godot expects a positive value.
-	pos.y *= -1;
-	return pos;
+	return _native_to_screen(Rect2i(nsrect.origin.x, nsrect.origin.y, nsrect.size.width, nsrect.size.height)).position;
 }
 
 void DisplayServerMacOS::window_set_position(const Point2i &p_position, WindowID p_window) {
@@ -2202,13 +2188,7 @@ void DisplayServerMacOS::window_set_position(const Point2i &p_position, WindowID
 		return;
 	}
 
-	Point2i position = p_position;
-	// macOS native y-coordinate relative to _get_screens_origin() is negative,
-	// Godot passes a positive value.
-	position.y *= -1;
-	position += _get_screens_origin();
-	position /= screen_get_max_scale();
-
+	Point2i position = _screen_to_native(Rect2i(p_position, Size2i())).position;
 	// Remove titlebar / window border size.
 	const NSRect contentRect = [wd.window_view frame];
 	const NSRect windowRect = [wd.window_object frame];
@@ -2271,7 +2251,8 @@ void DisplayServerMacOS::window_set_max_size(const Size2i p_size, WindowID p_win
 	wd.max_size = p_size;
 
 	if ((wd.max_size != Size2i()) && !wd.fullscreen) {
-		Size2i size = wd.max_size / screen_get_max_scale();
+		const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+		Size2i size = wd.max_size / screen_get_scale(scr_index);
 		[wd.window_object setContentMaxSize:NSMakeSize(size.x, size.y)];
 	} else {
 		[wd.window_object setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
@@ -2317,7 +2298,8 @@ void DisplayServerMacOS::window_set_min_size(const Size2i p_size, WindowID p_win
 	wd.min_size = p_size;
 
 	if ((wd.min_size != Size2i()) && !wd.fullscreen) {
-		Size2i size = wd.min_size / screen_get_max_scale();
+		const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+		Size2i size = wd.min_size / screen_get_scale(scr_index);
 		[wd.window_object setContentMinSize:NSMakeSize(size.x, size.y)];
 	} else {
 		[wd.window_object setContentMinSize:NSMakeSize(0, 0)];
@@ -2343,7 +2325,7 @@ void DisplayServerMacOS::window_set_size(const Size2i p_size, WindowID p_window)
 		return;
 	}
 
-	Size2i size = p_size / screen_get_max_scale();
+	Size2i size = _screen_to_native(Rect2i(window_get_position(p_window), p_size)).size;
 
 	NSPoint top_left;
 	NSRect old_frame = [wd.window_object frame];
@@ -2375,7 +2357,9 @@ Size2i DisplayServerMacOS::window_get_size_with_decorations(WindowID p_window) c
 	ERR_FAIL_COND_V(!windows.has(p_window), Size2i());
 	const WindowData &wd = windows[p_window];
 	NSRect frame = [wd.window_object frame];
-	return Size2i(frame.size.width, frame.size.height) * screen_get_max_scale();
+	const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+	const float scale = screen_get_scale(scr_index);
+	return Size2i(frame.size.width, frame.size.height) * scale;
 }
 
 void DisplayServerMacOS::window_set_mode(WindowMode p_mode, WindowID p_window) {
@@ -2418,12 +2402,14 @@ void DisplayServerMacOS::window_set_mode(WindowMode p_mode, WindowID p_window) {
 			[[wd.window_object standardWindowButton:NSWindowZoomButton] setEnabled:!wd.no_max_btn];
 			[[wd.window_object standardWindowButton:NSWindowMiniaturizeButton] setHidden:(wd.no_min_btn && wd.no_max_btn)];
 			[[wd.window_object standardWindowButton:NSWindowZoomButton] setHidden:(wd.no_min_btn && wd.no_max_btn)];
+			const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+			const float scale = screen_get_scale(scr_index);
 			if (wd.min_size != Size2i()) {
-				Size2i size = wd.min_size / screen_get_max_scale();
+				Size2i size = wd.min_size / scale;
 				[wd.window_object setContentMinSize:NSMakeSize(size.x, size.y)];
 			}
 			if (wd.max_size != Size2i()) {
-				Size2i size = wd.max_size / screen_get_max_scale();
+				Size2i size = wd.max_size / scale;
 				[wd.window_object setContentMaxSize:NSMakeSize(size.x, size.y)];
 			}
 			[wd.window_object toggleFullScreen:nil];
@@ -2555,7 +2541,8 @@ void DisplayServerMacOS::window_set_window_buttons_offset(const Vector2i &p_offs
 
 	ERR_FAIL_COND(!windows.has(p_window));
 	WindowData &wd = windows[p_window];
-	float scale = screen_get_max_scale();
+	const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+	const float scale = screen_get_scale(scr_index);
 	wd.wb_offset = p_offset / scale;
 	wd.wb_offset = wd.wb_offset.maxi(12);
 	if (wd.window_button_view) {
@@ -2573,7 +2560,8 @@ Vector3i DisplayServerMacOS::window_get_safe_title_margins(WindowID p_window) co
 		return Vector3i();
 	}
 
-	float scale = screen_get_max_scale();
+	const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd.window_object screen]];
+	const float scale = screen_get_scale(scr_index);
 	float max_x = [wd.window_button_view getOffset].x + [wd.window_button_view frame].size.width;
 	float max_y = [wd.window_button_view getOffset].y + [wd.window_button_view frame].size.height;
 
@@ -2885,10 +2873,7 @@ void DisplayServerMacOS::window_set_ime_position(const Point2i &p_pos, WindowID 
 }
 
 DisplayServer::WindowID DisplayServerMacOS::get_window_at_screen_position(const Point2i &p_position) const {
-	Point2i position = p_position;
-	position.y *= -1;
-	position += _get_screens_origin();
-	position /= screen_get_max_scale();
+	Point2i position = _screen_to_native(Rect2i(p_position, Size2i())).position;
 
 	NSInteger wnum = [NSWindow windowNumberAtPoint:NSMakePoint(position.x, position.y) belowWindowWithWindowNumber:0 /*topmost*/];
 	for (const KeyValue<WindowID, WindowData> &E : windows) {
@@ -3241,7 +3226,8 @@ Error DisplayServerMacOS::embed_process_update(WindowID p_window, EmbeddedProces
 	[CATransaction setDisableActions:YES];
 
 	EmbeddedProcessData *ed = embedded_processes.getptr(p_pid);
-	CGFloat scale = screen_get_max_scale();
+	const NSUInteger scr_index = [[NSScreen screens] indexOfObject:[wd->window_object screen]];
+	const float scale = screen_get_scale(scr_index);
 	if (ed == nil) {
 		ed = &embedded_processes.insert(p_pid, EmbeddedProcessData())->value;
 
@@ -3259,7 +3245,6 @@ Error DisplayServerMacOS::embed_process_update(WindowID p_window, EmbeddedProces
 
 	Rect2i p_rect = p_process->get_screen_embedded_window_rect();
 	CGRect rect = CGRectMake(p_rect.position.x, p_rect.position.y, p_rect.size.x, p_rect.size.y);
-	rect = CGRectApplyAffineTransform(rect, CGAffineTransformInvert(CGAffineTransformMakeScale(scale, scale)));
 
 	CGFloat height = wd->window_view.frame.size.height;
 	CGFloat x = rect.origin.x;
@@ -3632,21 +3617,7 @@ Rect2 DisplayServerMacOS::status_indicator_get_rect(IndicatorID p_id) const {
 	NSView *v = item.button;
 	const NSRect contentRect = [v frame];
 	const NSRect nsrect = [v.window convertRectToScreen:contentRect];
-	Rect2 rect;
-
-	// Return the position of the top-left corner, for macOS the y starts at the bottom.
-	const float scale = screen_get_max_scale();
-	rect.size.x = nsrect.size.width;
-	rect.size.y = nsrect.size.height;
-	rect.size *= scale;
-	rect.position.x = nsrect.origin.x;
-	rect.position.y = (nsrect.origin.y + nsrect.size.height);
-	rect.position *= scale;
-	rect.position -= _get_screens_origin();
-	// macOS native y-coordinate relative to _get_screens_origin() is negative,
-	// Godot expects a positive value.
-	rect.position.y *= -1;
-	return rect;
+	return _native_to_screen(Rect2i(nsrect.origin.x, nsrect.origin.y, nsrect.size.width, nsrect.size.height));
 }
 
 void DisplayServerMacOS::delete_status_indicator(IndicatorID p_id) {
@@ -3875,10 +3846,7 @@ DisplayServerMacOS::DisplayServerMacOS(const String &p_rendering_driver, WindowM
 
 	CGEventSourceSetLocalEventsSuppressionInterval(event_source, 0.0);
 
-	int screen_count = get_screen_count();
-	for (int i = 0; i < screen_count; i++) {
-		display_max_scale = std::fmax(display_max_scale, screen_get_scale(i));
-	}
+	_update_displays_arrangement();
 
 	// Register to be notified on keyboard layout changes.
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDistributedCenter(),
@@ -4075,15 +4043,17 @@ DisplayServerMacOS::DisplayServerMacOS(const String &p_rendering_driver, WindowM
 	Point2i window_position;
 	if (p_position != nullptr) {
 		window_position = *p_position;
+		p_screen = get_screen_from_rect(Rect2(window_position, Size2()));
 	} else {
 		if (p_screen == SCREEN_OF_MAIN_WINDOW) {
 			p_screen = SCREEN_PRIMARY;
 		}
+		p_screen = _get_screen_index(p_screen);
 		Rect2i scr_rect = screen_get_usable_rect(p_screen);
-		window_position = scr_rect.position + (scr_rect.size - p_resolution) / 2;
+		window_position = scr_rect.position + (scr_rect.size - p_resolution * screen_get_scale(p_screen)) / 2;
 	}
 
-	WindowID main_window = _create_window(p_mode, p_vsync_mode, Rect2i(window_position, p_resolution));
+	WindowID main_window = _create_window(p_mode, p_vsync_mode, Rect2i(window_position, p_resolution * screen_get_scale(p_screen)));
 	ERR_FAIL_COND(main_window == INVALID_WINDOW_ID);
 	for (int i = 0; i < WINDOW_FLAG_MAX; i++) {
 		if (p_flags & (1 << i)) {

@@ -146,6 +146,7 @@ bool DisplayServerWindows::has_feature(Feature p_feature) const {
 		case FEATURE_WINDOW_EMBEDDING:
 		case FEATURE_WINDOW_DRAG:
 		case FEATURE_SCREEN_EXCLUDE_FROM_CAPTURE:
+		case FEATURE_DPI_SCALING:
 			return true;
 		case FEATURE_EMOJI_AND_SYMBOL_PICKER:
 			return (os_ver.dwBuildNumber >= 17134); // Windows 10 Redstone 4 (1803)+ only.
@@ -1362,10 +1363,43 @@ static BOOL CALLBACK _MonitorEnumProcDpi(HMONITOR hMonitor, HDC hdcMonitor, LPRE
 	EnumDpiData *data = (EnumDpiData *)dwData;
 	if (data->count == data->screen) {
 		data->dpi = QueryDpiForMonitor(hMonitor);
+		return FALSE;
 	}
 
 	data->count++;
 	return TRUE;
+}
+
+static BOOL CALLBACK _MonitorEnumProcDpiMax(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+	EnumDpiData *data = (EnumDpiData *)dwData;
+	data->dpi = MAX(data->dpi, QueryDpiForMonitor(hMonitor));
+
+	return TRUE;
+}
+
+float DisplayServerWindows::screen_get_scale(int p_screen) const {
+	_THREAD_SAFE_METHOD_
+
+	if (OS::get_singleton()->is_hidpi_allowed()) {
+		p_screen = _get_screen_index(p_screen);
+		EnumDpiData data = { 0, p_screen, 72 };
+		EnumDisplayMonitors(nullptr, nullptr, _MonitorEnumProcDpi, (LPARAM)&data);
+		return (float)data.dpi / 96.0;
+	} else {
+		return 1.0;
+	}
+}
+
+float DisplayServerWindows::screen_get_max_scale() const {
+	_THREAD_SAFE_METHOD_
+
+	if (OS::get_singleton()->is_hidpi_allowed()) {
+		EnumDpiData data = { 0, 0, 72 };
+		EnumDisplayMonitors(nullptr, nullptr, _MonitorEnumProcDpiMax, (LPARAM)&data);
+		return (float)data.dpi / 96.0;
+	} else {
+		return 1.0;
+	}
 }
 
 int DisplayServerWindows::screen_get_dpi(int p_screen) const {
@@ -5962,6 +5996,18 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			}
 
 		} break;
+		case WM_DPICHANGED: {
+			if (OS::get_singleton()->is_hidpi_allowed()) {
+				RECT *const new_window_rect = (RECT *)lParam;
+				SetWindowPos(hWnd, NULL, new_window_rect->left,
+						new_window_rect->top,
+						new_window_rect->right - new_window_rect->left,
+						new_window_rect->bottom - new_window_rect->top,
+						SWP_NOZORDER | SWP_NOACTIVATE);
+
+				_send_window_event(windows[window_id], DisplayServer::WINDOW_EVENT_DPI_CHANGE);
+			}
+		} break;
 		case WM_DEVICECHANGE: {
 			joypad->probe_joypads();
 		} break;
@@ -6871,7 +6917,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 	}
 
 	if (OS::get_singleton()->is_hidpi_allowed()) {
-		SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
+		SetProcessDpiAwareness(SHC_PROCESS_PER_MONITOR_DPI_AWARE);
 	}
 
 	HMODULE comctl32 = LoadLibraryW(L"comctl32.dll");
@@ -7135,12 +7181,14 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 	Point2i window_position;
 	if (p_position != nullptr) {
 		window_position = *p_position;
+		p_screen = get_screen_from_rect(Rect2(window_position, Size2()));
 	} else {
 		if (p_screen == SCREEN_OF_MAIN_WINDOW) {
 			p_screen = SCREEN_PRIMARY;
 		}
+		p_screen = _get_screen_index(p_screen);
 		Rect2i scr_rect = screen_get_usable_rect(p_screen);
-		window_position = scr_rect.position + (scr_rect.size - p_resolution) / 2;
+		window_position = scr_rect.position + (scr_rect.size - p_resolution * screen_get_scale(p_screen)) / 2;
 	}
 
 	HWND parent_hwnd = NULL;
@@ -7149,7 +7197,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 		parent_hwnd = (HWND)p_parent_window;
 	}
 
-	WindowID main_window = _create_window(p_mode, p_vsync_mode, p_flags, Rect2i(window_position, p_resolution), false, INVALID_WINDOW_ID, parent_hwnd);
+	WindowID main_window = _create_window(p_mode, p_vsync_mode, p_flags, Rect2i(window_position, p_resolution * screen_get_scale(p_screen)), false, INVALID_WINDOW_ID, parent_hwnd);
 	if (main_window == INVALID_WINDOW_ID) {
 		r_error = ERR_UNAVAILABLE;
 		ERR_FAIL_MSG("Failed to create main window.");

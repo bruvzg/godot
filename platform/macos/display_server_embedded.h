@@ -44,6 +44,7 @@ struct DisplayServerEmbeddedState {
 	float screen_dpi = 96.0f;
 	/// The display ID of the window which is displaying the the embedded process content.
 	uint32_t display_id = -1;
+	float scale = 1.0f;
 
 	void serialize(PackedByteArray &r_data);
 	Error deserialize(const PackedByteArray &p_data);
@@ -198,6 +199,7 @@ public:
 	virtual void window_request_attention(WindowID p_window = MAIN_WINDOW_ID) override;
 	virtual void window_move_to_foreground(WindowID p_window = MAIN_WINDOW_ID) override;
 	virtual bool window_is_focused(WindowID p_window = MAIN_WINDOW_ID) const override;
+	virtual float window_get_scale(WindowID p_window = MAIN_WINDOW_ID) const override;
 
 	virtual float screen_get_max_scale() const override;
 

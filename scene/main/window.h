@@ -126,6 +126,11 @@ private:
 	mutable Size2i size = Size2i(DEFAULT_WINDOW_SIZE, DEFAULT_WINDOW_SIZE);
 	mutable Size2i min_size;
 	mutable Size2i max_size;
+
+	mutable Size2i unscaled_size = Size2i(DEFAULT_WINDOW_SIZE, DEFAULT_WINDOW_SIZE);
+	mutable Size2i unscaled_min_size;
+	mutable Size2i unscaled_max_size;
+
 	mutable Vector<Vector2> mpath;
 	mutable Mode mode = MODE_WINDOWED;
 	mutable bool flags[FLAG_MAX] = {};
@@ -143,6 +148,7 @@ private:
 	bool clamp_to_embedder = false;
 	bool unparent_when_invisible = false;
 	bool keep_title_visible = false;
+	bool dpi_auto_scaling = true;
 
 	LayoutDirection layout_dir = LAYOUT_DIRECTION_INHERITED;
 
@@ -386,6 +392,10 @@ public:
 
 	void set_content_scale_factor(real_t p_factor);
 	real_t get_content_scale_factor() const;
+	real_t get_dpi_scale_factor() const;
+
+	void set_dpi_auto_scaling(bool p_enabled);
+	bool get_dpi_auto_scaling() const;
 
 	void set_mouse_passthrough_polygon(const Vector<Vector2> &p_region);
 	Vector<Vector2> get_mouse_passthrough_polygon() const;

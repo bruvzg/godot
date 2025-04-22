@@ -1438,8 +1438,9 @@ void EditorNode::_viewport_resized() {
 }
 
 void EditorNode::_titlebar_resized() {
-	DisplayServer::get_singleton()->window_set_window_buttons_offset(Vector2i(title_bar->get_global_position().y + title_bar->get_size().y / 2, title_bar->get_global_position().y + title_bar->get_size().y / 2), DisplayServer::MAIN_WINDOW_ID);
-	const Vector3i &margin = DisplayServer::get_singleton()->window_get_safe_title_margins(DisplayServer::MAIN_WINDOW_ID);
+	double scale = get_window()->get_dpi_scale_factor();
+	DisplayServer::get_singleton()->window_set_window_buttons_offset(Vector2i(title_bar->get_global_position().y + title_bar->get_size().y / 2, title_bar->get_global_position().y + title_bar->get_size().y / 2) * scale, DisplayServer::MAIN_WINDOW_ID);
+	const Vector3i &margin = DisplayServer::get_singleton()->window_get_safe_title_margins(DisplayServer::MAIN_WINDOW_ID) / scale;
 	if (left_menu_spacer) {
 		int w = (gui_base->is_layout_rtl()) ? margin.y : margin.x;
 		left_menu_spacer->set_custom_minimum_size(Size2(w, 0));
@@ -7361,6 +7362,9 @@ void EditorNode::_touch_actions_panel_mode_changed() {
 	}
 }
 #endif
+//DDDDDDDDDDD
+#include "debug_wtrack.h"
+//DDDDDDDDDDD
 
 #ifdef MACOS_ENABLED
 extern "C" GameViewPluginBase *get_game_view_plugin();
@@ -7382,6 +7386,16 @@ void EditorNode::notify_settings_overrides_changed() {
 EditorNode::EditorNode() {
 	DEV_ASSERT(!singleton);
 	singleton = this;
+
+	//DDDDDDDDDDD
+	Window *w_track = memnew(Window);
+	Control *w_ctr = memnew(WTrack);
+	w_track->add_child(w_ctr);
+	add_child(w_track);
+	w_track->set_position(Vector2i(100, 100));
+	w_track->set_size(Vector2i(200, 200));
+	w_track->show();
+	//DDDDDDDDDDD
 
 	// Detecting headless mode, that means the editor is running in command line.
 	if (!DisplayServer::get_singleton()->window_can_draw()) {

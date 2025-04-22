@@ -124,7 +124,7 @@ void WindowWrapper::_set_window_rect(const Rect2 p_rect) {
 	// Set the window rect even when the window is maximized to have a good default size
 	// when the user remove the maximized mode.
 	window->set_position(p_rect.position);
-	window->set_size(p_rect.size);
+	window->set_size(p_rect.size * window->get_dpi_scale_factor());
 
 	if (EDITOR_GET("interface/multi_window/maximize_window")) {
 		window->set_mode(Window::MODE_MAXIMIZED);
@@ -208,12 +208,13 @@ bool WindowWrapper::get_window_enabled() const {
 }
 
 void WindowWrapper::set_window_enabled(bool p_enabled) {
+	//TODO remove scale???
 	_set_window_enabled_with_rect(p_enabled, _get_default_window_rect());
 }
 
 Rect2i WindowWrapper::get_window_rect() const {
 	ERR_FAIL_COND_V(!get_window_enabled(), Rect2i());
-	return Rect2i(window->get_position(), window->get_size());
+	return Rect2i(window->get_position(), window->get_size() / window->get_dpi_scale_factor());
 }
 
 int WindowWrapper::get_window_screen() const {
@@ -247,6 +248,9 @@ void WindowWrapper::restore_window_from_saved_position(const Rect2 p_window_rect
 		// Fallback to the target screen rect.
 		restored_screen_rect = real_screen_rect;
 	}
+	if (window->get_dpi_auto_scaling()) {
+		window_rect.size *= DisplayServer::get_singleton()->screen_get_scale(screen);
+	}
 
 	if (window_rect == Rect2i()) {
 		// Fallback to a standard rect.
@@ -264,6 +268,9 @@ void WindowWrapper::restore_window_from_saved_position(const Rect2 p_window_rect
 	// Make sure to restore the window if the user minimized it the last time it was displayed.
 	if (window->get_mode() == Window::MODE_MINIMIZED) {
 		window->set_mode(Window::MODE_WINDOWED);
+	}
+	if (window->get_dpi_auto_scaling()) {
+		window_rect.size /= DisplayServer::get_singleton()->screen_get_scale(screen);
 	}
 
 	// All good, restore the window.
@@ -295,6 +302,7 @@ void WindowWrapper::enable_window_on_screen(int p_screen, bool p_auto_scale) {
 		control_rect = Rect2i(control_rect.position * screen_ratio, control_rect.size * screen_ratio);
 		control_rect.position += dest_screen_rect.position;
 
+		//TODO remove scale???
 		restore_window(control_rect, p_screen);
 	} else {
 		window->set_current_screen(p_screen);

@@ -150,6 +150,17 @@ public:
 	List<WindowID> popup_list;
 	uint64_t time_since_popup = 0;
 
+	struct ScreenData {
+		int index = -1;
+		Rect2i native_rect;
+		Rect2i usable_rect;
+		Rect2i rect;
+		double scale = 1.0;
+		int dpi = 72;
+		float rate = -1.0;
+	};
+	mutable Vector<ScreenData> screen_data;
+
 private:
 #if defined(GLES3_ENABLED)
 	GLManagerLegacy_MacOS *gl_manager_legacy = nullptr;
@@ -199,7 +210,7 @@ private:
 	WindowID window_mouseover_id = INVALID_WINDOW_ID;
 	WindowID last_focused_window = INVALID_WINDOW_ID;
 	WindowID window_id_counter = MAIN_WINDOW_ID;
-	float display_max_scale = 1.f;
+	mutable float display_max_scale = 1.f;
 	mutable Point2i origin;
 	mutable bool displays_arrangement_dirty = true;
 	bool is_resizing = false;
@@ -266,7 +277,9 @@ public:
 	WindowData &get_window(WindowID p_window);
 
 	NSImage *_convert_to_nsimg(Ref<Image> &p_image) const;
-	Point2i _get_screens_origin() const;
+
+	Rect2i _screen_to_native(const Rect2i &p_rect) const;
+	Rect2i _native_to_screen(const Rect2i &p_rect) const;
 
 	void set_menu_delegate(NSMenu *p_menu);
 

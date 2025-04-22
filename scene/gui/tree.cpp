@@ -4331,6 +4331,7 @@ bool Tree::edit_selected(bool p_force_edit) {
 
 	Size2 scale = popup_editor->get_parent_viewport()->get_popup_base_transform().get_scale() * get_global_transform_with_canvas().get_scale();
 	real_t popup_scale = MIN(scale.x, scale.y);
+	popup_scale /= get_window()->get_dpi_scale_factor();
 
 	Rect2 rect = _get_item_focus_rect(s);
 	rect.position *= popup_scale;
@@ -4625,7 +4626,7 @@ void Tree::_accessibility_action_set_bool_value(const Variant &p_data, TreeItem 
 }
 
 void Tree::_accessibility_action_edit_custom(const Variant &p_data, TreeItem *p_item, int p_col) {
-	float popup_scale = popup_editor->is_embedded() ? 1.0 : popup_editor->get_parent_visible_window()->get_content_scale_factor();
+	float popup_scale = popup_editor->is_embedded() ? 1.0 : (popup_editor->get_parent_visible_window()->get_content_scale_factor() * popup_editor->get_parent_visible_window()->get_dpi_scale_factor());
 	Rect2 rect;
 	if (select_mode == SELECT_ROW) {
 		rect = p_item->get_meta("__focus_col_" + itos(p_col));
@@ -5012,7 +5013,7 @@ void Tree::_notification(int p_what) {
 			draw_size.y -= tbh;
 
 			cache.rtl = is_layout_rtl();
-			content_scale_factor = popup_editor->is_embedded() ? 1.0 : popup_editor->get_parent_visible_window()->get_content_scale_factor();
+			content_scale_factor = popup_editor->is_embedded() ? 1.0 : (popup_editor->get_parent_visible_window()->get_content_scale_factor() * popup_editor->get_parent_visible_window()->get_dpi_scale_factor());
 
 			if (root && get_size().x > 0 && get_size().y > 0) {
 				int self_height = 0; // Just to pass a reference, we don't need the root's `self_height`.

@@ -440,6 +440,11 @@ void Window::set_size(const Size2i &p_size) {
 #endif
 
 	size = p_size;
+	if (window_id != DisplayServer::INVALID_WINDOW_ID) {
+		unscaled_size = p_size / get_dpi_scale_factor();
+	} else {
+		unscaled_size = p_size;
+	}
 	_update_window_size();
 	_settings_changed();
 }
@@ -519,6 +524,11 @@ void Window::set_max_size(const Size2i &p_max_size) {
 		return;
 	}
 	max_size = max_size_clamped;
+	if (window_id != DisplayServer::INVALID_WINDOW_ID) {
+		unscaled_max_size = max_size / get_dpi_scale_factor();
+	} else {
+		unscaled_max_size = max_size;
+	}
 
 	_validate_limit_size();
 	_update_window_size();
@@ -542,6 +552,11 @@ void Window::set_min_size(const Size2i &p_min_size) {
 		return;
 	}
 	min_size = min_size_clamped;
+	if (window_id != DisplayServer::INVALID_WINDOW_ID) {
+		unscaled_min_size = min_size / get_dpi_scale_factor();
+	} else {
+		unscaled_min_size = min_size;
+	}
 
 	_validate_limit_size();
 	_update_window_size();
@@ -753,6 +768,7 @@ void Window::_clear_window() {
 
 	DisplayServer::get_singleton()->delete_sub_window(window_id);
 	window_id = DisplayServer::INVALID_WINDOW_ID;
+	size = unscaled_size;
 
 	// If closing window was focused and has a parent, return focus.
 	if (had_focus && transient_parent) {
@@ -780,6 +796,7 @@ void Window::_rect_changed_callback(const Rect2i &p_callback) {
 
 	if (size != p_callback.size) {
 		size = p_callback.size;
+		unscaled_size = p_callback.size / get_dpi_scale_factor();
 		_update_viewport_size();
 	}
 	if (window_id != DisplayServer::INVALID_WINDOW_ID && !DisplayServer::get_singleton()->has_feature(DisplayServer::FEATURE_SELF_FITTING_WINDOWS)) {
@@ -1165,6 +1182,13 @@ Size2i Window::_clamp_window_size(const Size2i &p_size) {
 }
 
 void Window::_update_window_size() {
+	if (window_id != DisplayServer::INVALID_WINDOW_ID) {
+		max_size = unscaled_max_size * get_dpi_scale_factor();
+		min_size = unscaled_min_size * get_dpi_scale_factor();
+		size = unscaled_size * get_dpi_scale_factor();
+		_validate_limit_size();
+	}
+
 	Size2i size_limit = get_clamped_minimum_size();
 	if (!embedder && window_id != DisplayServer::INVALID_WINDOW_ID && keep_title_visible) {
 		Size2i title_size = DisplayServer::get_singleton()->window_get_title_size(tr_title, window_id);
@@ -1230,9 +1254,10 @@ void Window::_update_viewport_size() {
 		}
 	}
 
+	real_t content_scale = get_content_scale_factor() * get_dpi_scale_factor();
 	if (content_scale_mode == CONTENT_SCALE_MODE_DISABLED || content_scale_size.x == 0 || content_scale_size.y == 0) {
 		final_size = size;
-		final_size_override = Size2(size) / content_scale_factor;
+		final_size_override = Size2(size) / content_scale;
 	} else {
 		//actual screen video mode
 		Size2 video_mode = size;
@@ -1311,13 +1336,13 @@ void Window::_update_viewport_size() {
 			} break;
 			case CONTENT_SCALE_MODE_CANVAS_ITEMS: {
 				final_size = screen_size;
-				final_size_override = viewport_size / content_scale_factor;
+				final_size_override = viewport_size / content_scale;
 				attach_to_screen_rect = Rect2(margin, screen_size);
 
 				window_transform.translate_local(margin);
 			} break;
 			case CONTENT_SCALE_MODE_VIEWPORT: {
-				final_size = (viewport_size / content_scale_factor).floor();
+				final_size = (viewport_size / content_scale).floor();
 				attach_to_screen_rect = Rect2(margin, screen_size);
 
 				window_transform.translate_local(margin);
@@ -1345,7 +1370,7 @@ void Window::_update_viewport_size() {
 		float scale = MIN(embedder->stretch_transform.get_scale().width, embedder->stretch_transform.get_scale().height);
 		Viewport::set_oversampling_override(scale);
 		Size2 s = Size2(final_size.width * scale, final_size.height * scale).ceil();
-		RS::get_singleton()->viewport_set_global_canvas_transform(get_viewport_rid(), global_canvas_transform * scale * content_scale_factor);
+		RS::get_singleton()->viewport_set_global_canvas_transform(get_viewport_rid(), global_canvas_transform * scale * content_scale);
 		RS::get_singleton()->viewport_set_size(get_viewport_rid(), s.width, s.height);
 		embedder->_sub_window_update(this);
 	}
@@ -1738,6 +1763,27 @@ void Window::set_content_scale_factor(real_t p_factor) {
 real_t Window::get_content_scale_factor() const {
 	ERR_READ_THREAD_GUARD_V(0);
 	return content_scale_factor;
+}
+
+void Window::set_dpi_auto_scaling(bool p_enabled) {
+	if (dpi_auto_scaling == p_enabled) {
+		return;
+	}
+	dpi_auto_scaling = p_enabled;
+	_update_viewport_size();
+}
+
+bool Window::get_dpi_auto_scaling() const {
+	return dpi_auto_scaling;
+}
+
+real_t Window::get_dpi_scale_factor() const {
+	ERR_READ_THREAD_GUARD_V(1);
+	if (!dpi_auto_scaling || window_id == DisplayServer::INVALID_WINDOW_ID || !DisplayServer::get_singleton()->has_feature(DisplayServer::FEATURE_DPI_SCALING) || get_embedder()) {
+		return 1.f; // DPI scaling disabled, embedded window or invisible window.
+	} else {
+		return DisplayServer::get_singleton()->window_get_scale(window_id);
+	}
 }
 
 DisplayServer::WindowID Window::get_window_id() const {
@@ -3180,6 +3226,11 @@ void Window::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_content_scale_factor", "factor"), &Window::set_content_scale_factor);
 	ClassDB::bind_method(D_METHOD("get_content_scale_factor"), &Window::get_content_scale_factor);
 
+	ClassDB::bind_method(D_METHOD("get_dpi_scale_factor"), &Window::get_dpi_scale_factor);
+
+	ClassDB::bind_method(D_METHOD("set_dpi_auto_scaling", "enabled"), &Window::set_dpi_auto_scaling);
+	ClassDB::bind_method(D_METHOD("get_dpi_auto_scaling"), &Window::get_dpi_auto_scaling);
+
 	ClassDB::bind_method(D_METHOD("set_mouse_passthrough_polygon", "polygon"), &Window::set_mouse_passthrough_polygon);
 	ClassDB::bind_method(D_METHOD("get_mouse_passthrough_polygon"), &Window::get_mouse_passthrough_polygon);
 
@@ -3278,6 +3329,7 @@ void Window::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "position", PROPERTY_HINT_NONE, "suffix:px"), "set_position", "get_position");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "size", PROPERTY_HINT_NONE, "suffix:px"), "set_size", "get_size");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "current_screen", PROPERTY_HINT_RANGE, "0,64,1,or_greater"), "set_current_screen", "get_current_screen");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "dpi_auto_scaling", PROPERTY_HINT_NONE, ""), "set_dpi_auto_scaling", "get_dpi_auto_scaling");
 
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR2_ARRAY, "mouse_passthrough_polygon"), "set_mouse_passthrough_polygon", "get_mouse_passthrough_polygon");
 
@@ -3419,6 +3471,7 @@ Window::Window() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	if (rendering_server) {
 		max_size = rendering_server->get_maximum_viewport_size();
+		unscaled_max_size = max_size;
 		max_size_used = max_size; // Update max_size_used.
 	}
 
