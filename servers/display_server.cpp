@@ -1476,6 +1476,8 @@ void DisplayServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("window_start_drag", "window_id"), &DisplayServer::window_start_drag, DEFVAL(MAIN_WINDOW_ID));
 	ClassDB::bind_method(D_METHOD("window_start_resize", "edge", "window_id"), &DisplayServer::window_start_resize, DEFVAL(MAIN_WINDOW_ID));
 
+	ClassDB::bind_method(D_METHOD("window_set_touchbar_items", "items", "window"), &DisplayServer::window_set_touchbar_items, DEFVAL(MAIN_WINDOW_ID));
+
 	ClassDB::bind_method(D_METHOD("accessibility_should_increase_contrast"), &DisplayServer::accessibility_should_increase_contrast);
 	ClassDB::bind_method(D_METHOD("accessibility_should_reduce_animation"), &DisplayServer::accessibility_should_reduce_animation);
 	ClassDB::bind_method(D_METHOD("accessibility_should_reduce_transparency"), &DisplayServer::accessibility_should_reduce_transparency);
@@ -1657,6 +1659,7 @@ void DisplayServer::_bind_methods() {
 	BIND_ENUM_CONSTANT(FEATURE_NATIVE_COLOR_PICKER);
 	BIND_ENUM_CONSTANT(FEATURE_SELF_FITTING_WINDOWS);
 	BIND_ENUM_CONSTANT(FEATURE_ACCESSIBILITY_SCREEN_READER);
+	BIND_ENUM_CONSTANT(FEATURE_TOUCHBAR);
 
 	BIND_ENUM_CONSTANT(ROLE_UNKNOWN);
 	BIND_ENUM_CONSTANT(ROLE_DEFAULT_BUTTON);

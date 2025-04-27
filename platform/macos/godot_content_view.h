@@ -56,7 +56,15 @@
 
 GODOT_CLANG_WARNING_PUSH_AND_IGNORE("-Wdeprecated-declarations") // OpenGL is deprecated in macOS 10.14.
 
-@interface GodotContentView : RootView <NSTextInputClient> {
+@interface GodotButtonTouchBarItem : NSButtonTouchBarItem {
+	Callable cb;
+}
+- (void)setCallback:(const Callable &)callback;
+- (Callable)getCallback;
+@end
+
+@interface GodotContentView : RootView <NSTextInputClient, NSTouchBarDelegate> {
+	TypedDictionary<String, Callable> bar_items;
 	DisplayServer::WindowID window_id;
 	NSTrackingArea *tracking_area;
 	NSMutableAttributedString *marked_text;
@@ -69,6 +77,7 @@ GODOT_CLANG_WARNING_PUSH_AND_IGNORE("-Wdeprecated-declarations") // OpenGL is de
 	NSMutableSet<NSString *> *registered_observers;
 }
 
+- (void)setTouchBarItems:(const TypedDictionary<String, Callable> &)items;
 - (void)processScrollEvent:(NSEvent *)event button:(MouseButton)button factor:(double)factor;
 - (void)processPanEvent:(NSEvent *)event dx:(double)dx dy:(double)dy;
 - (void)processMouseEvent:(NSEvent *)event index:(MouseButton)index pressed:(bool)pressed outofstream:(bool)outofstream;

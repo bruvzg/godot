@@ -73,6 +73,7 @@ void AcceptDialog::_notification(int p_what) {
 				if (parent_visible) {
 					parent_visible->connect(SceneStringName(focus_entered), callable_mp(this, &AcceptDialog::_parent_focused));
 				}
+				_update_buttons();
 			} else {
 				popped_up = false;
 				if (parent_visible) {
@@ -332,6 +333,34 @@ void AcceptDialog::_custom_button_visibility_changed(Button *button) {
 	}
 }
 
+void AcceptDialog::_update_buttons() {
+	if (!is_visible()) {
+		return;
+	}
+	if (!DisplayServer::get_singleton()->has_feature(DisplayServer::FEATURE_TOUCHBAR)) {
+		return;
+	}
+	if (get_window_id() == DisplayServer::INVALID_WINDOW_ID) {
+		return;
+	}
+
+	TypedDictionary<String, Callable> bar_items;
+	for (int i = 0; i < buttons_hbox->get_child_count(); i++) {
+		Button *b = Object::cast_to<Button>(buttons_hbox->get_child(i));
+		if (b) {
+			if (b == ok_button) {
+				bar_items[b->get_text()] = callable_mp(this, &AcceptDialog::_ok_pressed);
+			} else if (b->has_meta("__cancel")) {
+				bar_items[b->get_text()] = callable_mp(this, &AcceptDialog::_cancel_pressed);
+			} else {
+				String action = b->get_meta("__action");
+				bar_items[b->get_text()] = callable_mp(this, &AcceptDialog::_custom_action).bind(action);
+			}
+		}
+	}
+	DisplayServer::get_singleton()->window_set_touchbar_items(bar_items, get_window_id());
+}
+
 Button *AcceptDialog::add_button(const String &p_text, bool p_right, const String &p_action) {
 	Button *button = memnew(Button);
 	button->set_text(p_text);
@@ -346,6 +375,7 @@ Button *AcceptDialog::add_button(const String &p_text, bool p_right, const Strin
 		right_spacer = buttons_hbox->add_spacer(true);
 	}
 	button->set_meta("__right_spacer", right_spacer);
+	button->set_meta("__action", p_action);
 
 	button->connect(SceneStringName(visibility_changed), callable_mp(this, &AcceptDialog::_custom_button_visibility_changed).bind(button));
 
@@ -357,6 +387,7 @@ Button *AcceptDialog::add_button(const String &p_text, bool p_right, const Strin
 	if (!p_action.is_empty()) {
 		button->connect(SceneStringName(pressed), callable_mp(this, &AcceptDialog::_custom_action).bind(p_action));
 	}
+	_update_buttons();
 
 	return button;
 }
@@ -368,6 +399,7 @@ Button *AcceptDialog::add_cancel_button(const String &p_cancel) {
 	}
 
 	Button *b = swap_cancel_ok ? add_button(c, true) : add_button(c);
+	b->set_meta("__cancel", "cancel");
 
 	b->connect(SceneStringName(pressed), callable_mp(this, &AcceptDialog::_cancel_pressed));
 
@@ -395,6 +427,7 @@ void AcceptDialog::remove_button(Button *p_button) {
 	if (right_spacer) {
 		buttons_hbox->remove_child(right_spacer);
 		p_button->remove_meta("__right_spacer");
+		p_button->remove_meta("__action");
 		right_spacer->queue_free();
 	}
 	buttons_hbox->remove_child(p_button);
@@ -403,6 +436,7 @@ void AcceptDialog::remove_button(Button *p_button) {
 	if (is_visible()) {
 		_update_child_rects();
 	}
+	_update_buttons();
 }
 
 void AcceptDialog::_bind_methods() {

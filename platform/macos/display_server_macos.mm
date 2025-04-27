@@ -880,6 +880,7 @@ bool DisplayServerMacOS::has_feature(Feature p_feature) const {
 		case FEATURE_WINDOW_DRAG:
 		case FEATURE_SCREEN_EXCLUDE_FROM_CAPTURE:
 		case FEATURE_EMOJI_AND_SYMBOL_PICKER:
+		case FEATURE_TOUCHBAR:
 			return true;
 #ifdef ACCESSKIT_ENABLED
 		case FEATURE_ACCESSIBILITY_SCREEN_READER: {
@@ -2634,6 +2635,13 @@ void DisplayServerMacOS::window_start_resize(WindowResizeEdge p_edge, WindowID p
 	WindowData &wd = windows[p_window];
 
 	wd.edge = p_edge;
+}
+
+void DisplayServerMacOS::window_set_touchbar_items(const TypedDictionary<String, Callable> &p_items, WindowID p_window) {
+	ERR_FAIL_COND(!windows.has(p_window));
+
+	WindowData &wd = windows[p_window];
+	[((GodotContentView *)wd.window_view) setTouchBarItems:p_items];
 }
 
 void DisplayServerMacOS::window_set_window_buttons_offset(const Vector2i &p_offset, WindowID p_window) {

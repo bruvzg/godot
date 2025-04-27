@@ -65,6 +65,18 @@
 
 @end
 
+@implementation GodotButtonTouchBarItem
+
+- (void)setCallback:(const Callable &)callback {
+	cb = callback;
+}
+
+- (Callable)getCallback {
+	return cb;
+}
+
+@end
+
 @implementation GodotContentView
 
 - (void)setFrameSize:(NSSize)newSize {
@@ -123,6 +135,49 @@
 			ERR_PRINT("NSException: " + String::utf8([exception reason].UTF8String));
 		}
 	}
+}
+
+- (void)setTouchBarItems:(const TypedDictionary<String, Callable> &)items {
+	bar_items = items;
+	self.touchBar = nil;
+}
+
+- (void)barCallback:(id)sender {
+	GodotButtonTouchBarItem *item = sender;
+	if ([item getCallback].is_valid()) {
+		Variant ret;
+		Callable::CallError ce;
+
+		[item getCallback].callp(nullptr, 0, ret, ce);
+		if (ce.error != Callable::CallError::CALL_OK) {
+			ERR_PRINT(vformat("Failed to execute touchbar callback: %s.", Variant::get_callable_error_text([item getCallback], nullptr, 0, ce)));
+		}
+	}
+}
+
+- (NSTouchBar *)makeTouchBar {
+	NSTouchBar *bar = [[NSTouchBar alloc] init];
+	bar.delegate = self;
+	bar.customizationIdentifier = [NSString stringWithUTF8String:vformat("GodotWindow%d", window_id).utf8().get_data()];
+	NSMutableArray<NSString *> *item_ids = [NSMutableArray new];
+
+	for (const KeyValue<Variant, Variant> &it : bar_items) {
+		[item_ids addObject:[NSString stringWithUTF8String:String(it.key).utf8().get_data()]];
+	}
+	bar.defaultItemIdentifiers = item_ids;
+
+	return bar;
+}
+
+- (NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+	const String &key = String::utf8(identifier.UTF8String);
+	if (bar_items.has(key)) {
+		GodotButtonTouchBarItem *bar_item = [GodotButtonTouchBarItem buttonTouchBarItemWithIdentifier:identifier title:identifier target:self action:@selector(barCallback:)];
+		[bar_item setCallback:bar_items[key]];
+
+		return bar_item;
+	}
+	return nil;
 }
 
 - (id)init {

@@ -68,6 +68,7 @@ class AcceptDialog : public Window {
 	void _custom_button_visibility_changed(Button *button);
 	void _update_child_rects();
 	void _update_ok_text();
+	void _update_buttons();
 
 	static bool swap_cancel_ok;
 

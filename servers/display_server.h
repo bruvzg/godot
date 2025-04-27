@@ -35,6 +35,7 @@
 #include "core/io/resource.h"
 #include "core/os/os.h"
 #include "core/variant/callable.h"
+#include "core/variant/typed_dictionary.h"
 
 #include "display/native_menu.h"
 
@@ -169,6 +170,7 @@ public:
 		FEATURE_NATIVE_COLOR_PICKER,
 		FEATURE_SELF_FITTING_WINDOWS,
 		FEATURE_ACCESSIBILITY_SCREEN_READER,
+		FEATURE_TOUCHBAR,
 	};
 
 	virtual bool has_feature(Feature p_feature) const = 0;
@@ -506,6 +508,8 @@ public:
 	virtual void window_request_attention(WindowID p_window = MAIN_WINDOW_ID) = 0;
 	virtual void window_move_to_foreground(WindowID p_window = MAIN_WINDOW_ID) = 0;
 	virtual bool window_is_focused(WindowID p_window = MAIN_WINDOW_ID) const = 0;
+
+	virtual void window_set_touchbar_items(const TypedDictionary<String, Callable> &p_items, WindowID p_window = MAIN_WINDOW_ID) {}
 
 	virtual WindowID get_focused_window() const;
 

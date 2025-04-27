@@ -2436,6 +2436,15 @@
 				[b]Note:[/b] Avoid changing the window title every frame, as this can cause performance issues on certain window managers. Try to change the window title only a few times per second at most.
 			</description>
 		</method>
+		<method name="window_set_touchbar_items">
+			<return type="void" />
+			<param index="0" name="items" type="Dictionary[String, Callable]" />
+			<param index="1" name="window" type="int" default="0" />
+			<description>
+				Sets Touch Bar items for the given window.
+				[b]Note:[/b] This method is implemented only on macOS.
+			</description>
+		</method>
 		<method name="window_set_transient">
 			<return type="void" />
 			<param index="0" name="window_id" type="int" />
@@ -2595,6 +2604,9 @@
 		</constant>
 		<constant name="FEATURE_ACCESSIBILITY_SCREEN_READER" value="34" enum="Feature">
 			Display server supports interaction with screen reader or Braille display. [b]Linux (X11/Wayland), macOS, Windows[/b]
+		</constant>
+		<constant name="FEATURE_TOUCHBAR" value="35" enum="Feature">
+			Display server supports Touch Bar. [b]macOS[/b]
 		</constant>
 		<constant name="ROLE_UNKNOWN" value="0" enum="AccessibilityRole">
 			Unknown or custom role.
