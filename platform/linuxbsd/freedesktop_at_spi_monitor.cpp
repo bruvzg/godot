@@ -57,6 +57,7 @@ void FreeDesktopAtSPIMonitor::monitor_thread_func(void *p_userdata) {
 	if (dbus_error_is_set(&error)) {
 		dbus_error_free(&error);
 		mon->supported.clear();
+		mon->sr_enabled.clear();
 		return;
 	}
 
@@ -124,6 +125,7 @@ FreeDesktopAtSPIMonitor::FreeDesktopAtSPIMonitor() {
 	if (initialize_dbus(dylibloader_verbose) != 0) {
 		print_verbose("AT-SPI2: Failed to load DBus library!");
 		supported.clear();
+		sr_enabled.clear();
 		return;
 	}
 #endif
@@ -137,6 +139,7 @@ FreeDesktopAtSPIMonitor::FreeDesktopAtSPIMonitor() {
 	if (!ver_ok) {
 		print_verbose("AT-SPI2: Unsupported DBus library version!");
 		supported.clear();
+		sr_enabled.clear();
 		return;
 	}
 
