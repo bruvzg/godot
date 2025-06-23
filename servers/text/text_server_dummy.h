@@ -91,6 +91,7 @@ public:
 	virtual PackedInt32Array font_get_supported_glyphs(const RID &p_font_rid) const override { return PackedInt32Array(); }
 	virtual void font_draw_glyph(const RID &p_font_rid, const RID &p_canvas, int64_t p_size, const Vector2 &p_pos, int64_t p_index, const Color &p_color, float p_oversampling) const override {}
 	virtual void font_draw_glyph_outline(const RID &p_font_rid, const RID &p_canvas, int64_t p_size, int64_t p_outline_size, const Vector2 &p_pos, int64_t p_index, const Color &p_color, float p_oversampling) const override {}
+	virtual RID font_get_glyph_texture(const RID &p_font, int64_t p_size, const Vector2 &p_pos, int64_t p_outline_size, int64_t p_index, float p_oversampling = 0.0) const override { return RID(); }
 
 	virtual RID create_shaped_text(TextServer::Direction p_direction, TextServer::Orientation p_orientation) override { return RID(); }
 	virtual void shaped_text_clear(const RID &p_shaped) override {}

@@ -369,6 +369,7 @@ void TextServer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("font_draw_glyph", "font_rid", "canvas", "size", "pos", "index", "color", "oversampling"), &TextServer::font_draw_glyph, DEFVAL(Color(1, 1, 1)), DEFVAL(0.0));
 	ClassDB::bind_method(D_METHOD("font_draw_glyph_outline", "font_rid", "canvas", "size", "outline_size", "pos", "index", "color", "oversampling"), &TextServer::font_draw_glyph_outline, DEFVAL(Color(1, 1, 1)), DEFVAL(0.0));
+	ClassDB::bind_method(D_METHOD("font_get_glyph_texture", "font_rid", "size", "pos", "outline_size", "index", "oversampling"), &TextServer::font_get_glyph_texture, DEFVAL(0.0));
 
 	ClassDB::bind_method(D_METHOD("font_is_language_supported", "font_rid", "language"), &TextServer::font_is_language_supported);
 	ClassDB::bind_method(D_METHOD("font_set_language_support_override", "font_rid", "language", "supported"), &TextServer::font_set_language_support_override);

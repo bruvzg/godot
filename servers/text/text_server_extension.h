@@ -350,8 +350,10 @@ public:
 
 	virtual void font_draw_glyph(const RID &p_font, const RID &p_canvas, int64_t p_size, const Vector2 &p_pos, int64_t p_index, const Color &p_color = Color(1, 1, 1), float p_oversampling = 0.0) const override;
 	virtual void font_draw_glyph_outline(const RID &p_font, const RID &p_canvas, int64_t p_size, int64_t p_outline_size, const Vector2 &p_pos, int64_t p_index, const Color &p_color = Color(1, 1, 1), float p_oversampling = 0.0) const override;
+	virtual RID font_get_glyph_texture(const RID &p_font, int64_t p_size, const Vector2 &p_pos, int64_t p_outline_size, int64_t p_index, float p_oversampling = 0.0) const override;
 	GDVIRTUAL7C_REQUIRED(_font_draw_glyph, RID, RID, int64_t, const Vector2 &, int64_t, const Color &, float);
 	GDVIRTUAL8C_REQUIRED(_font_draw_glyph_outline, RID, RID, int64_t, int64_t, const Vector2 &, int64_t, const Color &, float);
+	GDVIRTUAL6RC_REQUIRED(RID, _font_get_glyph_texture, RID, int64_t, const Vector2 &, int64_t, int64_t, float);
 #ifndef DISABLE_DEPRECATED
 	GDVIRTUAL6C_COMPAT(_font_draw_glyph_bind_compat_104872, _font_draw_glyph, RID, RID, int64_t, const Vector2 &, int64_t, const Color &);
 	GDVIRTUAL7C_COMPAT(_font_draw_glyph_outline_bind_compat_104872, _font_draw_glyph_outline, RID, RID, int64_t, int64_t, const Vector2 &, int64_t, const Color &);

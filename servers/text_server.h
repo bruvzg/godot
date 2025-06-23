@@ -428,6 +428,8 @@ public:
 	virtual void font_draw_glyph(const RID &p_font, const RID &p_canvas, int64_t p_size, const Vector2 &p_pos, int64_t p_index, const Color &p_color = Color(1, 1, 1), float p_oversampling = 0.0) const = 0;
 	virtual void font_draw_glyph_outline(const RID &p_font, const RID &p_canvas, int64_t p_size, int64_t p_outline_size, const Vector2 &p_pos, int64_t p_index, const Color &p_color = Color(1, 1, 1), float p_oversampling = 0.0) const = 0;
 
+	virtual RID font_get_glyph_texture(const RID &p_font, int64_t p_size, const Vector2 &p_pos, int64_t p_outline_size, int64_t p_index, float p_oversampling = 0.0) const = 0;
+
 	virtual bool font_is_language_supported(const RID &p_font_rid, const String &p_language) const = 0;
 	virtual void font_set_language_support_override(const RID &p_font_rid, const String &p_language, bool p_supported) = 0;
 	virtual bool font_get_language_support_override(const RID &p_font_rid, const String &p_language) = 0;

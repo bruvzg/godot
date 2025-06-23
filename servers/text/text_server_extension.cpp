@@ -214,6 +214,7 @@ void TextServerExtension::_bind_methods() {
 
 	GDVIRTUAL_BIND(_font_draw_glyph, "font_rid", "canvas", "size", "pos", "index", "color", "oversampling");
 	GDVIRTUAL_BIND(_font_draw_glyph_outline, "font_rid", "canvas", "size", "outline_size", "pos", "index", "color", "oversampling");
+	GDVIRTUAL_BIND(_font_get_glyph_texture, "font_rid", "size", "pos", "outline_size", "index", "oversampling");
 #ifndef DISABLE_DEPRECATED
 	GDVIRTUAL_BIND_COMPAT(_font_draw_glyph_bind_compat_104872, "font_rid", "canvas", "size", "pos", "index", "color");
 	GDVIRTUAL_BIND_COMPAT(_font_draw_glyph_outline_bind_compat_104872, "font_rid", "canvas", "size", "outline_size", "pos", "index", "color");
@@ -1019,6 +1020,12 @@ void TextServerExtension::font_draw_glyph(const RID &p_font_rid, const RID &p_ca
 #ifndef DISABLE_DEPRECATED
 	GDVIRTUAL_CALL(_font_draw_glyph_bind_compat_104872, p_font_rid, p_canvas, p_size, p_pos, p_index, p_color);
 #endif
+}
+
+RID TextServerExtension::font_get_glyph_texture(const RID &p_font, int64_t p_size, const Vector2 &p_pos, int64_t p_outline_size, int64_t p_index, float p_oversampling) const {
+	RID ret;
+	GDVIRTUAL_CALL(_font_get_glyph_texture, p_font, p_size, p_pos, p_outline_size, p_index, p_oversampling, ret);
+	return ret;
 }
 
 void TextServerExtension::font_draw_glyph_outline(const RID &p_font_rid, const RID &p_canvas, int64_t p_size, int64_t p_outline_size, const Vector2 &p_pos, int64_t p_index, const Color &p_color, float p_oversampling) const {

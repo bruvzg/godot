@@ -4196,6 +4196,108 @@ void TextServerAdvanced::_font_draw_glyph_outline(const RID &p_font_rid, const R
 	}
 }
 
+RID TextServerAdvanced::_font_get_glyph_texture(const RID &p_font, int64_t p_size, const Vector2 &p_pos, int64_t p_outline_size, int64_t p_index, float p_oversampling) const {
+	if (p_index == 0) {
+		return RID(); // Non visual character, skip.
+	}
+
+	FontAdvanced *fd = _get_font_data(p_font);
+	ERR_FAIL_NULL_V(fd, RID());
+
+	MutexLock lock(fd->mutex);
+
+	// Oversampling.
+	bool viewport_oversampling = false;
+	float oversampling_factor = p_oversampling;
+	if (p_oversampling <= 0.0) {
+		if (fd->oversampling_override > 0.0) {
+			oversampling_factor = fd->oversampling_override;
+		} else if (vp_oversampling > 0.0) {
+			oversampling_factor = vp_oversampling;
+			viewport_oversampling = true;
+		} else {
+			oversampling_factor = 1.0;
+		}
+	}
+	bool skip_oversampling = fd->msdf || fd->fixed_size > 0;
+	if (skip_oversampling) {
+		oversampling_factor = 1.0;
+	} else {
+		uint64_t oversampling_level = CLAMP(oversampling_factor, 0.1, 100.0) * 64;
+		oversampling_factor = double(oversampling_level) / 64.0;
+	}
+
+	Vector2i size;
+	if (skip_oversampling) {
+		if (p_outline_size > 0) {
+			size = _get_size_outline(fd, Vector2i(p_size, p_outline_size));
+		} else {
+			size = _get_size(fd, p_size);
+		}
+	} else {
+		size = Vector2i(p_size * 64 * oversampling_factor, p_outline_size * oversampling_factor);
+	}
+	FontForSizeAdvanced *ffsd = nullptr;
+	ERR_FAIL_COND_V(!_ensure_cache_for_size(fd, size, ffsd, false, viewport_oversampling ? 64 * oversampling_factor : 0), RID());
+
+	int32_t index = p_index & 0xffffff; // Remove subpixel shifts.
+
+#ifdef MODULE_FREETYPE_ENABLED
+	if (!fd->msdf && ffsd->face) {
+		// LCD layout, bits 24, 25, 26
+		if (fd->antialiasing == FONT_ANTIALIASING_LCD) {
+			TextServer::FontLCDSubpixelLayout layout = lcd_subpixel_layout.get();
+			if (layout != FONT_LCD_SUBPIXEL_LAYOUT_NONE) {
+				index = index | (layout << 24);
+			}
+		}
+		// Subpixel X-shift, bits 27, 28
+		if ((fd->subpixel_positioning == SUBPIXEL_POSITIONING_ONE_QUARTER) || (fd->subpixel_positioning == SUBPIXEL_POSITIONING_AUTO && size.x <= SUBPIXEL_POSITIONING_ONE_QUARTER_MAX_SIZE * 64)) {
+			int xshift = (int)(Math::floor(4 * (p_pos.x + 0.125)) - 4 * Math::floor(p_pos.x + 0.125));
+			index = index | (xshift << 27);
+		} else if ((fd->subpixel_positioning == SUBPIXEL_POSITIONING_ONE_HALF) || (fd->subpixel_positioning == SUBPIXEL_POSITIONING_AUTO && size.x <= SUBPIXEL_POSITIONING_ONE_HALF_MAX_SIZE * 64)) {
+			int xshift = (int)(Math::floor(2 * (p_pos.x + 0.25)) - 2 * Math::floor(p_pos.x + 0.25));
+			index = index | (xshift << 27);
+		}
+	}
+#endif
+
+	FontGlyph fgl;
+	if (!_ensure_glyph(fd, size, index, fgl, viewport_oversampling ? 64 * oversampling_factor : 0)) {
+		return RID(); // Invalid or non-graphical glyph, do not display errors, nothing to draw.
+	}
+
+	if (fgl.found) {
+		ERR_FAIL_COND_V(fgl.texture_idx < -1 || fgl.texture_idx >= ffsd->textures.size(), RID());
+
+		if (fgl.texture_idx != -1) {
+			if (RenderingServer::get_singleton() != nullptr) {
+				if (ffsd->textures[fgl.texture_idx].dirty) {
+					ShelfPackTexture &tex = ffsd->textures.write[fgl.texture_idx];
+					Ref<Image> img = tex.image;
+					if (fgl.from_svg) {
+						// Same as the "fix alpha border" process option when importing SVGs
+						img->fix_alpha_edges();
+					}
+					if (fd->mipmaps && !img->has_mipmaps()) {
+						img = tex.image->duplicate();
+						img->generate_mipmaps();
+					}
+					if (tex.texture.is_null()) {
+						tex.texture = ImageTexture::create_from_image(img);
+					} else {
+						tex.texture->update(img);
+					}
+					tex.dirty = false;
+				}
+				RID texture = ffsd->textures[fgl.texture_idx].texture->get_rid();
+				return texture;
+			}
+		}
+	}
+	return RID();
+}
+
 bool TextServerAdvanced::_font_is_language_supported(const RID &p_font_rid, const String &p_language) const {
 	FontAdvanced *fd = _get_font_data(p_font_rid);
 	ERR_FAIL_NULL_V(fd, false);
