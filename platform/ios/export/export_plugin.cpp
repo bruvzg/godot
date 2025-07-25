@@ -2745,6 +2745,10 @@ void EditorExportPlatformIOS::_check_for_changes_poll_thread(void *ud) {
 			args.push_back("-j");
 			args.push_back("-");
 			args.push_back("-q");
+			args.push_back("--timeout");
+			args.push_back("5");
+			args.push_back("--filter");
+			args.push_back("hardwareProperties.deviceType MATCHES 'iPhone|iPad'");
 			int ec = 0;
 			Error err = OS::get_singleton()->execute("xcrun", args, &devices, &ec, true);
 			if (err == OK && ec == 0) {
