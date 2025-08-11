@@ -40,12 +40,112 @@
 #include <dbus/dbus.h>
 #endif
 
+#ifdef X11_ENABLED
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#ifdef SOWRAP_ENABLED
+#include "x11/dynwrappers/xlib-so_wrap.h"
+#endif
+#endif
+
 #include <unistd.h>
 
 #define BUS_OBJECT_NAME "org.a11y.Bus"
 #define BUS_OBJECT_PATH "/org/a11y/bus"
-
 #define BUS_INTERFACE_PROPERTIES "org.freedesktop.DBus.Properties"
+
+#define SPI2_OBJECT_NAME "org.a11y.atspi.Registry"
+#define SPI2_OBJECT_ROOT "/org/a11y/atspi/accessible/root"
+#define SPI2_OBJECT_PROPERTIES "org.a11y.atspi.Accessible"
+
+bool check_a11y_bus_connections(DBusConnection *p_session_bus) {
+	DBusError error;
+	dbus_error_init(&error);
+
+	const char *addr = getenv("AT_SPI_BUS_ADDRESS");
+#ifdef X11_ENABLED
+	unsigned char *x11_data = nullptr;
+	if (!addr) {
+		if (getenv("DISPLAY") != nullptr && getenv("WAYLAND_DISPLAY") == nullptr) {
+			Display *x11_display = XOpenDisplay(nullptr);
+			if (x11_display) {
+				Atom type;
+				int format, result;
+				unsigned long len, bytes_left;
+
+				Atom at_spi_bus = XInternAtom(x11_display, "AT_SPI_BUS", False);
+				result = XGetWindowProperty(x11_display, XDefaultRootWindow(x11_display),
+						at_spi_bus, // atom
+						0, BUFSIZ, // offset - len
+						False, // delete property to notify the owner
+						XA_STRING, // flag
+						&type, // return type
+						&format, // return format
+						&len, &bytes_left, // data length
+						&x11_data);
+				XCloseDisplay(x11_display);
+				if (result == Success) {
+					addr = (const char *)x11_data;
+				}
+			}
+		}
+	}
+#endif
+	if (!addr) {
+		DBusMessage *message = dbus_message_new_method_call(BUS_OBJECT_NAME, BUS_OBJECT_PATH, BUS_OBJECT_NAME, "GetAddress");
+		DBusMessage *reply = dbus_connection_send_with_reply_and_block(p_session_bus, message, 250, &error);
+		dbus_message_unref(message);
+		if (!dbus_error_is_set(&error)) {
+			DBusMessageIter iter;
+			dbus_message_iter_init(reply, &iter);
+			dbus_message_iter_get_basic(&iter, &addr);
+			dbus_message_unref(reply);
+		} else {
+			dbus_error_free(&error);
+			return false;
+		}
+	}
+	if (!addr) {
+		return false;
+	}
+
+	DBusConnection *a11y_bus = dbus_connection_open_private(addr, &error);
+#ifdef X11_ENABLED
+	if (x11_data) {
+		XFree(x11_data);
+	}
+#endif
+	if (dbus_error_is_set(&error)) {
+		dbus_error_free(&error);
+		return false;
+	}
+	if (!dbus_bus_register(a11y_bus, &error)) {
+		dbus_error_free(&error);
+		dbus_connection_close(a11y_bus);
+		dbus_connection_unref(a11y_bus);
+		return false;
+	}
+
+	bool at_spi_ok = false;
+	DBusMessage *message = dbus_message_new_method_call(SPI2_OBJECT_NAME, SPI2_OBJECT_ROOT, SPI2_OBJECT_PROPERTIES, "GetChildren");
+	if (message) {
+		DBusMessage *reply = dbus_connection_send_with_reply_and_block(a11y_bus, message, 250, &error);
+		dbus_message_unref(message);
+		if (!dbus_error_is_set(&error)) {
+			if (strcmp(dbus_message_get_signature(reply), "a(so)") == 0) {
+				at_spi_ok = true;
+			}
+			dbus_message_unref(reply);
+		} else {
+			dbus_error_free(&error);
+		}
+	}
+	dbus_connection_close(a11y_bus);
+	dbus_connection_unref(a11y_bus);
+
+	return at_spi_ok;
+}
 
 void FreeDesktopAtSPIMonitor::monitor_thread_func(void *p_userdata) {
 	FreeDesktopAtSPIMonitor *mon = (FreeDesktopAtSPIMonitor *)p_userdata;
@@ -72,7 +172,7 @@ void FreeDesktopAtSPIMonitor::monitor_thread_func(void *p_userdata) {
 				DBUS_TYPE_STRING, &member,
 				DBUS_TYPE_INVALID);
 
-		DBusMessage *reply = dbus_connection_send_with_reply_and_block(bus, message, 50, &error);
+		DBusMessage *reply = dbus_connection_send_with_reply_and_block(bus, message, 250, &error);
 		dbus_message_unref(message);
 
 		if (!dbus_error_is_set(&error)) {
@@ -80,35 +180,38 @@ void FreeDesktopAtSPIMonitor::monitor_thread_func(void *p_userdata) {
 			dbus_bool_t result;
 			dbus_message_iter_init(reply, &iter);
 			dbus_message_iter_recurse(&iter, &iter_variant);
+			bool enabled = true;
 			switch (dbus_message_iter_get_arg_type(&iter_variant)) {
 				case DBUS_TYPE_STRUCT: {
 					dbus_message_iter_recurse(&iter_variant, &iter_struct);
 					if (dbus_message_iter_get_arg_type(&iter_struct) == DBUS_TYPE_BOOLEAN) {
 						dbus_message_iter_get_basic(&iter_struct, &result);
-						if (result) {
-							mon->sr_enabled.set();
-						} else {
-							mon->sr_enabled.clear();
-						}
+						enabled = result;
 					}
 				} break;
 				case DBUS_TYPE_BOOLEAN: {
 					dbus_message_iter_get_basic(&iter_variant, &result);
-					if (result) {
-						mon->sr_enabled.set();
-					} else {
-						mon->sr_enabled.clear();
-					}
+					enabled = result;
 				} break;
 				default:
 					break;
 			}
 			dbus_message_unref(reply);
+			print_line("at-spi1: ", enabled ? "e" : "x");
+			if (enabled) {
+				enabled = check_a11y_bus_connections(bus);
+			}
+			print_line("at-spi2: ", enabled ? "e" : "x");
+			if (enabled) {
+				mon->sr_enabled.set();
+			} else {
+				mon->sr_enabled.clear();
+			}
 		} else {
 			dbus_error_free(&error);
 		}
 
-		usleep(50000);
+		usleep(2000000);
 	}
 
 	dbus_connection_unref(bus);
