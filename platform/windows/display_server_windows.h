@@ -30,6 +30,8 @@
 
 #pragma once
 
+#include "winrt_dispalyinfo.h"
+
 #include "core/config/project_settings.h"
 #include "core/input/input_event.h"
 #include "core/io/image.h"
@@ -285,6 +287,7 @@ class DisplayServerWindows : public DisplayServer {
 	struct WindowData {
 		HWND hWnd;
 		DisplayServerEnums::WindowID id;
+		WinRTDispalyInfo::WindowData *wwd = nullptr;
 
 		Vector<Vector2> mpath;
 		DisplayServerEnums::ProgressState progress_state = DisplayServerEnums::PROGRESS_STATE_NOPROGRESS;
@@ -555,6 +558,8 @@ class DisplayServerWindows : public DisplayServer {
 		float sdr_white_level = 0.0f;
 	};
 	AHashMap<int, ScreenHdrData> hdr_output_cache;
+
+	void _orientation_cb(int64_t p_id, int64_t p_orientation);
 
 	ScreenHdrData _get_screen_hdr_data(int p_screen) const;
 	void _update_hdr_output_for_window(DisplayServerEnums::WindowID p_window, const WindowData &p_window_data, ScreenHdrData p_screen_data);

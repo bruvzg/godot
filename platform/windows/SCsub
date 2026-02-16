@@ -101,9 +101,17 @@ if env["winrt"]:
             env_winrt["CPPDEFINES"].remove("_HAS_EXCEPTIONS")
         env_winrt.Append(CXXFLAGS=["/EHsc"])
     if not env_winrt.msvc:
-        env_winrt.Append(CPPPATH=[env["winrt_path"]])
+        env_winrt.Append(
+            CPPPATH=[env["winrt_path"], "#platform/windows/windows.graphics.display.interop", "#thirdparty/wil"]
+        )
+        env_winrt.Append(CCFLAGS=["-Wno-unknown-pragmas"])
+        tts_sources += [
+            "windows.graphics.display.interop/dlldata.c",
+            "windows.graphics.display.interop/windows.graphics.display.interop_i.c",
+            "windows.graphics.display.interop/windows.graphics.display.interop_p.c",
+        ]
     env_winrt.AppendUnique(CPPDEFINES=["WINRT_ENABLED"])
-    tts_sources += ["tts_driver_onecore.cpp"]
+    tts_sources += ["tts_driver_onecore.cpp", "winrt_displayinfo.cpp"]
 env_winrt.add_source_files(sources, tts_sources)
 
 sources += res_obj

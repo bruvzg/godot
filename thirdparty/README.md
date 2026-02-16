@@ -1251,6 +1251,21 @@ The following files are extracted from thirdparty sources:
 - `mesa/wayland-drm.xml`: https://gitlab.freedesktop.org/mesa/mesa/-/blob/mesa-25.3.0/src/egl/wayland/wayland-drm/wayland-drm.xml
 
 
+## wil
+
+- Upstream: https://github.com/microsoft/wil/
+- Version: v1.0.260126.7 (cbf677fb0a942557d08fd129f4c106a76247b2ec, 2026)
+- License: MIT
+
+File extracted from upstream release:
+
+- `wil/common.h`
+- `wil/cppwinrt.h`
+- `wil/result_macros.h`
+- `wil/wistd_config.h`
+- `wil/wistd_type_traits.h`
+- `LICENSE`
+
 ## wslay
 
 - Upstream: https://github.com/tatsuhiro-t/wslay

@@ -6922,6 +6922,10 @@ void DisplayServerWindows::_update_tablet_ctx(const String &p_old_driver, const 
 	}
 }
 
+void DisplayServerWindows::_orientation_cb(int64_t p_id, int64_t p_orientation) {
+	print_line("orientation cb ", p_id, " ", p_orientation);
+}
+
 Error DisplayServerWindows::_create_window(DisplayServerEnums::WindowID p_window_id, DisplayServerEnums::WindowMode p_mode, uint32_t p_flags, const Rect2i &p_rect, bool p_exclusive, DisplayServerEnums::WindowID p_transient_parent, HWND p_parent_hwnd, bool p_no_redirection_bitmap) {
 	DWORD dwExStyle;
 	DWORD dwStyle;
@@ -7017,6 +7021,8 @@ Error DisplayServerWindows::_create_window(DisplayServerEnums::WindowID p_window
 			windows.erase(id);
 			ERR_FAIL_V_MSG(ERR_CANT_CREATE, "Failed to create Windows OS window.");
 		}
+
+		wd.wwd = WinRTDispalyInfo::create_wd((uint64_t)wd.hWnd, callable_mp(this, &DisplayServerWindows::_orientation_cb), wd.id);
 
 		wd.parent_hwnd = p_parent_hwnd;
 
@@ -7211,6 +7217,8 @@ void DisplayServerWindows::_destroy_window(DisplayServerEnums::WindowID p_window
 		wd.icon_buffer_small.clear();
 		wd.icon_small = nullptr;
 	}
+
+	WinRTDispalyInfo::destroy_wd(wd.wwd);
 
 	DestroyWindow(wd.hWnd);
 	windows.erase(p_window_id);
