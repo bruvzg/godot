@@ -37,6 +37,7 @@
 #include "core/os/main_loop.h"
 #include "core/os/os.h"
 #include "drivers/png/png_driver_common.h"
+#include "servers/display/accessibility_server.h"
 
 #if defined(RD_ENABLED)
 #include "servers/rendering/rendering_context_driver.h"
@@ -487,6 +488,9 @@ int DisplayServerMacOSBase::accessibility_should_reduce_transparency() const {
 }
 
 int DisplayServerMacOSBase::accessibility_screen_reader_active() const {
+	if (AccessibilityServer::get_singleton() && AccessibilityServer::get_singleton()->override_active()) {
+		return true;
+	}
 	return [(GodotApplicationDelegate *)[[NSApplication sharedApplication] delegate] getVoiceOver];
 }
 

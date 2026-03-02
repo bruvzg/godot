@@ -1753,8 +1753,14 @@ void Window::_notification(int p_what) {
 				}
 			}
 
-			accessibility_title_element = RID();
-			accessibility_announcement_element = RID();
+			if (accessibility_title_element.is_valid()) {
+				AccessibilityServer::get_singleton()->free_element(accessibility_title_element);
+				accessibility_title_element = RID();
+			}
+			if (accessibility_announcement_element.is_valid()) {
+				AccessibilityServer::get_singleton()->free_element(accessibility_announcement_element);
+				accessibility_announcement_element = RID();
+			}
 
 			if (transient) {
 				_clear_transient();

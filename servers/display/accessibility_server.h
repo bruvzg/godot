@@ -60,12 +60,27 @@ protected:
 	static int server_create_count;
 
 public:
+#ifdef TOOLS_ENABLED
+	enum DebugCallbackEvent {
+		DEBUG_CB_WINDOW_ACTIVATE,
+		DEBUG_CB_WINDOW_DEACTIVATE,
+		DEBUG_CB_WINDOW_TREE_UPDATE,
+	};
+	virtual Array debug_get_window_list() = 0;
+	virtual Array debug_get_node_info(const RID &p_rid) = 0;
+	virtual void debug_trigger_action(const RID &p_rid, AccessibilityServerEnums::AccessibilityAction p_action, const Variant &p_data) = 0;
+	virtual void debug_set_update_callback(const Callable &p_callback) = 0;
+
+	virtual bool is_ancestor_of(const RID &p_rid, const RID &p_parent) const = 0;
+#endif
 	_FORCE_INLINE_ static AccessibilityServerEnums::AccessibilityMode get_mode() { return accessibility_mode; }
 	static void set_mode(AccessibilityServerEnums::AccessibilityMode p_mode) { accessibility_mode = p_mode; }
 
 	_FORCE_INLINE_ static AccessibilityServer *get_singleton() { return singleton; }
 
+	virtual String get_name() const = 0;
 	virtual bool is_supported() const { return false; }
+	virtual bool override_active() const { return false; }
 
 	virtual bool window_create(DisplayServerEnums::WindowID p_window_id, void *p_handle) = 0;
 	virtual void window_destroy(DisplayServerEnums::WindowID p_window_id) = 0;
@@ -100,6 +115,7 @@ public:
 	virtual void update_set_tooltip(const RID &p_id, const String &p_tooltip) = 0;
 	virtual void update_set_bounds(const RID &p_id, const Rect2 &p_rect) = 0;
 	virtual void update_set_transform(const RID &p_id, const Transform2D &p_transform) = 0;
+	virtual void update_clear_children(const RID &p_id) = 0;
 	virtual void update_add_child(const RID &p_id, const RID &p_child_id) = 0;
 	virtual void update_add_related_controls(const RID &p_id, const RID &p_related_id) = 0;
 	virtual void update_add_related_details(const RID &p_id, const RID &p_related_id) = 0;

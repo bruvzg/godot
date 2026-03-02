@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  accessibility_server_accesskit.h                                      */
+/*  accessibility_server_mock.h                                           */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -30,21 +30,15 @@
 
 #pragma once
 
-#ifdef ACCESSKIT_ENABLED
+#ifdef TOOLS_ENABLED
 
 #include "core/templates/rid_owner.h"
 #include "servers/display/accessibility_server.h"
 
-#include <accesskit.h>
-
-class AccessibilityServerAccessKit : public AccessibilityServer {
-	GDSOFTCLASS(AccessibilityServerAccessKit, AccessibilityServer);
-
-	static AccessibilityServer *create_func(Error &r_error);
+class AccessibilityServerMock : public AccessibilityServer {
+	friend class AccessibilityServer;
 
 	struct AccessibilityElement {
-		HashMap<accesskit_action, Callable> actions;
-
 		DisplayServerEnums::WindowID window_id = DisplayServerEnums::INVALID_WINDOW_ID;
 		RID parent;
 		bool owned_by_parent = false;
@@ -57,60 +51,34 @@ class AccessibilityServerAccessKit : public AccessibilityServer {
 		Variant value;
 		int64_t flags = 0;
 
-		accesskit_role role = ACCESSKIT_ROLE_UNKNOWN;
-		accesskit_node *node = nullptr;
+		AccessibilityServerEnums::AccessibilityRole role;
+		HashMap<AccessibilityServerEnums::AccessibilityAction, Callable> actions;
 	};
 	mutable RID_PtrOwner<AccessibilityElement> rid_owner;
 
 	struct WindowData {
 		// Adapter.
-#ifdef WINDOWS_ENABLED
-		accesskit_windows_subclassing_adapter *adapter = nullptr;
-#endif
-#ifdef MACOS_ENABLED
-		accesskit_macos_subclassing_adapter *adapter = nullptr;
-#endif
-#ifdef LINUXBSD_ENABLED
-		accesskit_unix_adapter *adapter = nullptr;
-#endif
-
 		RID root_id;
-		bool initial_update_completed = false;
 		HashSet<RID> update;
-		Callable activate;
-		Callable deactivate;
-		bool activated = false;
 	};
 
 	RID focus;
 
 	HashMap<DisplayServerEnums::WindowID, WindowData> windows;
-
-	HashMap<AccessibilityServerEnums::AccessibilityRole, accesskit_role> role_map;
-	HashMap<AccessibilityServerEnums::AccessibilityAction, accesskit_action> action_map;
-
-	_FORCE_INLINE_ accesskit_role _accessibility_role(AccessibilityServerEnums::AccessibilityRole p_role) const;
-	_FORCE_INLINE_ accesskit_action _accessibility_action(AccessibilityServerEnums::AccessibilityAction p_action) const;
-
 #ifdef TOOLS_ENABLED
-	HashMap<accesskit_role, AccessibilityServerEnums::AccessibilityRole> role_map_inv;
-	HashMap<accesskit_action, AccessibilityServerEnums::AccessibilityAction> action_map_inv;
 	Callable debug_cb;
-
-	_FORCE_INLINE_ AccessibilityServerEnums::AccessibilityRole _accessibility_role_inv(accesskit_role p_role) const;
-	_FORCE_INLINE_ AccessibilityServerEnums::AccessibilityAction _accessibility_action_inv(accesskit_action p_action) const;
 #endif
 
 	void _free_recursive(WindowData *p_wd, const RID &p_id);
-	_FORCE_INLINE_ void _ensure_node(const RID &p_id, AccessibilityElement *p_ae);
-
-	static void _accessibility_action_callback(struct accesskit_action_request *p_request, void *p_user_data);
-	static accesskit_tree_update *_accessibility_initial_tree_update_callback(void *p_user_data);
-	static void _accessibility_deactivation_callback(void *p_user_data);
-	static accesskit_tree_update *_accessibility_build_tree_update(void *p_user_data);
 
 	bool in_accessibility_update = false;
 	Callable update_cb;
+
+protected:
+	static AccessibilityServer *create_func(Error &r_error) {
+		r_error = OK;
+		return memnew(AccessibilityServerMock);
+	}
 
 public:
 #ifdef TOOLS_ENABLED
@@ -124,9 +92,9 @@ public:
 	static Error parse_message(void *p_user, const String &p_msg, const Array &p_args, bool &r_captured);
 #endif
 
-	String get_name() const override { return "accesskit"; }
+	String get_name() const override { return "mock"; }
 	bool is_supported() const override { return true; }
-	bool override_active() const override { return false; }
+	bool override_active() const override { return true; }
 
 	bool window_create(DisplayServerEnums::WindowID p_window_id, void *p_handle) override;
 	void window_destroy(DisplayServerEnums::WindowID p_window_id) override;
@@ -147,22 +115,19 @@ public:
 
 	void set_window_rect(DisplayServerEnums::WindowID p_window_id, const Rect2 &p_rect_out, const Rect2 &p_rect_in) override;
 	void set_window_focused(DisplayServerEnums::WindowID p_window_id, bool p_focused) override;
-	void set_window_callbacks(DisplayServerEnums::WindowID p_window_id, const Callable &p_activate_callable, const Callable &p_deativate_callable) override;
-	void window_activation_completed(DisplayServerEnums::WindowID p_window_id) override;
-	void window_deactivation_completed(DisplayServerEnums::WindowID p_window_id) override;
 
 	void update_set_role(const RID &p_id, AccessibilityServerEnums::AccessibilityRole p_role) override;
 	void update_set_name(const RID &p_id, const String &p_name) override;
-	void update_set_braille_label(const RID &p_id, const String &p_name) override;
-	void update_set_braille_role_description(const RID &p_id, const String &p_description) override;
+	void update_set_braille_label(const RID &p_id, const String &p_name) override {}
+	void update_set_braille_role_description(const RID &p_id, const String &p_description) override {}
 	void update_set_extra_info(const RID &p_id, const String &p_name_extra_info) override;
 	void update_set_description(const RID &p_id, const String &p_description) override;
 	void update_set_value(const RID &p_id, const String &p_value) override;
 	void update_set_tooltip(const RID &p_id, const String &p_tooltip) override;
 	void update_set_bounds(const RID &p_id, const Rect2 &p_rect) override;
 	void update_set_transform(const RID &p_id, const Transform2D &p_transform) override;
-	void update_clear_children(const RID &p_id) override;
 	void update_add_child(const RID &p_id, const RID &p_child_id) override;
+	void update_clear_children(const RID &p_id) override;
 	void update_add_related_controls(const RID &p_id, const RID &p_related_id) override;
 	void update_add_related_details(const RID &p_id, const RID &p_related_id) override;
 	void update_add_related_described_by(const RID &p_id, const RID &p_related_id) override;
@@ -215,11 +180,12 @@ public:
 	void update_set_color_value(const RID &p_id, const Color &p_color) override;
 	void update_set_background_color(const RID &p_id, const Color &p_color) override;
 	void update_set_foreground_color(const RID &p_id, const Color &p_color) override;
+	void set_window_callbacks(DisplayServerEnums::WindowID p_window_id, const Callable &p_activate_callable, const Callable &p_deativate_callable) override {}
+	void window_activation_completed(DisplayServerEnums::WindowID p_window_id) override {}
+	void window_deactivation_completed(DisplayServerEnums::WindowID p_window_id) override {}
 
-	static void register_create_func();
-
-	AccessibilityServerAccessKit();
-	~AccessibilityServerAccessKit();
+	AccessibilityServerMock();
+	virtual ~AccessibilityServerMock();
 };
 
-#endif // ACCESSKIT_ENABLED
+#endif

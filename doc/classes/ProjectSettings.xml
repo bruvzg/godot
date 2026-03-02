@@ -276,6 +276,7 @@
 			Accessibility driver:
 			-[b]accesskit[/b] (default): AccessKit driver.
 			-[b]dummy[/b]: Dummy driver, screen reader support is disabled.
+			-[b]mock[/b]: Editor only. Specialized implementation for API debugging.
 		</member>
 		<member name="accessibility/general/accessibility_support" type="int" setter="" getter="" default="0" keywords="screen reader">
 			Accessibility support mode:

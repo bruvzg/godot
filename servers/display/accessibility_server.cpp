@@ -33,11 +33,22 @@
 #include "core/object/class_db.h"
 #include "servers/display/accessibility_server_dummy.h"
 
+#ifdef TOOLS_ENABLED
+#include "accessibility_server_mock.h"
+#endif
+
 AccessibilityServer::AccessibilityServerCreate AccessibilityServer::server_create_functions[AccessibilityServer::MAX_SERVERS] = {
-	{ "dummy", &AccessibilityServerDummy::create_func }
+#ifdef TOOLS_ENABLED
+	{ "mock", &AccessibilityServerMock::create_func },
+#endif
+	{ "dummy", &AccessibilityServerDummy::create_func },
 };
 
+#ifdef TOOLS_ENABLED
+int AccessibilityServer::server_create_count = 2;
+#else
 int AccessibilityServer::server_create_count = 1;
+#endif
 
 void AccessibilityServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_supported"), &AccessibilityServer::is_supported);

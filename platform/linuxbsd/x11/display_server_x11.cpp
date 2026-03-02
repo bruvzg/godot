@@ -3479,6 +3479,9 @@ int DisplayServerX11::accessibility_should_increase_contrast() const {
 }
 
 int DisplayServerX11::accessibility_screen_reader_active() const {
+	if (AccessibilityServer::get_singleton() && AccessibilityServer::get_singleton()->override_active()) {
+		return true;
+	}
 #ifdef DBUS_ENABLED
 	if (atspi_monitor && atspi_monitor->is_supported()) {
 		return atspi_monitor->is_active();

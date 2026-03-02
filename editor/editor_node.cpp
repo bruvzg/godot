@@ -55,6 +55,7 @@
 #include "editor/debugger/editor_debugger_node.h"
 #include "editor/debugger/script_editor_debugger.h"
 #include "editor/doc/editor_help.h"
+#include "editor/docks/accessibility_inspector_dock.h"
 #include "editor/docks/editor_dock_manager.h"
 #include "editor/docks/filesystem_dock.h"
 #include "editor/docks/groups_dock.h"
@@ -9137,6 +9138,9 @@ EditorNode::EditorNode() {
 
 	log = memnew(EditorLog);
 	editor_dock_manager->add_dock(log);
+
+	memnew(AccessibilityInspectorDock);
+	editor_dock_manager->add_dock(AccessibilityInspectorDock::get_singleton());
 
 	center_split->connect(SceneStringName(resized), callable_mp(this, &EditorNode::_vp_resized));
 

@@ -85,8 +85,13 @@ void Node::_notification(int p_notification) {
 				for (int i = 0; i < get_child_count(); i++) {
 					Node *child_node = get_child(i);
 					Window *child_wnd = Object::cast_to<Window>(child_node);
-					if (child_wnd && !(child_wnd->is_visible() && (child_wnd->is_embedded() || child_wnd->is_popup()))) {
-						continue;
+					if (child_wnd) {
+						if (!child_wnd->is_visible()) {
+							continue;
+						}
+						if (!(child_wnd->is_embedded() || child_wnd->is_popup())) {
+							continue;
+						}
 					}
 					if (child_node->is_part_of_edited_scene()) {
 						continue;

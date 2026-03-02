@@ -43,6 +43,18 @@ protected:
 	}
 
 public:
+#ifdef TOOLS_ENABLED
+	Array debug_get_window_list() override { return Array(); }
+	Array debug_get_node_info(const RID &p_rid) override { return Array(); }
+	void debug_trigger_action(const RID &p_rid, AccessibilityServerEnums::AccessibilityAction p_action, const Variant &p_data) override {}
+	void debug_set_update_callback(const Callable &p_callback) override {}
+
+	bool is_ancestor_of(const RID &p_rid, const RID &p_parent) const override { return false; }
+#endif
+	virtual String get_name() const override { return "dummy"; }
+	virtual bool is_supported() const override { return false; }
+	virtual bool override_active() const override { return false; }
+
 	virtual bool window_create(DisplayServerEnums::WindowID p_window_id, void *p_handle) override { return true; }
 	virtual void window_destroy(DisplayServerEnums::WindowID p_window_id) override {}
 
@@ -76,6 +88,7 @@ public:
 	virtual void update_set_tooltip(const RID &p_id, const String &p_tooltip) override {}
 	virtual void update_set_bounds(const RID &p_id, const Rect2 &p_rect) override {}
 	virtual void update_set_transform(const RID &p_id, const Transform2D &p_transform) override {}
+	virtual void update_clear_children(const RID &p_id) override {}
 	virtual void update_add_child(const RID &p_id, const RID &p_child_id) override {}
 	virtual void update_add_related_controls(const RID &p_id, const RID &p_related_id) override {}
 	virtual void update_add_related_details(const RID &p_id, const RID &p_related_id) override {}

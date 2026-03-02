@@ -260,6 +260,8 @@ void SceneTree::_process_accessibility_changes(DisplayServerEnums::WindowID p_wi
 		} else if (node->get_non_popup_window()->get_window_id() != p_window_id) {
 			continue; // Another window, skip.
 		}
+		AccessibilityServer::get_singleton()->update_clear_children(node->get_accessibility_element());
+
 		node->notification(Node::NOTIFICATION_ACCESSIBILITY_UPDATE);
 		processed.push_back(id);
 	}

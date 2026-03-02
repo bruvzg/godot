@@ -642,7 +642,7 @@ void Main::print_help(const char *p_binary) {
 #endif
 	print_help_option("--wid <window_id>", "Request parented to window.\n");
 	print_help_option("--accessibility <mode>", "Select accessibility mode ['auto' (when screen reader is running, default), 'always', 'disabled'].\n");
-	print_help_option("--accessibility-driver <driver>", "Select accessibility driver ['accesskit', 'dummy'].\n");
+	print_help_option("--accessibility-driver <driver>", "Select accessibility driver ['accesskit', 'dummy', 'mock'].\n");
 
 	print_help_title("Debug options");
 	print_help_option("-d, --debug", "Debug (local stdout debugger).\n");

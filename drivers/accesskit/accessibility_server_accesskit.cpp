@@ -32,6 +32,12 @@
 
 #include "accessibility_server_accesskit.h"
 
+#ifdef TOOLS_ENABLED
+#include "core/debugger/engine_debugger.h"
+#include "core/variant/typed_array.h"
+#include "servers/display/display_server.h"
+#endif
+
 #include "servers/text/text_server.h"
 
 _FORCE_INLINE_ accesskit_role AccessibilityServerAccessKit::_accessibility_role(AccessibilityServerEnums::AccessibilityRole p_role) const {
@@ -47,6 +53,130 @@ _FORCE_INLINE_ accesskit_action AccessibilityServerAccessKit::_accessibility_act
 	}
 	return ACCESSKIT_ACTION_CLICK;
 }
+
+#ifdef TOOLS_ENABLED
+
+_FORCE_INLINE_ AccessibilityServerEnums::AccessibilityRole AccessibilityServerAccessKit::_accessibility_role_inv(accesskit_role p_role) const {
+	if (role_map_inv.has(p_role)) {
+		return role_map_inv[p_role];
+	}
+	return AccessibilityServerEnums::AccessibilityRole::ROLE_UNKNOWN;
+}
+
+_FORCE_INLINE_ AccessibilityServerEnums::AccessibilityAction AccessibilityServerAccessKit::_accessibility_action_inv(accesskit_action p_action) const {
+	if (action_map_inv.has(p_action)) {
+		return action_map_inv[p_action];
+	}
+	return AccessibilityServerEnums::AccessibilityAction::ACTION_CLICK;
+}
+
+Array AccessibilityServerAccessKit::debug_get_window_list() {
+	Array arr;
+	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &wd : windows) {
+		arr.push_back(wd.key);
+		arr.push_back(wd.value.root_id);
+	}
+	return arr;
+}
+
+Array AccessibilityServerAccessKit::debug_get_node_info(const RID &p_rid) {
+	Array arr;
+	arr.push_back(p_rid);
+
+	AccessibilityElement *ae = rid_owner.get_or_null(p_rid);
+	if (ae) {
+		_ensure_node(p_rid, ae);
+		arr.push_back(_accessibility_role_inv(ae->role));
+		TypedArray<RID> c;
+		for (const RID &r : ae->children) {
+			c.push_back(r);
+		}
+		for (const RID &r : ae->indirect_children) {
+			c.push_back(r);
+		}
+		arr.push_back(ae->parent);
+		arr.push_back(c);
+		arr.push_back(ae->meta);
+		arr.push_back(ae->name);
+		arr.push_back(ae->name_extra_info);
+		TypedArray<AccessibilityServerEnums::AccessibilityAction> actions;
+		for (const KeyValue<accesskit_action, Callable> &act : ae->actions) {
+			actions.push_back(_accessibility_action_inv(act.key));
+		}
+		arr.push_back(actions);
+		arr.push_back(ae->run);
+		arr.push_back(ae->value);
+		arr.push_back(ae->flags);
+		arr.push_back(String::utf8(accesskit_node_debug(ae->node)));
+		arr.push_back(ae->window_id);
+	}
+	return arr;
+}
+
+void AccessibilityServerAccessKit::debug_trigger_action(const RID &p_rid, AccessibilityServerEnums::AccessibilityAction p_action, const Variant &p_data) {
+	AccessibilityElement *ae = rid_owner.get_or_null(p_rid);
+	ERR_FAIL_NULL(ae);
+
+	accesskit_action action = _accessibility_action(p_action);
+
+	Variant rq_data = p_data;
+	if (!ae->actions.has(action) && ae->role == ACCESSKIT_ROLE_TEXT_RUN && action == ACCESSKIT_ACTION_SCROLL_INTO_VIEW) {
+		AccessibilityElement *root_ae = static_cast<AccessibilityServerAccessKit *>(singleton)->rid_owner.get_or_null(ae->parent);
+		ERR_FAIL_NULL(root_ae);
+		ae = root_ae;
+		rq_data = ae->run;
+	}
+
+	if (ae->actions.has(action)) {
+		Callable &cb = ae->actions[action];
+		cb.call_deferred(rq_data);
+	}
+}
+
+bool AccessibilityServerAccessKit::is_ancestor_of(const RID &p_rid, const RID &p_parent) const {
+	AccessibilityElement *ae = rid_owner.get_or_null(p_rid);
+	while (ae) {
+		if (ae->parent.is_null()) {
+			return false;
+		}
+		if (ae->parent == p_parent) {
+			return true;
+		}
+		ae = rid_owner.get_or_null(ae->parent);
+	}
+	return false;
+}
+
+Error AccessibilityServerAccessKit::parse_message(void *p_user, const String &p_msg, const Array &p_args, bool &r_captured) {
+	ERR_FAIL_NULL_V(singleton, ERR_UNCONFIGURED);
+	AccessibilityServerAccessKit *drv = static_cast<AccessibilityServerAccessKit *>(singleton);
+
+	if (p_msg == "rq_window_list") {
+		EngineDebugger::get_singleton()->send_message("accessibility:window_list", drv->debug_get_window_list());
+	} else if (p_msg == "rq_node_info") {
+		ERR_FAIL_COND_V(p_args.size() < 1, ERR_INVALID_DATA);
+		RID rid = p_args[0];
+		EngineDebugger::get_singleton()->send_message("accessibility:ae_info", drv->debug_get_node_info(rid));
+	} else if (p_msg == "rq_action") {
+		ERR_FAIL_COND_V(p_args.size() < 3, ERR_INVALID_DATA);
+		RID rid = p_args[0];
+		AccessibilityServerEnums::AccessibilityAction action = p_args[1];
+		Variant data = p_args[2];
+		drv->debug_trigger_action(rid, action, data);
+	} else if (p_msg == "rq_state") {
+		Array arr;
+		arr.push_back(get_singleton()->get_mode());
+		arr.push_back(DisplayServer::get_singleton()->accessibility_should_increase_contrast());
+		arr.push_back(DisplayServer::get_singleton()->accessibility_should_reduce_animation());
+		arr.push_back(DisplayServer::get_singleton()->accessibility_should_reduce_transparency());
+		arr.push_back(DisplayServer::get_singleton()->accessibility_screen_reader_active());
+		EngineDebugger::get_singleton()->send_message("accessibility:state", arr);
+	}
+
+	return OK;
+}
+
+#endif
 
 bool AccessibilityServerAccessKit::window_create(DisplayServerEnums::WindowID p_window_id, void *p_handle) {
 	ERR_FAIL_COND_V(windows.has(p_window_id), false);
@@ -85,6 +215,21 @@ void AccessibilityServerAccessKit::window_destroy(DisplayServerEnums::WindowID p
 	ERR_FAIL_NULL(wd);
 
 	print_verbose(vformat("Accessibility: window %d adapter destroyed.", p_window_id));
+#ifdef TOOLS_ENABLED
+	if (wd->activated) {
+		if (EngineDebugger::get_singleton() || debug_cb.is_valid()) {
+			Array arr;
+			arr.push_back(p_window_id);
+			arr.push_back(wd->root_id);
+			if (EngineDebugger::get_singleton()) {
+				EngineDebugger::get_singleton()->send_message("accessibility:deactivate_window", arr);
+			}
+			if (static_cast<AccessibilityServerAccessKit *>(singleton)->debug_cb.is_valid()) {
+				static_cast<AccessibilityServerAccessKit *>(singleton)->debug_cb.call(DebugCallbackEvent::DEBUG_CB_WINDOW_DEACTIVATE, arr);
+			}
+		}
+	}
+#endif
 
 #ifdef WINDOWS_ENABLED
 	accesskit_windows_subclassing_adapter_free(wd->adapter);
@@ -101,37 +246,53 @@ void AccessibilityServerAccessKit::window_destroy(DisplayServerEnums::WindowID p
 }
 
 void AccessibilityServerAccessKit::_accessibility_deactivation_callback(void *p_user_data) {
+	AccessibilityServerAccessKit *drv = static_cast<AccessibilityServerAccessKit *>(singleton);
 	DisplayServerEnums::WindowID window_id = (DisplayServerEnums::WindowID)(size_t)p_user_data;
-	WindowData *wd = static_cast<AccessibilityServerAccessKit *>(get_singleton())->windows.getptr(window_id);
+	WindowData *wd = drv->windows.getptr(window_id);
 	ERR_FAIL_NULL(wd);
 
 	print_verbose(vformat("Accessibility: window %d adapter deactivated.", window_id));
 
-	if (static_cast<AccessibilityServerAccessKit *>(get_singleton())->focus.is_valid()) {
-		AccessibilityElement *ae = static_cast<AccessibilityServerAccessKit *>(get_singleton())->rid_owner.get_or_null(static_cast<AccessibilityServerAccessKit *>(get_singleton())->focus);
+	if (drv->focus.is_valid()) {
+		AccessibilityElement *ae = drv->rid_owner.get_or_null(drv->focus);
 		if (ae && ae->window_id == window_id) {
-			static_cast<AccessibilityServerAccessKit *>(get_singleton())->focus = RID();
+			drv->focus = RID();
 		}
 	}
 	if (wd->deactivate.is_valid()) {
 		wd->deactivate.call_deferred(); // Should be called on main thread only.
 	}
-
+#ifdef TOOLS_ENABLED
+	if (wd->activated) {
+		if (EngineDebugger::get_singleton() || drv->debug_cb.is_valid()) {
+			Array arr;
+			arr.push_back(window_id);
+			arr.push_back(wd->root_id);
+			if (EngineDebugger::get_singleton()) {
+				EngineDebugger::get_singleton()->send_message("accessibility:deactivate_window", arr);
+			}
+			if (drv->debug_cb.is_valid()) {
+				drv->debug_cb.call(DebugCallbackEvent::DEBUG_CB_WINDOW_DEACTIVATE, arr);
+			}
+		}
+	}
+#endif
 	wd->activated = false;
 	wd->update.clear();
 }
 
 void AccessibilityServerAccessKit::_accessibility_action_callback(struct accesskit_action_request *p_request, void *p_user_data) {
+	AccessibilityServerAccessKit *drv = static_cast<AccessibilityServerAccessKit *>(singleton);
 	DisplayServerEnums::WindowID window_id = (DisplayServerEnums::WindowID)(size_t)p_user_data;
-	ERR_FAIL_COND(!static_cast<AccessibilityServerAccessKit *>(get_singleton())->windows.has(window_id));
+	ERR_FAIL_COND(!drv->windows.has(window_id));
 
 	RID rid = RID::from_uint64(p_request->target_node);
-	AccessibilityElement *ae = static_cast<AccessibilityServerAccessKit *>(get_singleton())->rid_owner.get_or_null(rid);
+	AccessibilityElement *ae = drv->rid_owner.get_or_null(rid);
 	ERR_FAIL_NULL(ae);
 
 	Variant rq_data;
 	if (!ae->actions.has(p_request->action) && ae->role == ACCESSKIT_ROLE_TEXT_RUN && p_request->action == ACCESSKIT_ACTION_SCROLL_INTO_VIEW) {
-		AccessibilityElement *root_ae = static_cast<AccessibilityServerAccessKit *>(get_singleton())->rid_owner.get_or_null(ae->parent);
+		AccessibilityElement *root_ae = drv->rid_owner.get_or_null(ae->parent);
 		ERR_FAIL_NULL(root_ae);
 		ae = root_ae;
 		rq_data = ae->run;
@@ -192,11 +353,11 @@ void AccessibilityServerAccessKit::_accessibility_action_callback(struct accessk
 						Dictionary sel;
 
 						RID start_rid = RID::from_uint64(p_request->data.value.set_text_selection.anchor.node);
-						AccessibilityElement *start_ae = static_cast<AccessibilityServerAccessKit *>(get_singleton())->rid_owner.get_or_null(start_rid);
+						AccessibilityElement *start_ae = drv->rid_owner.get_or_null(start_rid);
 						ERR_FAIL_NULL(start_ae);
 
 						RID end_rid = RID::from_uint64(p_request->data.value.set_text_selection.focus.node);
-						AccessibilityElement *end_ae = static_cast<AccessibilityServerAccessKit *>(get_singleton())->rid_owner.get_or_null(end_rid);
+						AccessibilityElement *end_ae = drv->rid_owner.get_or_null(end_rid);
 						ERR_FAIL_NULL(end_ae);
 
 						sel["start_element"] = start_ae->parent;
@@ -214,8 +375,9 @@ void AccessibilityServerAccessKit::_accessibility_action_callback(struct accessk
 }
 
 accesskit_tree_update *AccessibilityServerAccessKit::_accessibility_initial_tree_update_callback(void *p_user_data) {
+	AccessibilityServerAccessKit *drv = static_cast<AccessibilityServerAccessKit *>(singleton);
 	DisplayServerEnums::WindowID window_id = (DisplayServerEnums::WindowID)(size_t)p_user_data;
-	WindowData *wd = static_cast<AccessibilityServerAccessKit *>(get_singleton())->windows.getptr(window_id);
+	WindowData *wd = drv->windows.getptr(window_id);
 	ERR_FAIL_NULL_V(wd, nullptr);
 
 	accesskit_node *win_node = accesskit_node_new(ACCESSKIT_ROLE_WINDOW);
@@ -235,6 +397,19 @@ accesskit_tree_update *AccessibilityServerAccessKit::_accessibility_initial_tree
 		wd->activate.call_deferred(); // Should be called on main thread only.
 	}
 	wd->activated = true;
+#ifdef TOOLS_ENABLED
+	if (EngineDebugger::get_singleton() || drv->debug_cb.is_valid()) {
+		Array arr;
+		arr.push_back(window_id);
+		arr.push_back(wd->root_id);
+		if (EngineDebugger::get_singleton()) {
+			EngineDebugger::get_singleton()->send_message("accessibility:activate_window", arr);
+		}
+		if (drv->debug_cb.is_valid()) {
+			drv->debug_cb.call(DebugCallbackEvent::DEBUG_CB_WINDOW_ACTIVATE, arr);
+		}
+	}
+#endif
 
 	return tree_update;
 }
@@ -302,6 +477,7 @@ RID AccessibilityServerAccessKit::create_sub_element(const RID &p_parent_rid, Ac
 	ae->role = _accessibility_role(p_role);
 	ae->window_id = parent_ae->window_id;
 	ae->parent = p_parent_rid;
+	ae->owned_by_parent = true;
 	ae->node = accesskit_node_new(ae->role);
 	RID rid = rid_owner.make_rid(ae);
 	if (p_insert_pos == -1) {
@@ -325,6 +501,7 @@ RID AccessibilityServerAccessKit::create_sub_text_edit_elements(const RID &p_par
 	root_ae->role = ACCESSKIT_ROLE_GENERIC_CONTAINER;
 	root_ae->window_id = parent_ae->window_id;
 	root_ae->parent = p_parent_rid;
+	root_ae->owned_by_parent = true;
 	root_ae->node = accesskit_node_new(root_ae->role);
 	RID root_rid = rid_owner.make_rid(root_ae);
 	if (p_insert_pos == -1) {
@@ -428,6 +605,7 @@ RID AccessibilityServerAccessKit::create_sub_text_edit_elements(const RID &p_par
 			ae->role = ACCESSKIT_ROLE_TEXT_RUN;
 			ae->window_id = parent_ae->window_id;
 			ae->parent = root_rid;
+			ae->owned_by_parent = true;
 			ae->run = Vector3i(cur_range.x, cur_range.y, i);
 			ae->node = accesskit_node_new(ae->role);
 
@@ -520,6 +698,7 @@ RID AccessibilityServerAccessKit::create_sub_text_edit_elements(const RID &p_par
 		ae->role = ACCESSKIT_ROLE_TEXT_RUN;
 		ae->window_id = parent_ae->window_id;
 		ae->parent = root_rid;
+		ae->owned_by_parent = true;
 		ae->run = Vector3i(full_range.y, full_range.y, run_count);
 		ae->node = accesskit_node_new(ae->role);
 
@@ -602,7 +781,7 @@ void AccessibilityServerAccessKit::free_element(const RID &p_id) {
 	if (ae) {
 		WindowData *wd = windows.getptr(ae->window_id);
 		AccessibilityElement *parent_ae = rid_owner.get_or_null(ae->parent);
-		if (parent_ae) {
+		if (ae->owned_by_parent && parent_ae) {
 			parent_ae->children.erase(p_id);
 		}
 		_free_recursive(wd, p_id);
@@ -641,36 +820,60 @@ RID AccessibilityServerAccessKit::get_window_root(DisplayServerEnums::WindowID p
 }
 
 accesskit_tree_update *AccessibilityServerAccessKit::_accessibility_build_tree_update(void *p_user_data) {
+	AccessibilityServerAccessKit *drv = static_cast<AccessibilityServerAccessKit *>(singleton);
 	DisplayServerEnums::WindowID window_id = (DisplayServerEnums::WindowID)(size_t)p_user_data;
 
-	ERR_FAIL_COND_V(!static_cast<AccessibilityServerAccessKit *>(get_singleton())->windows.has(window_id), nullptr);
-	WindowData &wd = static_cast<AccessibilityServerAccessKit *>(get_singleton())->windows[window_id];
+	ERR_FAIL_COND_V(!drv->windows.has(window_id), nullptr);
+	WindowData &wd = drv->windows[window_id];
 
-	static_cast<AccessibilityServerAccessKit *>(get_singleton())->in_accessibility_update = true;
-	if (static_cast<AccessibilityServerAccessKit *>(get_singleton())->update_cb.is_valid()) {
-		static_cast<AccessibilityServerAccessKit *>(get_singleton())->update_cb.call(window_id);
+	drv->in_accessibility_update = true;
+	if (drv->update_cb.is_valid()) {
+		drv->update_cb.call(window_id);
 	}
-	static_cast<AccessibilityServerAccessKit *>(get_singleton())->in_accessibility_update = false;
+	drv->in_accessibility_update = false;
 
-	AccessibilityElement *focus_ae = static_cast<AccessibilityServerAccessKit *>(get_singleton())->rid_owner.get_or_null(static_cast<AccessibilityServerAccessKit *>(get_singleton())->focus);
+	AccessibilityElement *focus_ae = drv->rid_owner.get_or_null(drv->focus);
 	uint32_t update_size = wd.update.size();
 
 	accesskit_node_id ac_focus = (accesskit_node_id)wd.root_id.get_id();
 	if (focus_ae && focus_ae->window_id == window_id) {
-		ac_focus = (accesskit_node_id) static_cast<AccessibilityServerAccessKit *>(get_singleton())->focus.get_id();
+		ac_focus = (accesskit_node_id)drv->focus.get_id();
 	}
+#ifdef TOOLS_ENABLED
+	bool dbg_en = EngineDebugger::get_singleton() || drv->debug_cb.is_valid();
+	Array arr;
+	if (dbg_en) {
+		arr.push_back(window_id);
+		arr.push_back(drv->focus);
+	}
+#endif
 	accesskit_tree_update *tree_update = (update_size > 0) ? accesskit_tree_update_with_capacity_and_focus(update_size, ac_focus) : accesskit_tree_update_with_focus(ac_focus);
 	for (const RID &rid : wd.update) {
-		AccessibilityElement *ae = static_cast<AccessibilityServerAccessKit *>(get_singleton())->rid_owner.get_or_null(rid);
+		AccessibilityElement *ae = drv->rid_owner.get_or_null(rid);
 		if (ae && ae->node) {
 			for (const RID &child_rid : ae->children) {
 				accesskit_node_push_child(ae->node, (accesskit_node_id)child_rid.get_id());
 			}
+#ifdef TOOLS_ENABLED
+			if (dbg_en) {
+				arr.push_back(rid);
+			}
+#endif
 			accesskit_tree_update_push_node(tree_update, (accesskit_node_id)rid.get_id(), ae->node);
 			ae->node = nullptr;
 		}
 	}
 	wd.update.clear();
+#ifdef TOOLS_ENABLED
+	if (dbg_en) {
+		if (EngineDebugger::get_singleton()) {
+			EngineDebugger::get_singleton()->send_message("accessibility:update_window", arr);
+		}
+		if (drv->debug_cb.is_valid()) {
+			drv->debug_cb.call(DebugCallbackEvent::DEBUG_CB_WINDOW_TREE_UPDATE, arr);
+		}
+	}
+#endif
 
 	return tree_update;
 }
@@ -889,6 +1092,14 @@ void AccessibilityServerAccessKit::update_set_transform(const RID &p_id, const T
 	accesskit_node_set_transform(ae->node, transform);
 }
 
+void AccessibilityServerAccessKit::update_clear_children(const RID &p_id) {
+	ERR_FAIL_COND_MSG(!in_accessibility_update, "Accessibility updates are only allowed inside the NOTIFICATION_ACCESSIBILITY_UPDATE notification.");
+
+	AccessibilityElement *ae = rid_owner.get_or_null(p_id);
+	ERR_FAIL_NULL(ae);
+	ae->indirect_children.clear();
+}
+
 void AccessibilityServerAccessKit::update_add_child(const RID &p_id, const RID &p_child_id) {
 	ERR_FAIL_COND_MSG(!in_accessibility_update, "Accessibility updates are only allowed inside the NOTIFICATION_ACCESSIBILITY_UPDATE notification.");
 
@@ -897,6 +1108,8 @@ void AccessibilityServerAccessKit::update_add_child(const RID &p_id, const RID &
 	AccessibilityElement *other_ae = rid_owner.get_or_null(p_child_id);
 	ERR_FAIL_NULL(other_ae);
 	ERR_FAIL_COND(other_ae->window_id != ae->window_id);
+	other_ae->parent = p_id;
+	ae->indirect_children.push_back(p_child_id);
 	_ensure_node(p_id, ae);
 
 	accesskit_node_push_child(ae->node, (accesskit_node_id)p_child_id.get_id());
@@ -1755,6 +1968,11 @@ AccessibilityServerAccessKit::AccessibilityServerAccessKit() {
 	role_map[AccessibilityServerEnums::AccessibilityRole::ROLE_TOOLTIP] = ACCESSKIT_ROLE_TOOLTIP;
 	role_map[AccessibilityServerEnums::AccessibilityRole::ROLE_REGION] = ACCESSKIT_ROLE_REGION;
 	role_map[AccessibilityServerEnums::AccessibilityRole::ROLE_TEXT_RUN] = ACCESSKIT_ROLE_TEXT_RUN;
+#ifdef TOOLS_ENABLED
+	for (const KeyValue<AccessibilityServerEnums::AccessibilityRole, accesskit_role> &role : role_map) {
+		role_map_inv[role.value] = role.key;
+	}
+#endif
 
 	action_map[AccessibilityServerEnums::AccessibilityAction::ACTION_CLICK] = ACCESSKIT_ACTION_CLICK;
 	action_map[AccessibilityServerEnums::AccessibilityAction::ACTION_FOCUS] = ACCESSKIT_ACTION_FOCUS;
@@ -1782,6 +2000,15 @@ AccessibilityServerAccessKit::AccessibilityServerAccessKit() {
 	action_map[AccessibilityServerEnums::AccessibilityAction::ACTION_SET_VALUE] = ACCESSKIT_ACTION_SET_VALUE;
 	action_map[AccessibilityServerEnums::AccessibilityAction::ACTION_SHOW_CONTEXT_MENU] = ACCESSKIT_ACTION_SHOW_CONTEXT_MENU;
 	action_map[AccessibilityServerEnums::AccessibilityAction::ACTION_CUSTOM] = ACCESSKIT_ACTION_CUSTOM_ACTION;
+#ifdef TOOLS_ENABLED
+	for (const KeyValue<AccessibilityServerEnums::AccessibilityAction, accesskit_action> &action : action_map) {
+		action_map_inv[action.value] = action.key;
+	}
+#endif
+
+#ifdef TOOLS_ENABLED
+	EngineDebugger::register_message_capture("accessibility", EngineDebugger::Capture(nullptr, AccessibilityServerAccessKit::parse_message));
+#endif // DEBUG_ENABLED
 }
 
 AccessibilityServerAccessKit::~AccessibilityServerAccessKit() {}

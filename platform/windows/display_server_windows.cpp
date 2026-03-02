@@ -3067,6 +3067,10 @@ int DisplayServerWindows::accessibility_should_reduce_transparency() const {
 }
 
 int DisplayServerWindows::accessibility_screen_reader_active() const {
+	if (AccessibilityServer::get_singleton() && AccessibilityServer::get_singleton()->override_active()) {
+		return true;
+	}
+
 	BOOL sr_enabled = false; // Note: this should be BOOL (WinAPI), not bool (C++), since SystemParametersInfoA expect variable with specific size.
 	if (SystemParametersInfoA(SPI_GETSCREENREADER, 0, &sr_enabled, 0) && sr_enabled) {
 		return true;
