@@ -52,6 +52,14 @@
 #include <mntent.h>
 #endif
 
+#ifdef UDEV_ENABLED
+#ifdef SOWRAP_ENABLED
+#include "libudev-so_wrap.h"
+#else
+#include <libudev.h>
+#endif
+#endif
+
 String DirAccessUnix::fix_path(const String &p_path) const {
 	return DirAccess::fix_path(p_path).simplify_path();
 }
@@ -218,9 +226,35 @@ static bool _filter_drive(struct mntent *mnt) {
 }
 #endif
 
-static void _get_drives(List<String> *list) {
-	// Add root.
-	list->push_back("/");
+void DirAccessUnix::_update_drives() {
+	drives.clear();
+	drives.push_back({ "/", RTR("Root") });
+
+#ifdef UDEV_ENABLED
+#ifdef SOWRAP_ENABLED
+	static bool use_udev = true;
+	static bool init_udev = false;
+	if (!init_udev) {
+		init_udev = true;
+#ifdef DEBUG_ENABLED
+		int dylibloader_verbose = 1;
+#else
+		int dylibloader_verbose = 0;
+#endif
+		use_udev = initialize_libudev(dylibloader_verbose) == 0;
+		if (use_udev) {
+			if (!udev_new || !udev_unref || !udev_enumerate_new || !udev_enumerate_unref || !udev_enumerate_add_match_subsystem || !udev_enumerate_add_match_property || !udev_enumerate_scan_devices || !udev_enumerate_get_list_entry || !udev_list_entry_get_next || !udev_list_entry_get_name || !udev_device_new_from_syspath || !udev_device_get_property_value || !udev_device_unref) {
+				use_udev = false;
+			}
+		} else {
+			use_udev = false;
+		}
+	}
+#endif // SOWRAP_ENABLED
+#endif // UDEV_ENABLED
+
+	const char *home = getenv("HOME");
+	String home_name = home ? String::utf8(home) : String();
 
 #if __has_include(<mntent.h>) && defined(LINUXBSD_ENABLED)
 	// Check /etc/mtab for the list of mounted partitions.
@@ -232,24 +266,47 @@ static void _get_drives(List<String> *list) {
 		while (getmntent_r(mtab, &mnt, strings, sizeof(strings))) {
 			if (mnt.mnt_dir != nullptr && _filter_drive(&mnt)) {
 				// Avoid duplicates
-				String name = String::utf8(mnt.mnt_dir);
-				if (!list->find(name)) {
-					list->push_back(name);
+				String mount = String::utf8(mnt.mnt_dir);
+#ifdef UDEV_ENABLED
+				String name;
+				if (use_udev) {
+					struct udev *udev = udev_new();
+					struct udev_enumerate *uenum = udev_enumerate_new(udev);
+
+					udev_enumerate_add_match_subsystem(uenum, "block");
+					udev_enumerate_add_match_property(uenum, "DEVNAME", mnt.mnt_fsname);
+					udev_enumerate_scan_devices(uenum);
+
+					struct udev_list_entry *udevices = udev_enumerate_get_list_entry(uenum);
+					struct udev_list_entry *udev_ent = nullptr;
+					udev_list_entry_foreach(udev_ent, udevices) {
+						const char *path = udev_list_entry_get_name(udev_ent);
+						struct udev_device *device = udev_device_new_from_syspath(udev, path);
+
+						name = String::utf8(udev_device_get_property_value(device, "ID_FS_LABEL")).strip_edges();
+						udev_device_unref(device);
+					}
+					udev_enumerate_unref(uenum);
+					udev_unref(udev);
 				}
+				if (mount == home_name && name.is_empty()) {
+					name = RTR("Home");
+				}
+				if (drives.find({ mount, name }) == -1) {
+					drives.push_back({ mount, name });
+				}
+#endif
 			}
 		}
 
 		endmntent(mtab);
 	}
 #endif
-
 	// Add $HOME.
-	const char *home = getenv("HOME");
 	if (home) {
 		// Only add if it's not a duplicate
-		String home_name = String::utf8(home);
-		if (!list->find(home_name)) {
-			list->push_back(home_name);
+		if (drives.find({ home_name, RTR("Home") }) == -1) {
+			drives.push_back({ home_name, RTR("Home") });
 		}
 
 		// Check GTK+3 bookmarks for both XDG locations (Documents, Downloads, etc.)
@@ -263,9 +320,15 @@ static void _get_drives(List<String> *list) {
 				// Parse only file:// links
 				if (strncmp(string, "file://", 7) == 0) {
 					// Strip any unwanted edges on the strings and push_back if it's not a duplicate.
-					String fpath = String::utf8(string + 7).strip_edges().split_spaces()[0].uri_file_decode();
-					if (!list->find(fpath)) {
-						list->push_back(fpath);
+					Vector<String> bookmark_parts = String::utf8(string + 7).strip_edges().split_spaces(1);
+					String fpath = bookmark_parts[0].uri_file_decode();
+					String name = bookmark_parts.size() > 1 ? bookmark_parts[1].strip_edges() : String();
+					if (name.is_empty()) {
+						Vector<String> path_parts = bookmark_parts[0].rsplit("/", true, 1);
+						name = path_parts.size() > 1 ? path_parts[1].strip_edges() : fpath;
+					}
+					if (drives.find({ fpath, name }) == -1) {
+						drives.push_back({ fpath, name });
 					}
 				}
 			}
@@ -275,28 +338,29 @@ static void _get_drives(List<String> *list) {
 
 		// Add Desktop dir.
 		String dpath = OS::get_singleton()->get_system_dir(OS::SystemDir::SYSTEM_DIR_DESKTOP);
-		if (dpath.length() > 0 && !list->find(dpath)) {
-			list->push_back(dpath);
+		if (drives.find({ dpath, "Desktop" }) == -1) {
+			drives.push_back({ dpath, "Desktop" });
 		}
 	}
-
-	list->sort();
+	drives.sort_custom<DriveInfo>();
 }
 
 int DirAccessUnix::get_drive_count() {
-	List<String> list;
-	_get_drives(&list);
+	return drives.size();
+}
 
-	return list.size();
+String DirAccessUnix::get_drive_label(int p_drive) {
+	if (p_drive < 0 || p_drive >= drives.size()) {
+		return String();
+	}
+	return drives[p_drive].label;
 }
 
 String DirAccessUnix::get_drive(int p_drive) {
-	List<String> list;
-	_get_drives(&list);
-
-	ERR_FAIL_INDEX_V(p_drive, list.size(), "");
-
-	return list.get(p_drive);
+	if (p_drive < 0 || p_drive >= drives.size()) {
+		return String();
+	}
+	return drives[p_drive].path;
 }
 
 int DirAccessUnix::get_current_drive() {
@@ -733,6 +797,7 @@ DirAccessUnix::DirAccessUnix() {
 	_cisdir = false;
 
 	/* determine drive count */
+	_update_drives();
 
 	// set current directory to an absolute path of the current directory
 	char real_current_dir_name[2048];

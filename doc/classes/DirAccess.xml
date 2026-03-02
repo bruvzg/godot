@@ -186,6 +186,12 @@
 				On other platforms, the method returns 0.
 			</description>
 		</method>
+		<method name="get_drive_label" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="idx" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="get_drive_name" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="idx" type="int" />

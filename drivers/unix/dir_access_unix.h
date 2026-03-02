@@ -46,6 +46,22 @@ class DirAccessUnix : public DirAccess {
 	bool _cisdir = false;
 	bool _cishidden = false;
 
+	struct DriveInfo {
+		String path;
+		String label;
+
+		_FORCE_INLINE_ bool operator()(const DriveInfo &p_a, const DriveInfo &p_b) const {
+			return p_a.path < p_b.path;
+		}
+
+		_FORCE_INLINE_ bool operator==(const DriveInfo &p_a) const {
+			return path == p_a.path;
+		}
+	};
+
+	Vector<DriveInfo> drives;
+	void _update_drives();
+
 protected:
 	String current_dir;
 	virtual String fix_unicode_name(const char *p_name) const { return String::utf8(p_name); }
@@ -65,6 +81,7 @@ public:
 
 	virtual int get_drive_count() override;
 	virtual String get_drive(int p_drive) override;
+	virtual String get_drive_label(int p_drive) override;
 	virtual int get_current_drive() override;
 	virtual bool drives_are_shortcuts() override;
 

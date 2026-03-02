@@ -368,12 +368,16 @@ void FileDialog::update_dir() {
 		if (dir_access->get_current_dir().is_network_share_path()) {
 			_update_drives(false);
 			drives->add_item(ETR("Network"));
+			Dictionary meta;
+			meta["index"] = -1;
+			meta["path"] = String();
+			drives->set_item_metadata(-1, meta);
 			drives->set_item_disabled(-1, true);
 			drives->select(drives->get_item_count() - 1);
 		} else {
 			int cur = dir_access->get_current_drive();
 			for (int i = 0; i < drives->get_item_count(); i++) {
-				if (drives->get_item_metadata(i).operator int() == cur) {
+				if (drives->get_item_metadata(i).operator Dictionary()["index"].operator int() == cur) {
 					drives->select(i);
 					break;
 				}
@@ -390,7 +394,7 @@ void FileDialog::_dir_submitted(String p_dir) {
 #ifdef WINDOWS_ENABLED
 	if (root_prefix.is_empty() && drives->is_visible() && !new_dir.is_network_share_path() && new_dir.is_absolute_path() && new_dir.find(":/") == -1 && new_dir.find(":\\") == -1) {
 		// Non network path without X:/ prefix on Windows, add drive letter.
-		new_dir = drives->get_item_text(drives->get_selected()).path_join(new_dir);
+		new_dir = drives->get_item_metadata(drives->get_selected()).operator Dictionary()["path"].operator String().path_join(new_dir);
 	}
 #endif
 	if (!root_prefix.is_empty()) {
@@ -1602,7 +1606,7 @@ void FileDialog::_make_dir() {
 }
 
 void FileDialog::_select_drive(int p_idx) {
-	String d = drives->get_item_text(p_idx);
+	String d = drives->get_item_metadata(p_idx).operator Dictionary()["path"];
 	_change_dir(d);
 	filename_edit->set_text("");
 	_push_history();
@@ -1659,8 +1663,22 @@ void FileDialog::_update_drives(bool p_select) {
 		drives->show();
 
 		for (const KeyValue<int, String> &drv : drive_map) {
-			drives->add_item(drv.value);
-			drives->set_item_metadata(-1, drv.key);
+			String display_name = drv.value;
+			String lbl = dir_access->get_drive_label(drv.key);
+			if (!lbl.is_empty()) {
+#ifdef WINDOWS_ENABLED
+				display_name = drv.value + " (" + lbl + ")";
+#else
+				display_name = lbl + " (" + drv.value + ")";
+#endif
+			}
+			drives->add_item(display_name);
+			drives->set_item_tooltip(-1, drv.value);
+
+			Dictionary meta;
+			meta["index"] = drv.key;
+			meta["path"] = drv.value;
+			drives->set_item_metadata(-1, meta);
 			if (p_select && drv.key == cur) {
 				drives->select(drives->get_item_count() - 1);
 			}
@@ -2356,6 +2374,9 @@ FileDialog::FileDialog() {
 	drives = memnew(OptionButton);
 	drives->connect(SceneStringName(item_selected), callable_mp(this, &FileDialog::_select_drive));
 	drives->set_accessibility_name(ETR("Drive"));
+#ifdef WINDOWS_ENABLED
+	drives->set_fit_to_longest_item(false);
+#endif
 	top_toolbar->add_child(drives);
 
 	directory_edit = memnew(LineEdit);
