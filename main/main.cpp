@@ -973,6 +973,38 @@ int Main::test_entrypoint(int argc, char *argv[], bool &tests_need_run) {
 	return EXIT_SUCCESS;
 }
 
+#if defined(TOOLS_ENABLED) && defined(MACOS_ENABLED)
+
+/* Minimal engine initialization and cleanup for the icon proxy */
+
+Error Main::setup_min() {
+	Thread::make_main_thread();
+
+	OS::get_singleton()->initialize();
+
+	register_core_types();
+	register_core_driver_types();
+
+	engine = memnew(Engine);
+	globals = memnew(ProjectSettings);
+
+	register_core_settings(); //here globals are present
+
+	return OK;
+}
+
+void Main::cleanup_min() {
+	unregister_core_driver_types();
+	unregister_core_types();
+
+	OS::get_singleton()->_cmdline.clear();
+	OS::get_singleton()->_user_args.clear();
+
+	OS::get_singleton()->finalize_core();
+}
+
+#endif
+
 /* Engine initialization
  *
  * Consists of several methods that are called by each platform's specific main(argc, argv).

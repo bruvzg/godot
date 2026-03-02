@@ -40,6 +40,7 @@
 #include "servers/audio/audio_server.h"
 
 class JoypadSDL;
+class DockIconProxyServer;
 
 class OS_MacOS : public OS_Unix {
 #ifdef COREAUDIO_ENABLED
@@ -63,6 +64,9 @@ protected:
 	const char *execpath = nullptr;
 	int argc = 0;
 	char **argv = nullptr;
+#ifdef TOOLS_ENABLED
+	DockIconProxyServer *icon_proxy = nullptr;
+#endif
 
 #ifdef SDL_ENABLED
 	JoypadSDL *joypad_sdl = nullptr;
@@ -80,6 +84,21 @@ protected:
 	virtual void delete_main_loop() override;
 
 public:
+#ifdef TOOLS_ENABLED
+	static inline const char *tool_args[] = {
+		"-e",
+		"--editor",
+		"-p",
+		"--project-manager",
+		"--build-solutions",
+		"--import",
+		"--export-release",
+		"--export-debug",
+		"--export-pack",
+		"--export-patch",
+	};
+#endif
+
 	static inline const char *headless_args[] = {
 		"--headless",
 		"-h",
@@ -197,6 +216,11 @@ public:
 	int get_cmd_argc() const { return argc; }
 
 	virtual void run() override;
+
+#ifdef TOOLS_ENABLED
+	void send_activate();
+	void send_quit();
+#endif
 
 	OS_MacOS_NSApp(const char *p_execpath, int p_argc, char **p_argv);
 };

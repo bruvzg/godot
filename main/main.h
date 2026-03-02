@@ -69,6 +69,10 @@ public:
 #endif
 
 	static int test_entrypoint(int argc, char *argv[], bool &tests_need_run);
+#if defined(TOOLS_ENABLED) && defined(MACOS_ENABLED)
+	static Error setup_min();
+	static void cleanup_min();
+#endif
 	static Error setup(const char *execpath, int argc, char *argv[], bool p_second_phase = true);
 	static Error setup2(bool p_show_boot_logo = true); // The thread calling setup2() will effectively become the main thread.
 	static String get_locale_override();

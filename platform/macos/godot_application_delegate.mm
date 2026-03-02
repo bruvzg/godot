@@ -56,6 +56,15 @@
 	OS_MacOS_NSApp *os_mac;
 }
 
+- (BOOL)applicationShouldHandleReopen:(NSApplication *)sender hasVisibleWindows:(BOOL)hasVisibleWindows {
+#ifdef TOOLS_ENABLED
+	if (os_mac) {
+		os_mac->send_activate();
+	}
+#endif
+	return YES;
+}
+
 - (GodotApplicationDelegate *)initWithOS:(OS_MacOS_NSApp *)os {
 	self = [super init];
 	if (self) {
@@ -320,6 +329,12 @@ constexpr static NSEventModifierFlags FLAGS = NSEventModifierFlagCommand | NSEve
 	if (os_mac->os_should_terminate()) {
 		return NSTerminateNow;
 	}
+
+#ifdef TOOLS_ENABLED
+	if (os_mac) {
+		os_mac->send_quit();
+	}
+#endif
 
 	DisplayServerMacOS *ds = Object::cast_to<DisplayServerMacOS>(DisplayServer::get_singleton());
 	if (ds && ds->has_window(DisplayServerEnums::MAIN_WINDOW_ID)) {

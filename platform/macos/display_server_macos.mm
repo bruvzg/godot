@@ -47,6 +47,7 @@
 #import "os_macos.h"
 
 #ifdef TOOLS_ENABLED
+#include "dock_icon_proxy.h"
 #import "macos_quartz_core_spi.h"
 #endif
 
@@ -235,6 +236,11 @@ DisplayServerEnums::WindowID DisplayServerMacOS::_create_window(DisplayServerEnu
 
 	WindowData &wd = windows[id];
 	window_set_mode(p_mode, id);
+#ifdef TOOLS_ENABLED
+	if (dock_icon_proxy) {
+		dock_icon_proxy->add_window(id);
+	}
+#endif
 
 	const NSRect contentRect = [wd.window_view frame];
 	wd.size.width = contentRect.size.width * scale;
@@ -736,6 +742,9 @@ void DisplayServerMacOS::push_to_key_event_buffer(const DisplayServerMacOS::KeyE
 
 void DisplayServerMacOS::set_last_focused_window(DisplayServerEnums::WindowID p_window) {
 	last_focused_window = p_window;
+	if (p_window != DisplayServerEnums::INVALID_WINDOW_ID && dock_icon_proxy) {
+		dock_icon_proxy->send_key_changed();
+	}
 }
 
 void DisplayServerMacOS::set_is_resizing(bool p_is_resizing) {
@@ -764,7 +773,11 @@ void DisplayServerMacOS::window_destroy(DisplayServerEnums::WindowID p_window) {
 	}
 #endif
 	AccessibilityServer::get_singleton()->window_destroy(p_window);
-
+#ifdef TOOLS_ENABLED
+	if (dock_icon_proxy) {
+		dock_icon_proxy->remove_window(p_window);
+	}
+#endif
 	windows.erase(p_window);
 
 	if (last_focused_window == p_window) {
@@ -1766,6 +1779,12 @@ void DisplayServerMacOS::window_set_title(const String &p_title, DisplayServerEn
 	ERR_FAIL_COND(!windows.has(p_window));
 	WindowData &wd = windows[p_window];
 
+#ifdef TOOLS_ENABLED
+	if (dock_icon_proxy) {
+		dock_icon_proxy->set_window_title(p_window, p_title);
+	}
+#endif
+
 	[wd.window_object setTitle:[NSString stringWithUTF8String:p_title.utf8().get_data()]];
 }
 
@@ -2618,7 +2637,11 @@ bool DisplayServerMacOS::window_get_flag(DisplayServerEnums::WindowFlags p_flag,
 
 void DisplayServerMacOS::window_request_attention(DisplayServerEnums::WindowID p_window) {
 	// It's app global, ignore window id.
-	[NSApp requestUserAttention:NSCriticalRequest];
+	if (dock_icon_proxy) {
+		dock_icon_proxy->send_request_attention();
+	} else {
+		[NSApp requestUserAttention:NSCriticalRequest];
+	}
 }
 
 void DisplayServerMacOS::window_set_taskbar_progress_value(float p_value, DisplayServerEnums::WindowID p_window) {
@@ -3159,6 +3182,12 @@ void DisplayServerMacOS::_process_events(bool p_pump) {
 		}
 	}
 
+#ifdef TOOLS_ENABLED
+	if (dock_icon_proxy) {
+		dock_icon_proxy->poll();
+	}
+#endif
+
 	// Process "menu_callback"s.
 	while (List<MenuCall>::Element *call_p = deferred_menu_calls.front()) {
 		MenuCall call = call_p->get();
@@ -3641,6 +3670,22 @@ DisplayServerMacOS::DisplayServerMacOS(const String &p_rendering_driver, Display
 		display_max_scale = std::fmax(display_max_scale, screen_get_scale(i));
 	}
 
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint() || Engine::get_singleton()->is_project_manager_hint()) {
+		dock_icon_proxy = memnew(DockIconProxyClient);
+		if (dock_icon_proxy->connect_to_proxy()) {
+			[NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+		} else {
+			memdelete(dock_icon_proxy);
+			dock_icon_proxy = nullptr;
+
+			[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+		}
+	} else {
+		[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+	}
+#endif
+
 	// Register to be notified on displays arrangement changes.
 	CGDisplayRegisterReconfigurationCallback(_displays_arrangement_changed, nullptr);
 
@@ -3888,6 +3933,13 @@ DisplayServerMacOS::~DisplayServerMacOS() {
 		memdelete(native_menu);
 		native_menu = nullptr;
 	}
+
+#ifdef TOOLS_ENABLED
+	if (dock_icon_proxy) {
+		memdelete(dock_icon_proxy);
+		dock_icon_proxy = nullptr;
+	}
+#endif
 
 	// Destroy all windows.
 	for (HashMap<DisplayServerEnums::WindowID, WindowData>::Iterator E = windows.begin(); E;) {

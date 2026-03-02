@@ -80,6 +80,7 @@ class EmbeddedProcessMacOS;
 class InputEvent;
 class InputEventWithModifiers;
 class NativeMenuMacOS;
+class DockIconProxyClient;
 
 class DisplayServerMacOS : public DisplayServerMacOSBase {
 	GDSOFTCLASS(DisplayServerMacOS, DisplayServerMacOSBase);
@@ -184,6 +185,9 @@ private:
 
 	id menu_delegate = nullptr;
 	NativeMenuMacOS *native_menu = nullptr;
+#ifdef TOOLS_ENABLED
+	DockIconProxyClient *dock_icon_proxy = nullptr;
+#endif
 
 	CGEventSourceRef event_source;
 	void _mouse_apply_mode(DisplayServerEnums::MouseMode p_prev_mode, DisplayServerEnums::MouseMode p_new_mode) override;

@@ -37,15 +37,18 @@
 
 #ifdef TOOLS_ENABLED
 #import "display_server_macos_embedded.h"
+#import "dock_icon_proxy.h"
 #endif
 
 #include "core/config/engine.h"
 #include "core/crypto/crypto_core.h"
 #include "core/input/input.h"
 #include "core/io/file_access.h"
+#include "core/object/object.h"
 #include "core/os/main_loop.h"
 #include "core/os/os.h"
 #include "core/profiling/profiling.h"
+#include "core/string/string_name.h"
 #include "core/version_generated.gen.h"
 #include "drivers/apple/os_log_logger.h"
 #include "main/main.h"
@@ -1108,7 +1111,30 @@ static void handle_interrupt(int sig) {
 	}
 }
 
+#ifdef TOOLS_ENABLED
+void OS_MacOS_NSApp::send_activate() {
+	if (icon_proxy) {
+		icon_proxy->send_activate(0, DisplayServerEnums::MAIN_WINDOW_ID);
+	}
+}
+
+void OS_MacOS_NSApp::send_quit() {
+	if (icon_proxy) {
+		icon_proxy->send_quit();
+	}
+}
+#endif
+
 void OS_MacOS_NSApp::start_main() {
+#ifdef TOOLS_ENABLED
+	if (icon_proxy) {
+		if (!icon_proxy->start_server()) {
+			terminate();
+		}
+		return;
+	}
+#endif
+
 	Error err;
 	@autoreleasepool {
 		err = Main::setup(execpath, argc, argv);
@@ -1185,6 +1211,13 @@ void OS_MacOS_NSApp::terminate() {
 }
 
 void OS_MacOS_NSApp::cleanup() {
+#ifdef TOOLS_ENABLED
+	if (icon_proxy) {
+		memdelete(icon_proxy);
+		icon_proxy = nullptr;
+		Main::cleanup_min();
+	}
+#endif
 	if (main_loop) {
 		main_loop->finalize();
 	}
@@ -1201,8 +1234,36 @@ OS_MacOS_NSApp::OS_MacOS_NSApp(const char *p_execpath, int p_argc, char **p_argv
 	// Implicitly create shared NSApplication instance.
 	[GodotApplication sharedApplication];
 
-	// In case we are unbundled, make us a proper UI application.
+#ifdef TOOLS_ENABLED
+	bool tools_enabled = false;
+	for (int i = 0; i < p_argc; i++) {
+		String arg = String::utf8(p_argv[i]);
+		if (arg.ends_with("project.godot")) {
+			tools_enabled = true;
+			break;
+		}
+		if (arg == "--icon_proxy") {
+			Main::setup_min();
+
+			icon_proxy = memnew(DockIconProxyServer);
+			tools_enabled = false;
+			break;
+		}
+		for (size_t j = 0; j < std::size(OS_MacOS::tool_args); j++) {
+			if (arg == OS_MacOS::tool_args[j]) {
+				tools_enabled = true;
+				break;
+			}
+		}
+	}
+	if (tools_enabled) {
+		[NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+	} else {
+		[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+	}
+#else
 	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+#endif
 
 	// Menu bar setup must go between sharedApplication above and
 	// finishLaunching below, in order to properly emulate the behavior
