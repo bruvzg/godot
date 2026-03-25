@@ -160,9 +160,12 @@ private:
 
 	RID accessibility_title_element;
 	RID accessibility_announcement_element;
+	RID accessibility_silent_element;
+	String accessibility_silent_br;
 	String announcement;
 	String accessibility_name;
 	String accessibility_description;
+	bool accessibility_slient = false;
 
 	void _make_window();
 	void _clear_window();
@@ -302,6 +305,10 @@ public:
 
 	RID get_accessibility_element() const override;
 	virtual RID get_focused_accessibility_element() const override;
+
+	bool accessibility_is_paused() const { return accessibility_slient; }
+	void accessibility_pause_for_custom_audio(const String &p_braille_label);
+	void accessibility_resume();
 
 	void set_title(const String &p_title);
 	String get_title() const;

@@ -270,29 +270,33 @@ void SceneTree::_process_accessibility_changes(DisplayServerEnums::WindowID p_wi
 	ObjectID oid = DisplayServer::get_singleton()->window_get_attached_instance_id(p_window_id);
 	Window *w_this = (Window *)ObjectDB::get_instance(oid);
 	if (w_this) {
-		Window *w_focus = w_this->get_focused_subwindow();
-		if (w_focus && !w_focus->is_part_of_edited_scene()) {
-			w_this = w_focus;
-		}
-
-		// Popups have no native window focus, but have focused element.
-		DisplayServerEnums::WindowID popup_id = DisplayServer::get_singleton()->window_get_active_popup();
-		if (popup_id != DisplayServerEnums::INVALID_WINDOW_ID) {
-			Window *popup_w = Window::get_from_id(popup_id);
-			if (popup_w && w_this->is_ancestor_of(popup_w)) {
-				w_this = popup_w;
-			}
-		}
-
-		RID new_focus_element;
-		Control *n_focus = w_this->gui_get_focus_owner();
-		if (n_focus && !n_focus->is_part_of_edited_scene()) {
-			new_focus_element = n_focus->get_focused_accessibility_element();
+		if (w_this->accessibility_is_paused()) {
+			AccessibilityServer::get_singleton()->update_set_focus(w_this->get_focused_accessibility_element());
 		} else {
-			new_focus_element = w_this->get_focused_accessibility_element();
-		}
+			Window *w_focus = w_this->get_focused_subwindow();
+			if (w_focus && !w_focus->is_part_of_edited_scene()) {
+				w_this = w_focus;
+			}
 
-		AccessibilityServer::get_singleton()->update_set_focus(new_focus_element);
+			// Popups have no native window focus, but have focused element.
+			DisplayServerEnums::WindowID popup_id = DisplayServer::get_singleton()->window_get_active_popup();
+			if (popup_id != DisplayServerEnums::INVALID_WINDOW_ID) {
+				Window *popup_w = Window::get_from_id(popup_id);
+				if (popup_w && w_this->is_ancestor_of(popup_w)) {
+					w_this = popup_w;
+				}
+			}
+
+			RID new_focus_element;
+			Control *n_focus = w_this->gui_get_focus_owner();
+			if (n_focus && !n_focus->is_part_of_edited_scene()) {
+				new_focus_element = n_focus->get_focused_accessibility_element();
+			} else {
+				new_focus_element = w_this->get_focused_accessibility_element();
+			}
+
+			AccessibilityServer::get_singleton()->update_set_focus(new_focus_element);
+		}
 	}
 
 	// Cleanup.

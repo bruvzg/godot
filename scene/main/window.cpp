@@ -1506,6 +1506,9 @@ RID Window::get_accessibility_element() const {
 }
 
 RID Window::get_focused_accessibility_element() const {
+	if (accessibility_slient) {
+		return accessibility_silent_element;
+	}
 	if (window_id == DisplayServerEnums::MAIN_WINDOW_ID) {
 		if (get_child_count() > 0) {
 			return get_child(0)->get_focused_accessibility_element(); // Try scene tree root node.
@@ -1525,6 +1528,10 @@ void Window::_notification(int p_what) {
 			if (accessibility_announcement_element.is_valid()) {
 				AccessibilityServer::get_singleton()->free_element(accessibility_announcement_element);
 				accessibility_announcement_element = RID();
+			}
+			if (accessibility_silent_element.is_valid()) {
+				AccessibilityServer::get_singleton()->free_element(accessibility_silent_element);
+				accessibility_silent_element = RID();
 			}
 		} break;
 
@@ -1567,17 +1574,27 @@ void Window::_notification(int p_what) {
 				AccessibilityServer::get_singleton()->update_set_bounds(accessibility_title_element, Rect2(Vector2(0, -w), Size2(size.x, w)));
 			} else {
 				AccessibilityServer::get_singleton()->update_set_transform(ae, get_final_transform());
-				if (_get_size_2d_override() != Size2()) {
-					AccessibilityServer::get_singleton()->update_set_bounds(ae, Rect2(Point2(), _get_size_2d_override()));
-				} else {
-					AccessibilityServer::get_singleton()->update_set_bounds(ae, Rect2(Point2(), _get_size()));
-				}
+				const Size2 &ac_size = (_get_size_2d_override() != Size2()) ? _get_size_2d_override() : (Size2)_get_size();
+				AccessibilityServer::get_singleton()->update_set_bounds(ae, Rect2(Point2(), ac_size));
 
 				if (accessibility_announcement_element.is_null()) {
 					accessibility_announcement_element = AccessibilityServer::get_singleton()->create_sub_element(ae, AccessibilityServerEnums::AccessibilityRole::ROLE_STATIC_TEXT);
 				}
 
-				if (announcement.is_empty()) {
+				if (accessibility_silent_element.is_null()) {
+					accessibility_silent_element = AccessibilityServer::get_singleton()->create_sub_element(ae, AccessibilityServerEnums::AccessibilityRole::ROLE_UNKNOWN);
+				}
+				if (accessibility_slient) {
+					if (!accessibility_silent_br.is_empty()) {
+						AccessibilityServer::get_singleton()->update_set_braille_label(accessibility_silent_element, accessibility_silent_br);
+					}
+					AccessibilityServer::get_singleton()->update_set_bounds(accessibility_silent_element, Rect2(Point2(), ac_size));
+					AccessibilityServer::get_singleton()->update_set_flag(accessibility_silent_element, AccessibilityServerEnums::AccessibilityFlags::FLAG_HIDDEN, false);
+				} else {
+					AccessibilityServer::get_singleton()->update_set_flag(accessibility_silent_element, AccessibilityServerEnums::AccessibilityFlags::FLAG_HIDDEN, true);
+				}
+
+				if (announcement.is_empty() || accessibility_slient) {
 					AccessibilityServer::get_singleton()->update_set_live(accessibility_announcement_element, AccessibilityServerEnums::AccessibilityLiveMode::LIVE_OFF);
 				} else {
 					AccessibilityServer::get_singleton()->update_set_name(accessibility_announcement_element, announcement);
@@ -1755,6 +1772,7 @@ void Window::_notification(int p_what) {
 
 			accessibility_title_element = RID();
 			accessibility_announcement_element = RID();
+			accessibility_silent_element = RID();
 
 			if (transient) {
 				_clear_transient();
@@ -1786,6 +1804,21 @@ void Window::_notification(int p_what) {
 		case NOTIFICATION_VP_MOUSE_EXIT: {
 			emit_signal(SceneStringName(mouse_exited));
 		} break;
+	}
+}
+
+void Window::accessibility_pause_for_custom_audio(const String &p_braille_label) {
+	if (!accessibility_slient) {
+		accessibility_slient = true;
+		accessibility_silent_br = p_braille_label;
+		queue_accessibility_update();
+	}
+}
+
+void Window::accessibility_resume() {
+	if (accessibility_slient) {
+		accessibility_slient = false;
+		queue_accessibility_update();
 	}
 }
 
@@ -3511,6 +3544,10 @@ void Window::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("popup_exclusive_centered", "from_node", "minsize"), &Window::popup_exclusive_centered, DEFVAL(Size2i()));
 	ClassDB::bind_method(D_METHOD("popup_exclusive_centered_ratio", "from_node", "ratio"), &Window::popup_exclusive_centered_ratio, DEFVAL(0.8));
 	ClassDB::bind_method(D_METHOD("popup_exclusive_centered_clamped", "from_node", "minsize", "fallback_ratio"), &Window::popup_exclusive_centered_clamped, DEFVAL(Size2i()), DEFVAL(0.75));
+
+	ClassDB::bind_method(D_METHOD("accessibility_is_paused"), &Window::accessibility_is_paused);
+	ClassDB::bind_method(D_METHOD("accessibility_pause_for_custom_audio", "braille_label"), &Window::accessibility_pause_for_custom_audio);
+	ClassDB::bind_method(D_METHOD("accessibility_resume"), &Window::accessibility_resume);
 
 	// Keep the enum values in sync with the `Mode` enum.
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Windowed,Minimized,Maximized,Fullscreen,Exclusive Fullscreen"), "set_mode", "get_mode");

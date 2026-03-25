@@ -94,6 +94,9 @@ void Node::_notification(int p_notification) {
 					AccessibilityServer::get_singleton()->update_add_child(ae, child_node->get_accessibility_element());
 				}
 			}
+			if (get_window() && get_window()->accessibility_is_paused()) {
+				AccessibilityServer::get_singleton()->update_set_flag(ae, AccessibilityServerEnums::AccessibilityFlags::FLAG_HIDDEN, true);
+			}
 		} break;
 
 		case NOTIFICATION_PROCESS: {

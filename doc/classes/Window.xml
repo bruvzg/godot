@@ -16,6 +16,25 @@
 				Virtual method to be implemented by the user. Overrides the value returned by [method get_contents_minimum_size].
 			</description>
 		</method>
+		<method name="accessibility_is_paused" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code], if screen reader interactions were paused by [method accessibility_pause_for_custom_audio] call.
+			</description>
+		</method>
+		<method name="accessibility_pause_for_custom_audio">
+			<return type="void" />
+			<param index="0" name="braille_label" type="String" />
+			<description>
+				Pauses screen reader interaction to allow custom audio cues to play.
+			</description>
+		</method>
+		<method name="accessibility_resume">
+			<return type="void" />
+			<description>
+				Resumes screen reader after [method accessibility_pause_for_custom_audio] call.
+			</description>
+		</method>
 		<method name="add_theme_color_override">
 			<return type="void" />
 			<param index="0" name="name" type="StringName" />

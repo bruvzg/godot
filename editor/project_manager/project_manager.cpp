@@ -505,7 +505,12 @@ void ProjectManager::_update_list_placeholder() {
 }
 
 void ProjectManager::_scan_projects() {
-	scan_dir->popup_file_dialog();
+	//scan_dir->popup_file_dialog();
+	if (!get_window()->accessibility_is_paused()) {
+		get_window()->accessibility_pause_for_custom_audio("Meh");
+	} else {
+		get_window()->accessibility_resume();
+	}
 }
 
 void ProjectManager::_run_project() {
