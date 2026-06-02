@@ -147,6 +147,9 @@ private:
 	bool unparent_when_invisible = false;
 	bool keep_title_visible = false;
 
+	bool key_state[0x7F] = {};
+	bool sp_key_state[0x7F] = {};
+
 	LayoutDirection layout_dir = LAYOUT_DIRECTION_INHERITED;
 
 	void _update_child_controls();

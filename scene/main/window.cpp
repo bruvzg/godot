@@ -894,8 +894,40 @@ void Window::_event_callback(DisplayServerEnums::WindowEvent p_event) {
 					}
 				}
 			}
+			for (int k = 0; k < 0x7F; k++) {
+				if (key_state[k] != Input::get_singleton()->is_physical_key_pressed((Key)(k + 1)) && key_state[k]) {
+					Ref<InputEventKey> ke;
+					ke.instantiate();
+					ke->set_window_id(window_id == DisplayServerEnums::INVALID_WINDOW_ID ? DisplayServerEnums::MAIN_WINDOW_ID : window_id);
+					ke->set_pressed(false);
+					ke->set_echo(false);
+					ke->set_keycode(DisplayServer::get_singleton()->keyboard_get_keycode_from_physical((Key)(k + 1)));
+					ke->set_physical_keycode((Key)(k + 1));
+					ke->set_key_label(DisplayServer::get_singleton()->keyboard_get_label_from_physical((Key)(k + 1)));
+					ke->set_unicode(0);
+					ke->set_location(KeyLocation::UNSPECIFIED);
+					Input::get_singleton()->parse_input_event(ke);
+				}
+				if (sp_key_state[k] != Input::get_singleton()->is_physical_key_pressed((Key)(k + 1) | Key::SPECIAL) && sp_key_state[k]) {
+					Ref<InputEventKey> ke;
+					ke.instantiate();
+					ke->set_window_id(window_id == DisplayServerEnums::INVALID_WINDOW_ID ? DisplayServerEnums::MAIN_WINDOW_ID : window_id);
+					ke->set_pressed(false);
+					ke->set_echo(false);
+					ke->set_keycode(DisplayServer::get_singleton()->keyboard_get_keycode_from_physical((Key)(k + 1) | Key::SPECIAL));
+					ke->set_physical_keycode((Key)(k + 1) | Key::SPECIAL);
+					ke->set_key_label(DisplayServer::get_singleton()->keyboard_get_label_from_physical((Key)(k + 1) | Key::SPECIAL));
+					ke->set_unicode(0);
+					ke->set_location(KeyLocation::UNSPECIFIED);
+					Input::get_singleton()->parse_input_event(ke);
+				}
+			}
 		} break;
 		case DisplayServerEnums::WINDOW_EVENT_FOCUS_OUT: {
+			for (int k = 0; k < 0x7F; k++) {
+				key_state[k] = Input::get_singleton()->is_physical_key_pressed((Key)(k + 1));
+				sp_key_state[k] = Input::get_singleton()->is_physical_key_pressed((Key)(k + 1) | Key::SPECIAL);
+			}
 			focused = false;
 			if (focused_window == this) {
 				focused_window = nullptr;
