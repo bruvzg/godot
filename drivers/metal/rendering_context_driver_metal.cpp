@@ -228,9 +228,12 @@ public:
 		count--;
 		front = (front + 1) % frame_buffers.size();
 
+#if !defined(IOS_SIMULATOR)
 		if (vsync_mode != DisplayServerEnums::VSYNC_DISABLED) {
 			p_cmd_buffer->get_command_buffer()->presentDrawableAfterMinimumDuration(drawable, present_minimum_duration);
-		} else {
+		} else
+#endif
+		{
 			p_cmd_buffer->get_command_buffer()->presentDrawable(drawable);
 		}
 	}

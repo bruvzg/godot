@@ -28,6 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#if !defined(IOS_SIMULATOR)
+
 #ifdef METAL_ENABLED
 
 #include "metal_fx.h"
@@ -205,6 +207,8 @@ void MFXTemporalEffect::callback(RDD *p_driver, RDD::CommandBufferID p_command_b
 
 	CallbackArgs::free(&p_userdata);
 }
+
+#endif
 
 #endif
 

@@ -33,7 +33,9 @@ class Buffer;
 class TensorDescriptor;
 class TensorExtents;
 
+#if !defined(IOS_SIMULATOR)
 _MTL_CONST(NS::ErrorDomain, TensorDomain);
+#endif
 
 _MTL_ENUM(NS::Integer, TensorDataType) {
     TensorDataTypeNone = 0,
@@ -134,7 +136,9 @@ public:
 
 }
 
+#if !defined(IOS_SIMULATOR)
 _MTL_PRIVATE_DEF_CONST(NS::ErrorDomain, TensorDomain);
+#endif
 
 _MTL_INLINE MTL::TensorExtents* MTL::TensorExtents::alloc()
 {

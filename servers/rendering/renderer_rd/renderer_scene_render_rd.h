@@ -50,7 +50,7 @@
 #include "servers/rendering/rendering_server_types.h"
 #include "servers/rendering/rendering_shader_library.h"
 
-#ifdef METAL_ENABLED
+#if defined(METAL_ENABLED) && !defined(IOS_SIMULATOR)
 #include "servers/rendering/renderer_rd/effects/metal_fx.h"
 #endif
 
@@ -69,7 +69,7 @@ protected:
 	RendererRD::FSR *fsr = nullptr;
 	RendererRD::VRS *vrs = nullptr;
 	RendererRD::Resolve *resolve_effects = nullptr;
-#ifdef METAL_ENABLED
+#if defined(METAL_ENABLED) && !defined(VISIONOS_ENABLED) && !defined(IOS_SIMULATOR)
 	RendererRD::MFXSpatialEffect *mfx_spatial = nullptr;
 #endif
 	double time = 0.0;

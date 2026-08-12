@@ -30,11 +30,11 @@
 
 #pragma once
 
-#if defined(METAL_ENABLED) && !defined(VISIONOS_ENABLED)
+#if defined(METAL_ENABLED) && !defined(VISIONOS_ENABLED) && !defined(IOS_SIMULATOR)
 #define METAL_MFXTEMPORAL_ENABLED
 #endif
 
-#ifdef METAL_ENABLED
+#if defined(METAL_ENABLED) && !defined(IOS_SIMULATOR)
 
 #include "core/templates/paged_allocator.h"
 #include "servers/rendering/renderer_rd/effects/spatial_upscaler.h"

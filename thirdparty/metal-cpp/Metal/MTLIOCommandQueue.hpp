@@ -48,7 +48,10 @@ _MTL_ENUM(NS::Integer, IOError) {
     IOErrorInternal = 2,
 };
 
+#if !defined(IOS_SIMULATOR)
 _MTL_CONST(NS::ErrorDomain, IOErrorDomain);
+#endif
+
 class IOCommandQueue : public NS::Referencing<IOCommandQueue>
 {
 public:
@@ -104,7 +107,9 @@ public:
 };
 
 }
+#if !defined(IOS_SIMULATOR)
 _MTL_PRIVATE_DEF_CONST(NS::ErrorDomain, IOErrorDomain);
+#endif
 _MTL_INLINE MTL::IOCommandBuffer* MTL::IOCommandQueue::commandBuffer()
 {
     return Object::sendMessage<MTL::IOCommandBuffer*>(this, _MTL_PRIVATE_SEL(commandBuffer));

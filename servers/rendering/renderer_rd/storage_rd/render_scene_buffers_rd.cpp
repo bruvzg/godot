@@ -144,7 +144,7 @@ void RenderSceneBuffersRD::cleanup() {
 		}
 	}
 
-#ifdef METAL_ENABLED
+#if defined(METAL_ENABLED) && !defined(IOS_SIMULATOR)
 	if (mfx_spatial_context) {
 		memdelete(mfx_spatial_context);
 		mfx_spatial_context = nullptr;
@@ -256,7 +256,7 @@ void RenderSceneBuffersRD::set_use_debanding(bool p_use_debanding) {
 	use_debanding = p_use_debanding;
 }
 
-#ifdef METAL_ENABLED
+#if defined(METAL_ENABLED) && !defined(IOS_SIMULATOR)
 void RenderSceneBuffersRD::ensure_mfx(RendererRD::MFXSpatialEffect *p_effect) {
 	if (mfx_spatial_context) {
 		return;
