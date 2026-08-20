@@ -85,6 +85,7 @@ public:
 
 	virtual String get_template_file_name(const String &p_target, const String &p_arch) const override;
 	virtual Error fixup_embedded_pck(const String &p_path, int64_t p_embedded_start, int64_t p_embedded_size) override;
+	virtual Error fixup_debug_symbol_link(const String &p_path, const String &p_symbol_file) override;
 
 	virtual void get_platform_features(List<String> *r_features) const override;
 

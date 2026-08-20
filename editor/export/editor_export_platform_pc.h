@@ -78,4 +78,7 @@ public:
 	virtual Error fixup_embedded_pck(const String &p_path, int64_t p_embedded_start, int64_t p_embedded_size) {
 		return Error::OK;
 	}
+	virtual Error fixup_debug_symbol_link(const String &p_path, const String &p_symbol_path) {
+		return Error::OK;
+	}
 };

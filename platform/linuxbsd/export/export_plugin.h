@@ -77,6 +77,7 @@ public:
 	virtual Error export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags = 0, bool p_notify = true) override;
 	virtual String get_template_file_name(const String &p_target, const String &p_arch) const override;
 	virtual Error fixup_embedded_pck(const String &p_path, int64_t p_embedded_start, int64_t p_embedded_size) override;
+	virtual Error fixup_debug_symbol_link(const String &p_path, const String &p_symbol_file) override;
 	virtual bool is_executable(const String &p_path) const override;
 
 	virtual void get_platform_features(List<String> *r_features) const override;
