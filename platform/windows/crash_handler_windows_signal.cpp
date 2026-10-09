@@ -31,7 +31,9 @@
 #include "crash_handler_windows.h"
 
 #include "core/config/project_settings.h"
+#include "core/crypto/crypto_core.h"
 #include "core/io/file_access.h"
+#include "core/io/marshalls.h"
 #include "core/object/script_language.h"
 #include "core/os/main_loop.h"
 #include "core/os/os.h"
@@ -65,6 +67,17 @@ struct CrashHandlerData {
 	uint64_t pc = 0;
 	HANDLE process = nullptr;
 	bool sym_ok = false;
+
+	struct ModData {
+		String mod_name;
+		uint64_t offset = 0;
+	};
+	struct SymInfo {
+		uint64_t offset = 0;
+		int8_t mod_idx = 0;
+	};
+	LocalVector<ModData> mod_info;
+	LocalVector<SymInfo> sym_info;
 };
 
 struct module_data {
@@ -120,6 +133,22 @@ int symbol_callback(void *data, uintptr_t pc, const char *filename, int lineno, 
 			}
 		}
 	}
+	{
+		bool mod_found = false;
+		int8_t mod_idx = 0;
+		for (unsigned int j = 0; j < ch_data->mod_info.size(); j++) {
+			if (ch_data->mod_info[j].mod_name == mod_name) {
+				mod_found = true;
+				mod_idx = j;
+				break;
+			}
+		}
+		if (!mod_found) {
+			ch_data->mod_info.push_back({ mod_name, offset });
+			mod_idx = ch_data->mod_info.size() - 1;
+		}
+		ch_data->sym_info.push_back({ (uint64_t)ch_data->pc, mod_idx });
+	}
 
 	if (function) {
 		char fname[1024];
@@ -167,6 +196,22 @@ void error_callback(void *data, const char *msg, int errnum) {
 					}
 				}
 			}
+		}
+		{
+			bool mod_found = false;
+			int8_t mod_idx = 0;
+			for (unsigned int j = 0; j < ch_data->mod_info.size(); j++) {
+				if (ch_data->mod_info[j].mod_name == mod_name) {
+					mod_found = true;
+					mod_idx = j;
+					break;
+				}
+			}
+			if (!mod_found) {
+				ch_data->mod_info.push_back({ mod_name, offset });
+				mod_idx = ch_data->mod_info.size() - 1;
+			}
+			ch_data->sym_info.push_back({ (uint64_t)ch_data->pc, mod_idx });
 		}
 		print_error(vformat("[%d] %x (%s+%x) - %s", ch_data->index++, ch_data->pc, mod_name, ch_data->pc - offset, String::utf8(msg)));
 	}
@@ -273,8 +318,10 @@ extern void CrashHandlerException(int signal) {
 	}
 	exec_path = exec_path.replace_char('/', '\\');
 
-	CharString cs = exec_path.utf8(); // Note: should remain in scope during backtrace_simple call.
-	data.state = backtrace_create_state(cs.get_data(), 0, &error_callback, reinterpret_cast<void *>(&data));
+	{
+		CharString cs = exec_path.utf8(); // Note: should remain in scope during backtrace_simple call.
+		data.state = backtrace_create_state(cs.get_data(), 0, &error_callback, reinterpret_cast<void *>(&data));
+	}
 	if (data.state != nullptr) {
 		data.index = 1;
 		backtrace_simple(data.state, 1, &trace_callback, &error_callback, reinterpret_cast<void *>(&data));
@@ -293,6 +340,30 @@ extern void CrashHandlerException(int signal) {
 			print_error(vformat("-- END OF %s BACKTRACE --", backtrace->get_language_name().to_upper()));
 			print_error("================================================================");
 		}
+	}
+	{
+		PackedByteArray encoded_trace;
+		encoded_trace.push_back(data.mod_info.size());
+		for (unsigned int i = 0; i < data.mod_info.size(); i++) {
+			CharString cs = data.mod_info[i].mod_name.utf8();
+			int64_t off = encoded_trace.size();
+			encoded_trace.resize(off + 8 + cs.size());
+			encode_uint64(data.mod_info[i].offset, encoded_trace.ptrw() + off);
+			memcpy(encoded_trace.ptrw() + off + 8, cs.get_data(), cs.size());
+		}
+		encoded_trace.push_back(data.sym_info.size());
+		for (unsigned int i = 0; i < data.sym_info.size(); i++) {
+			int64_t off = encoded_trace.size();
+			encoded_trace.resize(off + 8 + 1);
+			encode_uint64(data.sym_info[i].offset, encoded_trace.ptrw() + off);
+			encoded_trace.write[off + 8] = data.sym_info[i].mod_idx;
+		}
+		String ret = CryptoCore::b64_encode_str(encoded_trace.ptr(), encoded_trace.size());
+		for (int pos = 0; pos < ret.length();) {
+			print_error(ret.substr(pos, 80));
+			pos += 80;
+		}
+		print_error("================================================================");
 	}
 }
 #endif

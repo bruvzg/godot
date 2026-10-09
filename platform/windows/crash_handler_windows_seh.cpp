@@ -31,6 +31,8 @@
 #include "crash_handler_windows.h"
 
 #include "core/config/project_settings.h"
+#include "core/crypto/crypto_core.h"
+#include "core/io/marshalls.h"
 #include "core/object/script_language.h"
 #include "core/os/main_loop.h"
 #include "core/os/os.h"
@@ -200,6 +202,16 @@ DWORD CrashHandlerException(EXCEPTION_POINTERS *ep) {
 	IMAGE_NT_HEADERS *h = ImageNtHeader(base);
 	DWORD image_type = h->FileHeader.Machine;
 
+	struct ModData {
+		String mod_name;
+		uint64_t offset = 0;
+	};
+	struct SymInfo {
+		uint64_t offset = 0;
+		int8_t mod_idx = 0;
+	};
+	LocalVector<ModData> mod_info;
+	LocalVector<SymInfo> sym_info;
 	int n = 0;
 	do {
 		if (skip_first) {
@@ -224,6 +236,22 @@ DWORD CrashHandlerException(EXCEPTION_POINTERS *ep) {
 							mod_name = "<unknown module>";
 						}
 					}
+				}
+				{
+					bool mod_found = false;
+					int8_t mod_idx = 0;
+					for (unsigned int j = 0; j < mod_info.size(); j++) {
+						if (mod_info[j].mod_name == mod_name) {
+							mod_found = true;
+							mod_idx = j;
+							break;
+						}
+					}
+					if (!mod_found) {
+						mod_info.push_back({ mod_name, offset });
+						mod_idx = mod_info.size() - 1;
+					}
+					sym_info.push_back({ (uint64_t)frame.AddrPC.Offset, mod_idx });
 				}
 				if (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &offset_from_symbol, &line)) {
 					print_error(vformat("[%d] %x (%s+%x) - %s (%s:%d)", n, (uint64_t)frame.AddrPC.Offset, mod_name, (uint64_t)frame.AddrPC.Offset - offset, fnName.c_str(), (char *)line.FileName, (int)line.LineNumber));
@@ -253,6 +281,30 @@ DWORD CrashHandlerException(EXCEPTION_POINTERS *ep) {
 			print_error(vformat("-- END OF %s BACKTRACE --", backtrace->get_language_name().to_upper()));
 			print_error("================================================================");
 		}
+	}
+	{
+		PackedByteArray encoded_trace;
+		encoded_trace.push_back(mod_info.size());
+		for (unsigned int i = 0; i < mod_info.size(); i++) {
+			CharString cs = mod_info[i].mod_name.utf8();
+			int64_t off = encoded_trace.size();
+			encoded_trace.resize(off + 8 + cs.size());
+			encode_uint64(mod_info[i].offset, encoded_trace.ptrw() + off);
+			memcpy(encoded_trace.ptrw() + off + 8, cs.get_data(), cs.size());
+		}
+		encoded_trace.push_back(sym_info.size());
+		for (unsigned int i = 0; i < sym_info.size(); i++) {
+			int64_t off = encoded_trace.size();
+			encoded_trace.resize(off + 8 + 1);
+			encode_uint64(sym_info[i].offset, encoded_trace.ptrw() + off);
+			encoded_trace.write[off + 8] = sym_info[i].mod_idx;
+		}
+		String ret = CryptoCore::b64_encode_str(encoded_trace.ptr(), encoded_trace.size());
+		for (int pos = 0; pos < ret.length();) {
+			print_error(ret.substr(pos, 80));
+			pos += 80;
+		}
+		print_error("================================================================");
 	}
 
 	// Pass the exception to the OS
