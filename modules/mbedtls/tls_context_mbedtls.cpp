@@ -31,6 +31,7 @@
 #include "tls_context_mbedtls.h"
 
 #include "core/config/project_settings.h"
+#include "core/os/os.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"
@@ -156,6 +157,18 @@ Error TLSContextMbedTLS::init_server(int p_transport, Ref<TLSOptions> p_options,
 	return OK;
 }
 
+int TLSContextMbedTLS::verification_callback(void *p_user_data, mbedtls_x509_crt *p_crt, int p_certificate_depth, uint32_t *r_flags) {
+	if (p_crt) {
+		PackedByteArray der_data;
+		der_data.resize_uninitialized(p_crt->raw.len);
+		memcpy(der_data.ptrw(), p_crt->raw.p, p_crt->raw.len);
+		if (!OS::get_singleton()->system_verify_certificte_revocation(der_data)) {
+			*r_flags = *r_flags | MBEDTLS_X509_BADCERT_OTHER;
+		}
+	}
+	return 0;
+}
+
 Error TLSContextMbedTLS::init_client(int p_transport, const String &p_hostname, Ref<TLSOptions> p_options) {
 	ERR_FAIL_COND_V(p_options.is_null() || p_options->is_server(), ERR_INVALID_PARAMETER);
 
@@ -208,8 +221,22 @@ Error TLSContextMbedTLS::init_client(int p_transport, const String &p_hostname, 
 		}
 	}
 
+#ifdef TOOLS_ENABLED
+	if (EditorSettings::get_singleton()) {
+		if (EditorSettings::get_singleton()->get_setting("network/tls/system_verify_revocation").operator bool()) {
+			mbedtls_ssl_conf_verify(&conf, &TLSContextMbedTLS::verification_callback, this);
+		}
+	} else
+#endif
+	{
+		if (GLOBAL_GET("network/tls/system_verify_revocation").operator bool()) {
+			mbedtls_ssl_conf_verify(&conf, &TLSContextMbedTLS::verification_callback, this);
+		}
+	}
+
 	// Set valid CAs
 	mbedtls_ssl_conf_ca_chain(&conf, cas->get_context(), nullptr);
+
 	mbedtls_ssl_setup(&tls, &conf);
 	return OK;
 }

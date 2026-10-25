@@ -1033,6 +1033,51 @@ String OS_MacOS::get_system_ca_certificates() {
 	return certs;
 }
 
+bool OS_MacOS::system_verify_certificte_revocation(const PackedByteArray &p_der_data) {
+	CFDataRef data = nullptr;
+	SecCertificateRef certificate = nullptr;
+	SecPolicyRef policy = nullptr;
+	SecTrustRef trust = nullptr;
+	CFErrorRef error = nullptr;
+	bool ver_ok = false;
+
+	data = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, p_der_data.ptr(), p_der_data.size(), kCFAllocatorNull);
+	if (!data) {
+		goto done;
+	}
+	certificate = SecCertificateCreateWithData(kCFAllocatorDefault, data);
+	if (!certificate) {
+		goto done;
+	}
+	policy = SecPolicyCreateRevocation(kSecRevocationUseAnyAvailableMethod);
+	if (!policy) {
+		goto done;
+	}
+	if (SecTrustCreateWithCertificates(certificate, policy, &trust) != noErr || !trust) {
+		goto done;
+	}
+	if (SecTrustEvaluateWithError(trust, &error)) {
+		ver_ok = true;
+	}
+done:
+	if (error) {
+		CFRelease(error);
+	}
+	if (trust) {
+		CFRelease(trust);
+	}
+	if (policy) {
+		CFRelease(policy);
+	}
+	if (certificate) {
+		CFRelease(certificate);
+	}
+	if (data) {
+		CFRelease(data);
+	}
+	return ver_ok;
+}
+
 Error OS_MacOS::get_entropy(uint8_t *r_buffer, int p_bytes) {
 	int status = SecRandomCopyBytes(kSecRandomDefault, p_bytes, r_buffer);
 	return status == errSecSuccess ? OK : FAILED;

@@ -35,6 +35,7 @@
 #include "core/object/ref_counted.h"
 
 #include <mbedtls/debug.h>
+#include <mbedtls/pem.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/ssl_cookie.h>
 
@@ -69,6 +70,7 @@ private:
 	mbedtls_ssl_config conf;
 
 	Error _setup(int p_endpoint, int p_transport, int p_authmode);
+	static int verification_callback(void *p_user_data, mbedtls_x509_crt *p_crt, int p_certificate_depth, uint32_t *r_flags);
 
 public:
 	static void print_mbedtls_error(int p_ret);

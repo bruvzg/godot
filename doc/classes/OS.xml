@@ -897,6 +897,14 @@
 				[b]Note:[/b] This method is currently only implemented on Windows and macOS. On other platforms, it will fallback to [method shell_open] with a directory path of [param file_or_dir_path] prefixed with [code]file://[/code].
 			</description>
 		</method>
+		<method name="system_verify_certificte_revocation">
+			<return type="bool" />
+			<param index="0" name="der_data" type="PackedByteArray" />
+			<description>
+				Performs certificate revocation check using either CRL (Certification Revocation List) or OCSP (Online Certificate Status Protocol) method. Returns [code]true[/code], if certificate is valid.
+				[b]Note:[/b] This method is currently only implemented on macOS.
+			</description>
+		</method>
 		<method name="unset_environment" qualifiers="const">
 			<return type="void" />
 			<param index="0" name="variable" type="String" />

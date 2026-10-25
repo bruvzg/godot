@@ -184,6 +184,7 @@ public:
 
 	PackedByteArray get_entropy(int p_bytes);
 	String get_system_ca_certificates();
+	bool system_verify_certificte_revocation(const PackedByteArray &p_der_data);
 
 	enum StdHandleType {
 		STD_HANDLE_INVALID,

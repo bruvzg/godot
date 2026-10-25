@@ -48,6 +48,7 @@ void initialize_mbedtls_module(ModuleInitializationLevel p_level) {
 	}
 
 	GLOBAL_DEF("network/tls/enable_tls_v1.3", true);
+	GLOBAL_DEF("network/tls/system_verify_revocation", true);
 
 #ifdef DEBUG_ENABLED
 	if (OS::get_singleton()->is_stdout_verbose()) {
